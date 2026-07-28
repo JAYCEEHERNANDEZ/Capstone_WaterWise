@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="WaterWise">
+  <rect width="512" height="512" rx="112" fill="#0284C7"/>
+  <path d="M256 83c-35 56-112 149-112 221 0 64 50 115 112 115s112-51 112-115c0-72-77-165-112-221Z" fill="#fff"/>
+  <path d="M203 315c11 32 35 48 72 48 24 0 45-11 61-29-13 37-43 59-83 59-48 0-85-37-85-85 0-21 11-48 27-75-5 32-3 59 8 82Z" fill="#BAE6FD"/>
+  <path d="M208 288c27 19 67 19 96 0" fill="none" stroke="#0284C7" stroke-linecap="round" stroke-width="21"/>
+</svg>

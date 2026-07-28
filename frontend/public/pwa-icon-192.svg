@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="WaterWise">
+  <rect width="192" height="192" rx="42" fill="#0284C7"/>
+  <path d="M96 31c-13 21-42 56-42 83 0 24 19 43 42 43s42-19 42-43c0-27-29-62-42-83Z" fill="#fff"/>
+  <path d="M76 118c4 12 13 18 27 18 9 0 17-4 23-11-5 14-16 22-31 22-18 0-32-14-32-32 0-8 4-18 10-28-2 12-1 22 3 31Z" fill="#BAE6FD"/>
+  <path d="M78 108c10 7 25 7 36 0" fill="none" stroke="#0284C7" stroke-linecap="round" stroke-width="8"/>
+</svg>

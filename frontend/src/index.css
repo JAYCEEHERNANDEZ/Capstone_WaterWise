@@ -1,0 +1,166 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
+}
+
+:root {
+  --waterwise-slate-900: #0f172a;
+  --waterwise-sky-600: #0284c7;
+  --waterwise-emerald-600: #16a34a;
+  --waterwise-red-600: #dc2626;
+  --waterwise-slate-50: #f8fafc;
+
+  color: var(--waterwise-slate-900);
+  background: var(--waterwise-slate-50);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 28rem),
+    var(--waterwise-slate-50);
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  color: #ffffff;
+  background: #0284c7;
+}
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
+}
+
+@keyframes waterwise-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.waterwise-skeleton-shimmer {
+  animation: waterwise-skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waterwise-skeleton-shimmer {
+    animation: none;
+  }
+}
+/* Admin datasets refresh automatically; manual refresh controls are hidden. */
+.admin-auto-refresh button:has(.lucide-refresh-cw) {
+  display: none;
+}
+
+/* Slightly denser typography for the data-heavy admin workspace only. */
+.admin-auto-refresh .text-4xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.admin-auto-refresh .text-3xl {
+  font-size: 1.625rem;
+  line-height: 2rem;
+}
+
+.admin-auto-refresh .text-2xl {
+  font-size: 1.3rem;
+  line-height: 1.75rem;
+}
+
+.admin-auto-refresh .text-xl {
+  font-size: 1.1rem;
+  line-height: 1.55rem;
+}
+
+.admin-auto-refresh .text-base {
+  font-size: 0.925rem;
+  line-height: 1.4rem;
+}
+
+.admin-auto-refresh .text-sm {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.admin-auto-refresh .text-xs {
+  font-size: 0.7rem;
+  line-height: 1rem;
+}
+
+/* Compact, data-first admin pages: keep primary controls above the fold. */
+.admin-auto-refresh main > header {
+  padding: 1.1rem 1.25rem !important;
+  border-radius: 1.25rem !important;
+}
+
+.admin-auto-refresh main > * + * {
+  margin-top: 1rem !important;
+}
+
+.admin-auto-refresh main > header h2 {
+  font-size: 1.5rem !important;
+  line-height: 1.9rem !important;
+}
+
+.admin-auto-refresh main > header .rounded-2xl {
+  padding: 0.7rem !important;
+  border-radius: 0.8rem !important;
+}
+
+.admin-auto-refresh main > header .mt-4,
+.admin-auto-refresh main > header .mt-5 {
+  margin-top: 0.6rem !important;
+}
+
+.admin-auto-refresh main > header .mt-3 {
+  margin-top: 0.45rem !important;
+}
+
+.admin-auto-refresh main > header .gap-6,
+.admin-auto-refresh main > header .gap-7 {
+  gap: 0.8rem !important;
+}
+
+.admin-auto-refresh [data-testid="analytics-dashboard"] > section,
+.admin-auto-refresh [data-testid="admin-dashboard"] > section {
+  margin-top: 1rem;
+}
+
+.admin-auto-refresh [data-testid="monthly-consumption-card"],
+.admin-auto-refresh [data-testid="yearly-consumption-card"] {
+  height: 10rem;
+}
+
+.admin-auto-refresh [data-testid="analytics-dashboard"] {
+  min-height: 0;
+}

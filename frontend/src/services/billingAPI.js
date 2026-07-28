@@ -1,0 +1,83 @@
+import apiClient from "./apiClient";
+
+const billingClient = {
+  get: (path, options) => apiClient.get(`/billing${path}`, options),
+  post: (path, payload, options) =>
+    apiClient.post(`/billing${path}`, payload, options),
+};
+
+function formatMonth(value) {
+  if (!value) return "Unknown period";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
+export function normalizeBillingRecord(record) {
+  const consumer = Array.isArray(record.consumers)
+    ? record.consumers[0]
+    : (record.consumers ?? record.consumer ?? {});
+  const reading = Array.isArray(record.consumption)
+    ? record.consumption[0]
+    : (record.consumption ?? {});
+  const purokNumber = consumer.purok_no ?? record.purok_no;
+  const consumption = Number(
+    reading.consumption ??
+      record.monthly_consumption ??
+      record.cubic_used ??
+      0,
+  );
+
+  return {
+    id: record.id,
+    invoiceNumber: `INV-${record.id}`,
+    consumerName:
+      consumer.full_name ??
+      record.consumer_name ??
+      `Consumer #${record.user_id}`,
+    purok:
+      consumer.purok ??
+      (purokNumber != null ? `Purok ${purokNumber}` : record.purok) ??
+      "Unassigned",
+    billingPeriod: formatMonth(record.billing_date),
+    readingDate: reading.reading_date ?? record.billing_date,
+    cubicMetersConsumed: Number.isFinite(consumption) ? consumption : 0,
+    amountDue: Number(record.total_bill ?? 0),
+    outstandingBalance: Number(record.remaining_balance ?? 0),
+    status: record.status ?? "Unpaid",
+    address:
+      consumer.purok ??
+      (purokNumber != null ? `Purok ${purokNumber}` : record.address) ??
+      "Address not available",
+    previousReading: Number(reading.previous_reading ?? 0),
+    currentReading: Number(reading.present_reading ?? 0),
+    dueDate: record.due_date,
+    raw: record,
+  };
+}
+
+export async function fetchBillingHistory(options = {}) {
+  const response = await billingClient.get("/", options);
+  const records = response.data?.data ?? [];
+  return Array.isArray(records) ? records.map(normalizeBillingRecord) : [];
+}
+
+export async function fetchBillingById(id, options = {}) {
+  const response = await billingClient.get(`/${id}`, options);
+  return response.data?.data ? normalizeBillingRecord(response.data.data) : null;
+}
+
+export async function fetchConsumerBillings(consumerId, options = {}) {
+  const response = await billingClient.get(`/consumer/${consumerId}`, options);
+  const records = response.data?.data ?? [];
+  return Array.isArray(records) ? records.map(normalizeBillingRecord) : [];
+}
+
+export async function generateMonthlyBilling(payload, options = {}) {
+  const response = await billingClient.post("/", payload, options);
+  return response.data?.data ?? response.data;
+}
+
+export default billingClient;
