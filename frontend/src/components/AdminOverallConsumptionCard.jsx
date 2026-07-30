@@ -167,7 +167,7 @@ function AdminOverallConsumptionCard() {
         {/* Title */}
         <p data-testid="overall-consumption-card"
         className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">
-          Overall Consumption
+          Overall Consumption Prediction
         </p>
 
         {/* Loading */}
