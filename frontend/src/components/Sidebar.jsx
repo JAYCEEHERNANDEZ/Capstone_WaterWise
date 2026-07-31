@@ -11,7 +11,7 @@ function NavigationLink({ compact, item, mobile = false, onNavigate }) {
   const Icon = typeof item === "string" ? null : item.Icon;
   const sharedClass = mobile
     ? "relative flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 text-center text-[11px] font-bold transition"
-    : `flex min-h-12 items-center justify-start rounded-xl px-3 text-left text-sm font-bold transition ${compact ? "lg:min-h-10 lg:gap-2 lg:py-1.5" : "lg:gap-3 lg:py-2"}`;
+    : `relative flex min-h-11 items-center justify-start rounded-xl px-3 text-left text-sm font-bold transition ${compact ? "lg:gap-2.5 lg:py-2" : "lg:gap-3 lg:py-2"}`;
 
   if (typeof item === "string" || !item.path) {
     return (
@@ -30,8 +30,8 @@ function NavigationLink({ compact, item, mobile = false, onNavigate }) {
           isActive
             ? mobile
               ? "bg-sky-50 text-sky-700 before:absolute before:-top-2 before:h-1 before:w-8 before:rounded-full before:bg-sky-600"
-              : "bg-gradient-to-r from-sky-700 to-sky-600 text-white shadow-[0_8px_22px_rgba(2,132,184,0.2)]"
-            : "text-slate-500 hover:bg-sky-50/80 hover:text-slate-900",
+              : "bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-100 before:absolute before:left-0 before:h-6 before:w-1 before:rounded-r-full before:bg-sky-600"
+            : "text-slate-500 hover:bg-sky-50/70 hover:text-slate-900",
         ].join(" ")
       }
       onClick={onNavigate}
@@ -64,7 +64,7 @@ export default function Sidebar({
         />
       )}
 
-      <aside className={`ww-glass-strong fixed inset-x-0 bottom-0 z-40 border-x-0 border-b-0 border-t border-white/70 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_40px_rgba(15,74,110,0.1)] lg:sticky lg:shrink-0 lg:self-start lg:border-y-0 lg:border-l-0 lg:border-r lg:pb-0 lg:shadow-none ${compact ? "lg:top-16 lg:h-[calc(100vh-64px)] lg:w-52 xl:w-56" : "lg:top-[72px] lg:h-[calc(100vh-72px)] lg:w-64 xl:w-72"}`}>
+      <aside className={`ww-glass-strong fixed inset-x-0 bottom-0 z-40 border-x-0 border-b-0 border-t border-white/70 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_40px_rgba(15,74,110,0.1)] lg:sticky lg:shrink-0 lg:self-start lg:border-y-0 lg:border-l-0 lg:border-r lg:pb-0 lg:shadow-none ${compact ? "lg:top-16 lg:h-[calc(100vh-64px)] lg:w-60 xl:w-64" : "lg:top-[72px] lg:h-[calc(100vh-72px)] lg:w-64 xl:w-72"}`}>
         {additionalMobileItems.length > 0 && (
           <div
             className={[
@@ -92,9 +92,12 @@ export default function Sidebar({
           </div>
         )}
 
-        <div className={`flex h-full items-center gap-2 px-2 py-2 lg:flex-col lg:items-stretch ${compact ? "lg:p-3" : "lg:p-5"}`}>
+        <div className={`flex h-full items-center gap-2 px-2 py-2 lg:flex-col lg:items-stretch ${compact ? "lg:px-4 lg:py-5" : "lg:p-5"}`}>
           <nav className="hidden min-w-0 flex-1 overflow-y-auto lg:block" aria-label={`${activeRoleLabel ?? "WaterWise"} navigation`}>
-            <ul className="grid min-w-0 gap-1.5">
+            <p className="mb-3 px-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
+              Workspace
+            </p>
+            <ul className="grid min-w-0 gap-1">
               {items.map((item) => (
                 <li key={getItemLabel(item)}>
                   <NavigationLink compact={compact} item={item} />
@@ -123,23 +126,7 @@ export default function Sidebar({
             )}
           </nav>
 
-          <div className="hidden shrink-0 lg:mt-auto lg:block lg:w-full lg:border-t lg:border-slate-200/80 lg:pt-4">
-            <div className="flex items-center gap-3 rounded-xl bg-white/55 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700 shadow-sm">
-                <FiUser aria-hidden="true" className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold tracking-[-0.02em] text-slate-900">
-                  {userName}
-                </p>
-                {activeRoleLabel && (
-                  <p className="mt-1 text-xs font-semibold text-sky-700">
-                    {activeRoleLabel}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+        
         </div>
       </aside>
     </>

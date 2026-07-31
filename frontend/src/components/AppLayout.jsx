@@ -209,7 +209,7 @@ export default function AppLayout({ children }) {
         </div>
       )}
 
-      <div className="mx-auto max-w-[1600px] lg:flex">
+      <div className="w-full lg:flex">
         <Sidebar
           activeRoleLabel={activeRoleConfig.label}
           items={activeRoleConfig.links}
@@ -219,7 +219,7 @@ export default function AppLayout({ children }) {
 
         <main className="ww-workspace min-w-0 flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
           <div className={activeRole === "admin" ? "h-full px-4 py-4 sm:px-5 lg:px-6" : "h-full px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8"}>
-            <div className="mx-auto max-w-7xl">
+            <div className={activeRole === "admin" ? "w-full" : "mx-auto max-w-7xl"}>
               {activeRole !== "admin" && <div className="mb-5 sm:mb-7">
                 <h1 className="mt-1.5 text-[26px] font-extrabold leading-8 tracking-[-0.035em] text-slate-900 sm:text-[32px] sm:leading-[38px]">
                   {formatPageTitle(location.pathname, activeRole)}
