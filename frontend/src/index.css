@@ -342,6 +342,17 @@ textarea::placeholder {
   box-shadow: 0 0 0 4px rgba(2, 132, 184, 0.12);
 }
 
+.ww-field[aria-invalid="true"] {
+  border-color: #dc4545;
+  background: rgba(255, 245, 245, 0.88);
+  color: #991b1b;
+}
+
+.ww-field[aria-invalid="true"]:focus {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.12);
+}
+
 .ww-primary-button {
   min-height: 44px;
   border-radius: 12px;

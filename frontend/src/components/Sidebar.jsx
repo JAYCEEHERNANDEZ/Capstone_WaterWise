@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FiMoreHorizontal, FiUser, FiX } from "react-icons/fi";
+import { FiMoreHorizontal, FiX } from "react-icons/fi";
 import { NavLink } from "react-router";
 
 function getItemLabel(item) {
@@ -46,7 +46,6 @@ function NavigationLink({ compact, item, mobile = false, onNavigate }) {
 export default function Sidebar({
   activeRoleLabel,
   items = [],
-  userName = "WaterWise User",
   compact = false,
 }) {
   const [isMoreOpen, setIsMoreOpen] = useState(false);

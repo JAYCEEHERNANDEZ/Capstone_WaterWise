@@ -213,7 +213,6 @@ export default function AppLayout({ children }) {
         <Sidebar
           activeRoleLabel={activeRoleConfig.label}
           items={activeRoleConfig.links}
-          userName={accountName || activeRoleConfig.userName}
           compact={activeRole === "admin"}
         />
 

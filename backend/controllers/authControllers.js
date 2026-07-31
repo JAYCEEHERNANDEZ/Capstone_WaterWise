@@ -11,13 +11,6 @@ export async function login(req, res) {
     const { email, identifier, password } = req.body ?? {};
     const user = await authenticateAccount(identifier ?? email, password);
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email, username, or password.",
-      });
-    }
-
     const token = jwt.sign(
       { role: user.role },
       getJwtSecret(),
@@ -34,6 +27,7 @@ export async function login(req, res) {
     return res.status(error.statusCode ?? 500).json({
       success: false,
       message: error.message || "Login failed.",
+      ...(error.field ? { field: error.field } : {}),
     });
   }
 }

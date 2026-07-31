@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   FiCheckCircle,
   FiClipboard,
@@ -38,19 +38,42 @@ const roles = [
 
 export default function Login() {
   const navigate = useNavigate();
+  const identifierRef = useRef(null);
+  const passwordRef = useRef(null);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [identifierError, setIdentifierError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     const trimmedIdentifier = identifier.trim();
+    const nextIdentifierError = !trimmedIdentifier
+      ? "Enter your email address or username."
+      : trimmedIdentifier.includes("@") &&
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedIdentifier)
+        ? "Enter a valid email address, such as name@example.com."
+        : "";
+    const nextPasswordError = !password
+      ? "Enter your password."
+      : "";
 
-    if (!trimmedIdentifier || !password.trim()) {
-      setMessage("Enter your credentials to continue.");
+    setIdentifierError(nextIdentifierError);
+    setPasswordError(nextPasswordError);
+
+    if (nextIdentifierError || nextPasswordError) {
+      setMessage("");
+      requestAnimationFrame(() => {
+        if (nextIdentifierError) {
+          identifierRef.current?.focus();
+        } else {
+          passwordRef.current?.focus();
+        }
+      });
       return;
     }
 
@@ -71,7 +94,30 @@ export default function Login() {
       setMessage(`Signed in as ${destination.label}.`);
       navigate(destination.route);
     } catch (error) {
-      setMessage(error.message);
+      const status = error.cause?.response?.status;
+      const errorField = error.cause?.response?.data?.field;
+      const isCredentialError =
+        [400, 401].includes(status) ||
+        /invalid (email|username|password|credentials)/i.test(error.message);
+
+      if (isCredentialError && errorField === "identifier") {
+        setIdentifierError(error.message || "Email address or username was not found.");
+        setPasswordError("");
+        setMessage("");
+        requestAnimationFrame(() => identifierRef.current?.focus());
+      } else if (isCredentialError && errorField === "password") {
+        setIdentifierError("");
+        setPasswordError(error.message || "Incorrect password.");
+        setMessage("");
+        requestAnimationFrame(() => passwordRef.current?.focus());
+      } else if (isCredentialError) {
+        setIdentifierError("");
+        setPasswordError("Incorrect password.");
+        setMessage("");
+        requestAnimationFrame(() => passwordRef.current?.focus());
+      } else {
+        setMessage(error.message || "We couldn't sign you in. Try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -128,40 +174,59 @@ export default function Login() {
               <form className="space-y-5" onSubmit={handleSubmit}>
                 <div>
                   <label
-                    className="text-sm font-semibold text-[#0F172A]"
+                    className="text-sm font-semibold text-slate-900"
                     htmlFor="login-identifier"
                   >
                     Email or username
                   </label>
                   <div className="relative mt-2">
-                    <FiMail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <FiMail aria-hidden="true" className={`pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${identifierError ? "text-red-500" : "text-slate-400"}`} />
                     <input
+                      aria-describedby={identifierError ? "login-identifier-error" : undefined}
+                      aria-invalid={Boolean(identifierError)}
                       autoComplete="username"
-                    className="ww-field py-3 pl-12 pr-4 text-base"
+                      className="ww-field py-3 pl-12 pr-4 text-base"
                       id="login-identifier"
-                      onChange={(event) => setIdentifier(event.target.value)}
+                      onChange={(event) => {
+                        setIdentifier(event.target.value);
+                        if (identifierError) setIdentifierError("");
+                        if (message) setMessage("");
+                      }}
                       placeholder="name@sucolwater.gov"
+                      ref={identifierRef}
                       type="text"
                       value={identifier}
                     />
                   </div>
+                  {identifierError && (
+                    <p className="mt-2 text-sm font-semibold text-red-700" id="login-identifier-error">
+                      {identifierError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label
-                    className="text-sm font-semibold text-[#0F172A]"
+                    className="text-sm font-semibold text-slate-900"
                     htmlFor="login-password"
                   >
                     Password
                   </label>
                   <div className="relative mt-2">
-                    <FiLock aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <FiLock aria-hidden="true" className={`pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${passwordError ? "text-red-500" : "text-slate-400"}`} />
                     <input
+                      aria-describedby={passwordError ? "login-password-error" : undefined}
+                      aria-invalid={Boolean(passwordError)}
                       autoComplete="current-password"
-                    className="ww-field py-3 pl-12 pr-12 text-base"
+                      className="ww-field py-3 pl-12 pr-12 text-base"
                       id="login-password"
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        if (passwordError) setPasswordError("");
+                        if (message) setMessage("");
+                      }}
                       placeholder="Enter password"
+                      ref={passwordRef}
                       type={showPassword ? "text" : "password"}
                       value={password}
                     />
@@ -179,6 +244,11 @@ export default function Login() {
                       )}
                     </button>
                   </div>
+                  {passwordError && (
+                    <p className="mt-2 text-sm font-semibold text-red-700" id="login-password-error">
+                      {passwordError}
+                    </p>
+                  )}
                 </div>
 
                 <button
