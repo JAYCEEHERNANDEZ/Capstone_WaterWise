@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Award, Medal, RefreshCw, Trophy } from "lucide-react";
 
 import { fetchConsumptionRanking } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 function ConsumptionRankingSection() {
   const [ranking, setRanking] = useState([]);
@@ -66,11 +67,11 @@ function ConsumptionRankingSection() {
 
   return (
     <section data-testid="consumption-ranking-section"
-    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-water-600">
             Analytics
           </p>
 
@@ -87,7 +88,7 @@ function ConsumptionRankingSection() {
           type="button"
           onClick={loadRanking}
           disabled={loading}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
@@ -95,14 +96,7 @@ function ConsumptionRankingSection() {
 
       {/* Loading */}
       {loading && (
-        <div className="space-y-3">
-          {[...Array(5)].map((_, index) => (
-            <div
-              key={index}
-              className="h-20 animate-pulse rounded-2xl bg-slate-200"
-            />
-          ))}
-        </div>
+        <LoadingSkeleton count={5} label="Loading consumption ranking" variant="list" />
       )}
 
       {/* Error */}
@@ -121,7 +115,7 @@ function ConsumptionRankingSection() {
             <div
               key={item.purok}
               data-testid="ranking-row"
-              className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 transition hover:border-sky-200 hover:bg-sky-50"
+              className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 transition hover:border-water-200 hover:bg-water-50"
             >
               <div className="flex items-center gap-4">
                 {getRankIcon(index)}

@@ -5,16 +5,17 @@ const RolesTable = ({
 }) => {
   if (roles.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-6 text-center">
-        <p className="text-gray-500">No roles available.</p>
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <p className="font-bold text-navy-900">No roles available</p>
+        <p className="mt-1 text-sm text-slate-500">Configured staff roles will appear here.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-100">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
+      <table className="min-w-full divide-y divide-slate-200">
+        <thead className="bg-slate-50 text-slate-600">
           <tr>
             <th className="px-4 py-3 text-left text-sm font-semibold">
               Role Name
@@ -37,7 +38,7 @@ const RolesTable = ({
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-slate-200">
           {roles.map((role) => (
             <tr key={role.id}>
               <td className="px-4 py-3">{role.name}</td>
@@ -56,14 +57,16 @@ const RolesTable = ({
                 <div className="flex justify-center gap-2">
                   <button
                     onClick={() => onEdit(role)}
-                    className="rounded bg-blue-500 px-3 py-1 text-white hover:bg-blue-600"
+                    className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 font-bold text-navy-900 hover:border-water-300 hover:bg-water-50"
+                    type="button"
                   >
                     Edit
                   </button>
 
                   <button
                     onClick={() => onDelete(role.id)}
-                    className="rounded bg-red-500 px-3 py-1 text-white hover:bg-red-600"
+                    className="min-h-11 rounded-xl border border-red-200 bg-white px-4 font-bold text-red-700 hover:bg-red-50"
+                    type="button"
                   >
                     Delete
                   </button>

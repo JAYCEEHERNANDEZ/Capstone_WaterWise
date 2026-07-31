@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-import Header from "./Header";
-import Sidebar from "./Sidebar";
 import BillingSummaryCard from "./BillingSummaryCard";
 import BillingHistoryTable from "./BillingHistoryTable";
 import PaymentForm from "./PaymentForm";
@@ -60,22 +58,12 @@ function BillingManagement() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-
-      <div className="flex-1">
-        <Header />
-
-        <main className="p-6 space-y-6">
-          <h1 className="text-3xl font-bold">
-            Billing Management
-          </h1>
-
-          <p className="text-gray-600">
-            Manage consumer billing
-            records and payment
-            transactions.
-          </p>
+    <section className="space-y-6">
+      <header>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-600">Financial operations</p>
+        <h1 className="mt-2 text-2xl font-extrabold text-navy-900 sm:text-3xl">Billing management</h1>
+        <p className="mt-2 max-w-2xl text-slate-600">Review resident bills, record payments, and confirm account balances.</p>
+      </header>
 
           <BillingSummaryCard
             billingData={billingHistory}
@@ -97,7 +85,7 @@ function BillingManagement() {
           {selectedReceipt && (
             <section
               data-testid="receipt-details"
-              className="bg-white rounded-lg shadow p-6"
+              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card"
             >
               <h2 className="text-xl font-bold mb-4">
                 Receipt Details
@@ -205,9 +193,7 @@ function BillingManagement() {
               </div>
             </section>
           )}
-        </main>
-      </div>
-    </div>
+    </section>
   );
 }
 

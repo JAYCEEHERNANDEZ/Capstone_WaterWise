@@ -16,7 +16,7 @@ function normalizeConsumer(consumer) {
     consumerNo: String(consumer.id ?? ""),
     fullName: consumer.full_name ?? "",
     purok: consumer.purok_no != null ? `Purok ${consumer.purok_no}` : "Unassigned",
-    paymentStatus: consumer.status ?? "active",
+    status: consumer.status ?? "active",
   };
 }
 

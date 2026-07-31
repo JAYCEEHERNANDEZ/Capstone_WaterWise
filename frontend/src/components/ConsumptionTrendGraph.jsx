@@ -44,9 +44,9 @@ function UsageTooltip({ active, payload, label }) {
   const record = payload[0].payload;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
-      <p className="text-sm font-bold text-[#0F172A]">{label}</p>
-      <p className="mt-1 font-mono text-sm text-[#0284C7]">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-card">
+      <p className="text-sm font-bold text-navy-900">{label}</p>
+      <p className="mt-1 font-mono text-sm text-water-600">
         {record.consumption} m³ consumed
       </p>
       {typeof record.previousReading === "number" &&
@@ -82,15 +82,15 @@ export default function ConsumptionTrendGraph({ trendData = [] }) {
 
   return (
     <section
-      className="ww-glass-strong rounded-[24px] p-4 sm:p-6"
+      className="ww-glass-strong rounded-2xl p-4 sm:p-6"
       data-testid="trend-graph-container"
     >
       <div className="mb-4 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
             Usage trend
           </p>
-          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A] sm:text-2xl">
+          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
             Monthly consumption
           </h3>
           <p className="mt-1.5 text-sm leading-6 text-slate-600">
@@ -148,11 +148,11 @@ export default function ConsumptionTrendGraph({ trendData = [] }) {
             />
             <Tooltip content={<UsageTooltip />} />
             <Line
-              activeDot={{ fill: "#0284B8", r: 6, stroke: "#FFFFFF", strokeWidth: 2 }}
+              activeDot={{ fill: "#07968F", r: 6, stroke: "#FFFFFF", strokeWidth: 2 }}
               dataKey="consumption"
-              dot={{ fill: "#0284B8", r: 4, stroke: "#FFFFFF", strokeWidth: 2 }}
+              dot={{ fill: "#07968F", r: 4, stroke: "#FFFFFF", strokeWidth: 2 }}
               name="Consumption"
-              stroke="#0284B8"
+              stroke="#07968F"
               strokeWidth={3}
               type="monotone"
             />

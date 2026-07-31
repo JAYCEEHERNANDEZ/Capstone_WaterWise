@@ -6,6 +6,7 @@ import {
   fetchAllPuroksMonthlyPrediction,
   fetchAllPuroksYearlyPrediction,
 } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 function AdminPerPurokConsumptionCard() {
   const [period, setPeriod] = useState("Monthly");
@@ -74,7 +75,6 @@ function AdminPerPurokConsumptionCard() {
     <div
     data-testid="purok-consumption-card"
       className="
-group
 relative
 overflow-hidden
 rounded-2xl
@@ -82,27 +82,13 @@ border
 border-slate-200
 bg-white
 p-5
-shadow-sm
-transition-all
-duration-300
-hover:-translate-y-1
-hover:border-emerald-200
-hover:shadow-md
+shadow-card
+transition-colors
+duration-150
+
+hover:border-water-200
 "
     >
-      <div
-        className="
-absolute
--right-10
--top-10
-h-28
-w-28
-rounded-full
-bg-emerald-100/80
-blur-2xl
-"
-      />
-
       <div
         className="
 relative
@@ -155,7 +141,7 @@ gap-2
                 onClick={() => setPeriod("Monthly")}
                 className={`
 
-rounded-lg
+rounded-xl
 px-4
 py-2
 text-xs
@@ -176,7 +162,7 @@ ${
                 onClick={() => setPeriod("Yearly")}
                 className={`
 
-rounded-lg
+rounded-xl
 px-4
 py-2
 text-xs
@@ -212,7 +198,7 @@ h-9
 w-9
 items-center
 justify-center
-rounded-lg
+rounded-xl
 bg-slate-100
 transition
 hover:bg-slate-200
@@ -257,26 +243,7 @@ text-emerald-600
         {/* LOADING */}
 
         {loading && (
-          <div
-            className="
-mt-5
-grid
-grid-cols-3
-gap-3
-"
-          >
-            {defaultPuroks.map((purok) => (
-              <div
-                key={purok}
-                className="
-h-20
-animate-pulse
-rounded-xl
-bg-slate-200
-"
-              />
-            ))}
-          </div>
+          <LoadingSkeleton className="mt-5" count={3} label="Loading purok predictions" variant="list" />
         )}
 
         {/* ERROR */}

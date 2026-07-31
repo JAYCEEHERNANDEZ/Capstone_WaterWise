@@ -1,13 +1,15 @@
-function getStatusClass(status) {
+import { AlertCircle, CheckCircle2, Clock3, Eye, WalletCards } from "lucide-react";
+
+function getStatusConfig(status) {
   if (status === "Paid") {
-    return "bg-emerald-50 text-[#16A34A]";
+    return { Icon: CheckCircle2, className: "border-emerald-200 bg-emerald-50 text-emerald-700" };
   }
 
   if (status === "Partially Paid") {
-    return "bg-amber-50 text-[#D97706]";
+    return { Icon: Clock3, className: "border-amber-200 bg-amber-50 text-amber-800" };
   }
 
-  return "bg-red-50 text-[#DC2626]";
+  return { Icon: AlertCircle, className: "border-red-200 bg-red-50 text-red-700" };
 }
 
 export default function BillingHistoryTable({ historyData = [], onSelectReceipt, onPayBalance, showConsumerDetails = true, receiptLabel = "View Receipt", allowAllReceipts = false }) {
@@ -44,10 +46,11 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt,
           {historyData.map((row) => {
             const canViewReceipt = allowAllReceipts || row.status === "Paid";
             const canPayBalance = row.outstandingBalance > 0 && (row.status === "Unpaid" || row.status === "Partially Paid");
+            const { Icon: StatusIcon, className: statusClassName } = getStatusConfig(row.status);
 
             return (
               <tr
-                className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 text-[#0F172A] shadow-[0_12px_36px_rgba(15,23,42,0.05)] transition hover:border-sky-200 md:table-row md:rounded-none md:border-0 md:p-0 md:shadow-none md:hover:bg-slate-50"
+                className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-slate-200 bg-white p-4 text-navy-900 shadow-card transition hover:border-water-200 md:table-row md:rounded-none md:border-0 md:p-0 md:shadow-none md:hover:bg-slate-50"
                 data-testid="history-row"
                 key={row.invoiceNumber}
               >
@@ -70,10 +73,11 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt,
                 </td>
                 <td className="flex items-end justify-end md:table-cell md:px-4 md:py-4">
                   <span
-                    className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold ${getStatusClass(row.status)}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${statusClassName}`}
                     data-status={row.status}
                     data-testid="row-status"
                   >
+                    <StatusIcon aria-hidden="true" className="h-3.5 w-3.5" />
                     {row.status}
                   </span>
                 </td>
@@ -81,9 +85,9 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt,
                   <div className="flex flex-col gap-2 md:flex-row md:justify-end md:gap-3">
                     <button
                       className={[
-                        "min-h-11 w-full rounded-xl border px-4 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7] focus-visible:ring-offset-2 md:w-auto",
+                        "min-h-11 w-full rounded-xl border px-4 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 md:w-auto",
                         canViewReceipt
-                          ? "border-sky-200 bg-sky-50 text-[#0284C7] hover:bg-sky-100"
+                          ? "border-water-200 bg-water-50 text-water-600 hover:bg-water-100"
                           : "cursor-not-allowed bg-slate-100 text-slate-400",
                       ].join(" ")}
                       data-testid={`view-receipt-${row.invoiceNumber}`}
@@ -91,13 +95,14 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt,
                       onClick={() => canViewReceipt && onSelectReceipt && onSelectReceipt(row)}
                       type="button"
                     >
+                      {canViewReceipt && <Eye aria-hidden="true" className="mr-2 inline h-4 w-4" />}
                       {canViewReceipt ? receiptLabel : "Unavailable"}
                     </button>
                     <button
                       className={[
-                        "min-h-11 w-full rounded-xl border px-4 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2 md:w-auto",
+                        "min-h-11 w-full rounded-xl border px-4 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 md:w-auto",
                         canPayBalance
-                          ? "border-emerald-200 bg-emerald-50 text-[#16A34A] hover:bg-emerald-100"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                           : "cursor-not-allowed bg-slate-100 text-slate-400",
                       ].join(" ")}
                       data-testid={`pay-balance-${row.invoiceNumber}`}
@@ -105,6 +110,7 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt,
                       onClick={() => canPayBalance && onPayBalance && onPayBalance(row)}
                       type="button"
                     >
+                      {canPayBalance ? <WalletCards aria-hidden="true" className="mr-2 inline h-4 w-4" /> : <CheckCircle2 aria-hidden="true" className="mr-2 inline h-4 w-4" />}
                       {canPayBalance ? `Pay ₱${row.outstandingBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "Paid"}
                     </button>
                   </div>

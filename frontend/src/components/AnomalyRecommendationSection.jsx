@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Lightbulb,
-  LoaderCircle,
   RefreshCw,
 } from "lucide-react";
 
@@ -10,6 +9,7 @@ import { generateAllAnomalies } from "../services/anomalyAPI";
 import { isCanceledRequest } from "../services/apiClient";
 import { fetchAllRecommendations } from "../services/recommendationAPI";
 import AnomalyAlertCard from "./AnomalyAlertCard";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const EMPTY_ANALYSIS = {
   overallMonthly: null,
@@ -149,12 +149,12 @@ export default function AnomalyRecommendationSection() {
 
   return (
     <section
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       data-testid="anomaly-recommendation-section"
     >
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-water-600">
             Gemini AI Decision Support
           </p>
           <h2 className="mt-2 flex items-center gap-2 text-2xl font-extrabold text-slate-900">
@@ -177,10 +177,7 @@ export default function AnomalyRecommendationSection() {
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center gap-3 rounded-2xl bg-slate-50 py-12 text-slate-600">
-          <LoaderCircle className="h-5 w-5 animate-spin text-sky-600" />
-          Analyzing consumption history...
-        </div>
+        <LoadingSkeleton count={3} label="Analyzing consumption history" variant="list" />
       )}
 
       {!loading && errorMessage && (

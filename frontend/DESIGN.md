@@ -1,775 +1,694 @@
-# WaterWise UI/UX Design System
+# WaterWise UI/UX Design Specification
 
-> **Design direction:** a modern, calm, and trustworthy civic utility experience inspired by water—clear, fluid, and accessible.
+> **Design direction:** clean, modern, calm, and operationally efficient.
 >
-> **Primary users:** barangay officials, meter readers, and residents/consumers.
+> **Primary users:** barangay officials, meter readers, and community residents.
 >
-> **Document status:** target design specification. Existing screens should migrate toward this system without changing role permissions or business rules.
+> **Implementation target:** responsive React application using reusable tokens and role-aware components.
 
 ---
 
-## 1. Product Experience
+## 1. Executive Purpose & Design Direction
 
-WaterWise helps a barangay manage water consumption, meter readings, billing, payments, announcements, and reports. The interface must make public-service work easier for officials while giving residents a simple and transparent view of their household account.
+WaterWise is a barangay water-management platform for monitoring consumption, recording meter readings, overseeing billing and payments, identifying anomalies, publishing announcements, and helping residents understand their household water use.
 
-The experience should feel:
+The interface must make complex utility information feel organized and approachable. Barangay officials need high information density without visual clutter, meter readers need fast and reliable field controls, and residents need immediate answers about balances, due dates, payments, and unusual consumption.
 
-- **Clear:** important numbers and next actions are easy to find.
-- **Trustworthy:** billing, readings, and payment records are presented precisely.
-- **Fluid:** layouts transition naturally between phone, tablet, and desktop.
-- **Calm:** water-inspired color and motion support the content without distracting from it.
-- **Inclusive:** the system works for users with different ages, abilities, devices, and levels of digital confidence.
+### 1.1 Visual direction
 
-### 1.1 Design principles
+The design takes inspiration from the reference dashboard's strongest characteristics:
 
-1. **Show the answer before the data.** Lead with “Amount due,” “Due date,” “Reading status,” or “Consumers needing attention,” then provide details.
-2. **One clear primary action per view.** Secondary actions remain available but visually quieter.
-3. **Recognition over recall.** Use familiar labels, visible status text, icons with labels, and persistent context.
-4. **Progressive disclosure.** Summaries come first; advanced filters, analytics, and record metadata appear on demand.
-5. **Prevent errors before confirming them.** Validate forms early, explain consequences, and show a review step for financial or irreversible actions.
-6. **Design for real conditions.** Prioritize small screens, sunlight readability, unstable connections, and touch use in the field.
-7. **Glass supports hierarchy.** Transparency is a visual accent—not a substitute for contrast, structure, or readable surfaces.
+- Quiet off-white application canvas
+- Solid white cards with soft borders
+- Restrained shadows used only for raised elements
+- Compact desktop sidebar and top utility bar
+- Strong black/navy typography with clear hierarchy
+- One controlled accent color for navigation and primary actions
+- Modular metric cards and balanced dashboard grids
+- Generous internal padding with efficient space between sections
+- Small status badges that combine color, icon, and text
+- Clean charts with muted gridlines and one highlighted data series
+
+WaterWise adapts these qualities with a water-oriented teal-blue accent, civic-service language, consumption units, billing states, and role-specific workflows.
+
+### 1.2 Experience attributes
+
+The product should feel:
+
+- **Clear:** the most important status and next action are immediately visible.
+- **Reliable:** billing, payment, and reading data are precise and auditable.
+- **Efficient:** frequent staff tasks require few steps and preserve context.
+- **Calm:** neutral surfaces and restrained color reduce cognitive load.
+- **Responsive:** each workspace adapts to its user's device and environment.
+- **Inclusive:** language, contrast, controls, and feedback support varied abilities and digital confidence.
+
+### 1.3 Core UX principles
+
+1. **Lead with the answer.** Show amount due, due date, reading status, or operational exception before supporting detail.
+2. **Prioritize action over decoration.** Every visual element must improve hierarchy, recognition, or feedback.
+3. **Keep one primary action per region.** Secondary actions use quieter button treatments.
+4. **Use progressive disclosure.** Summaries appear first; filters, metadata, and advanced analytics appear when needed.
+5. **Prevent errors early.** Validate forms inline and provide review steps for readings, payments, and destructive changes.
+6. **Preserve context.** Search, filters, pagination, and scroll position should survive detail views and modal actions.
+7. **Make status redundant.** Communicate status using color, icon, and text together.
+8. **Design for real conditions.** Support small phones, bright outdoor environments, slow connections, and one-handed use.
 
 ---
 
-## 2. Users and Their Needs
+## 2. Target User Profiles & UX Principles
 
 ### 2.1 Barangay officials / administrators
 
-Officials work with many records and frequently switch between monitoring, searching, verification, and reporting.
+Administrators review system-wide information and work across many resident, billing, payment, reading, announcement, and report records.
 
-**Primary goals**
+**Primary needs**
 
-- See the water system’s current condition at a glance.
-- Find a resident, bill, payment, or meter reading quickly.
-- Identify overdue balances, unusual consumption, and incomplete readings.
-- Manage consumers, events, and announcements.
-- Produce reliable reports and receipts.
+- Monitor current water-system performance.
+- Identify overdue accounts, missing readings, and unusual consumption.
+- Search residents by name, account number, meter number, or purok.
+- Review billing and payment status.
+- Publish targeted or community-wide announcements.
+- Generate reliable operational reports.
 
-**Design response**
+**UX requirements**
 
-- Use a compact, data-first desktop workspace with clear page titles and saved context.
-- Keep global search, filters, date ranges, and key actions close to the data they affect.
-- Use tables on wide screens and structured record cards on narrow screens.
-- Preserve filters and pagination when returning from a record.
-- Confirm high-impact actions and display an audit-friendly success result.
-- Pair charts with a plain-language interpretation and a data table or summary.
+- Use a compact desktop-first workspace with a persistent sidebar.
+- Place key metrics and attention items above charts.
+- Keep search, filters, date ranges, and actions beside the records they affect.
+- Use sortable tables on desktop and structured record cards on mobile.
+- Preserve filters when opening and closing resident details.
+- Link dashboard exceptions to pre-filtered management pages.
+- Confirm financial, publishing, and destructive actions.
 
-### 2.2 Residents / consumers
+### 2.2 Meter readers / field personnel
 
-Residents may open WaterWise only when checking a bill, payment, announcement, or unusual usage. They should not need utility terminology to understand their account.
+Meter readers primarily work from phones, often outdoors and with unreliable connectivity.
 
-**Primary goals**
+**Primary needs**
 
-- Know how much to pay and when.
-- Understand current and historical water use.
+- Find the correct resident and meter quickly.
+- Compare the previous reading with the physical meter.
+- Enter a new reading accurately.
+- Review calculated consumption before submission.
+- Know whether a reading was recorded, pending, or failed.
+
+**UX requirements**
+
+- Use a focused sequence: **Select resident → Enter reading → Review → Confirm**.
+- Use controls at least `48px` high for field tasks.
+- Display resident name, purok, account number, meter number, and previous reading together.
+- Open the numeric keypad for meter values.
+- Warn when a reading is below the previous value or unusually high.
+- Preserve entered values after recoverable errors.
+- Clearly distinguish **Recorded**, **Pending**, **Not submitted**, and **Failed**.
+- Never imply that offline information was successfully submitted.
+
+### 2.3 Community residents / consumers
+
+Residents may use WaterWise infrequently and should not need utility expertise to understand their account.
+
+**Primary needs**
+
+- Know the amount due and due date.
 - Confirm whether a payment was recorded.
-- View or download a receipt.
-- Receive important barangay water announcements.
-- Check and understand account details.
+- Understand current and historical water use.
+- Open and download receipts.
+- Receive billing, leak, and barangay announcements.
+- Review household and meter details.
 
-**Design response**
+**UX requirements**
 
-- Put amount due, due date, payment status, and latest consumption above the fold.
-- Use plain-language labels such as “Water used this month” before technical units.
-- Explain changes: “3 m³ higher than last month,” not only “18 m³.”
-- Use reassuring empty states such as “You have no unpaid bills.”
-- Keep the three resident destinations stable: **Home**, **Bills**, and **Profile**.
-- Make receipts and announcements easy to open from notifications.
+- Put amount due, due date, and payment state above the fold.
+- Prefer plain language such as **Water used this month** before technical terminology.
+- Explain comparisons: **3 m³ higher than last month**, not only **18 m³**.
+- Keep resident navigation limited to **Home**, **Bills**, and **Profile**.
+- Use comfortable spacing and `16px` body text.
+- Provide reassuring empty states such as **You have no unpaid bills**.
+- Explain how residents can request account-detail corrections.
 
-### 2.3 Meter readers / field personnel
+### 2.4 Shared content rules
 
-Meter readers often work outdoors, on phones, and with intermittent connectivity.
-
-**Primary goals**
-
-- Find the correct consumer and meter.
-- See the previous reading before entering the new one.
-- Record a reading quickly and accurately.
-- Know whether a submission succeeded or still needs attention.
-
-**Design response**
-
-- Use a focused step flow: **Select consumer → Enter reading → Review → Submit**.
-- Keep the previous reading, meter number, address/purok, and current input visible together.
-- Use a numeric keypad, large controls, and strong sunlight contrast.
-- Detect readings below the previous value and unusually large changes.
-- Never imply that unsent data was saved; use explicit **Saved**, **Pending**, and **Failed** states.
-- Preserve typed values after recoverable errors.
+- Use **Residents** in user-facing staff interfaces; retain **Consumers** only where required by the data model.
+- Use **Billing** for staff navigation and **Bills** for resident navigation.
+- Write dates as **31 July 2026** to avoid ambiguity.
+- Format currency as Philippine pesos: `₱1,250.00`.
+- Use `m³` consistently and explain **cubic meters** on first use where helpful.
+- Use direct action labels: **Record payment**, **Add resident**, **Review reading**, **Download receipt**.
+- Avoid vague labels such as **Proceed**, **Submit**, or **Manage** when a precise verb exists.
 
 ---
 
-## 3. Information Architecture
+## 3. Design Tokens
 
-Use role-specific navigation. Do not expose inaccessible destinations and then rely on an error page to explain permissions.
+Tokens are the source of truth. Components must not introduce arbitrary colors, radii, spacing, or shadows.
 
-| Role | Primary navigation | Default landing view |
-|---|---|---|
-| Administrator | Dashboard, Consumers, Readings, Billing, Payments, Announcements, Analytics, Reports | Dashboard |
-| Meter reader | Record Reading | Record Reading |
-| Resident | Home, Bills, Profile | Home |
+### 3.1 Color palette
 
-Events may appear as a dedicated administrator item when actively used; otherwise group event notices with Announcements to keep navigation concise.
+#### Neutral and brand colors
 
-### 3.1 Page hierarchy
-
-Every page follows the same order:
-
-1. Breadcrumb when the user is deeper than one level
-2. Eyebrow or context label
-3. Page title
-4. One-sentence description
-5. Primary action
-6. Summary or status
-7. Filters and search
-8. Main content
-9. Supporting details
-
-On mobile, keep the title, status, and primary action visible before secondary filters.
-
-### 3.2 Naming conventions
-
-- Use **Residents** in public-facing UI and **Consumers** only where it matches existing records or domain language.
-- Use **Billing** for staff workflows and **Bills** for resident navigation.
-- Use verbs for actions: **Record payment**, **Add resident**, **Download receipt**.
-- Avoid vague actions such as **Proceed**, **Submit**, or **Manage** when a precise verb is available.
-
----
-
-## 4. Fluid-Glass Visual Language
-
-The visual metaphor is clean water over a stable civic foundation. Soft blue light, translucent layers, and gentle depth create the “fluid glass” character. Content surfaces remain solid enough for long reading sessions.
-
-### 4.1 Surface hierarchy
-
-| Level | Surface | Use |
-|---|---|---|
-| Canvas | Mist gradient with soft blue ambient shapes | Application background |
-| Base | `rgba(255,255,255,0.92)` | Tables, forms, dense content, receipts |
-| Glass | `rgba(255,255,255,0.72)` with blur | Header, sidebar, summary cards, drawers |
-| Emphasis | Deep navy-to-ocean gradient | Hero balance, login brand panel, critical summary |
-| Overlay | `rgba(8,32,50,0.38)` | Modal and drawer scrim |
-
-Glass surfaces use all four of the following:
-
-```css
-background: rgba(255, 255, 255, 0.72);
-border: 1px solid rgba(255, 255, 255, 0.62);
-box-shadow: 0 16px 48px rgba(15, 74, 110, 0.12);
-backdrop-filter: blur(18px) saturate(135%);
-```
-
-Provide a solid fallback for browsers or devices that do not support blur:
-
-```css
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-surface {
-    background: #ffffff;
-    border-color: #d8e6ee;
-  }
-}
-```
-
-### 4.2 Glass usage rules
-
-- Use at most two visibly layered glass surfaces in the same region.
-- Do not place body text directly over decorative gradients or imagery.
-- Use near-solid surfaces for tables, long forms, receipts, and destructive dialogs.
-- Never lower text opacity to create hierarchy; use approved semantic text colors.
-- Keep glass blur between `12px` and `24px`; excessive blur wastes device resources.
-- On low-power or reduced-transparency modes, remove blur and preserve the same hierarchy with solid color and borders.
-
-### 4.3 Water-inspired details
-
-- Use asymmetrical ambient gradients rather than literal wave decorations.
-- A small droplet-shaped brand mark is appropriate; repeated water icons are not.
-- Use aqua highlights for active and selected states.
-- Use subtle flowing motion only for transitions or loading—not as a permanent background animation.
-
----
-
-## 5. Design Tokens
-
-Tokens are the source of truth. Components should not introduce arbitrary colors, radii, shadows, or spacing.
-
-### 5.1 Color
-
-#### Brand and neutral
-
-| Token | Value | Purpose |
+| Token | Value | Usage |
 |---|---:|---|
-| `--ocean-950` | `#082032` | Deep backgrounds |
-| `--ocean-900` | `#0B2B40` | Primary text and emphasis |
-| `--ocean-800` | `#0F3D57` | Dark interactive surfaces |
-| `--water-700` | `#036E9F` | Pressed primary action |
-| `--water-600` | `#0284B8` | Primary action and links |
-| `--water-500` | `#0EA5C9` | Active indicators |
-| `--aqua-300` | `#67E8D3` | Accent on dark surfaces |
-| `--mist-100` | `#E8F5F8` | Selected and hover surfaces |
-| `--mist-50` | `#F4FAFB` | Application canvas |
-| `--white` | `#FFFFFF` | Solid content surface |
-| `--slate-700` | `#334155` | Secondary text |
-| `--slate-500` | `#64748B` | Supporting text |
-| `--slate-200` | `#D8E2E8` | Dividers and input borders |
+| `--canvas` | `#F4F7FA` | Application background |
+| `--surface` | `#FFFFFF` | Cards, tables, forms, drawers, navigation |
+| `--surface-subtle` | `#F7FAFC` | Grouped rows, hover states, secondary panels |
+| `--surface-selected` | `#E8F5F3` | Selected navigation and records |
+| `--navy-950` | `#082032` | Strong page headers and emphasis cards |
+| `--navy-900` | `#0B2B40` | Primary text |
+| `--navy-700` | `#334B5B` | Secondary headings |
+| `--slate-600` | `#52697A` | Body and supporting text |
+| `--slate-500` | `#6B7F8E` | Metadata and placeholders |
+| `--border` | `#DCE5EA` | Standard borders and dividers |
+| `--border-strong` | `#C5D2D9` | Inputs and emphasized separation |
+| `--water-700` | `#067A75` | Pressed primary actions |
+| `--water-600` | `#07968F` | Primary actions, links, active indicators |
+| `--water-500` | `#13AAA2` | Chart highlights and icon accents |
+| `--water-100` | `#DDF4F1` | Selected navigation and informational backgrounds |
+| `--water-50` | `#F0FAF8` | Subtle accent surfaces |
 
-#### Semantic
+#### Semantic colors
 
-| Token | Value | Meaning |
-|---|---:|---|
-| `--success-700` | `#15803D` | Paid, complete, normal |
-| `--warning-700` | `#A16207` | Due soon, attention needed |
-| `--danger-700` | `#B91C1C` | Overdue, failed, destructive |
-| `--info-700` | `#0369A1` | Informational and in progress |
+| State | Strong | Background | Border |
+|---|---:|---:|---:|
+| Success / Paid / Normal | `#15803D` | `#ECFDF3` | `#BBE7C8` |
+| Warning / Due soon | `#A16207` | `#FFF8E6` | `#F4D994` |
+| Danger / Overdue / Failed | `#B91C1C` | `#FFF1F1` | `#F4C1C1` |
+| Information / In progress | `#0369A1` | `#EFF8FF` | `#BFDBEE` |
 
-Semantic colors always appear with an icon or written label. “Paid,” “Overdue,” and “Pending” must remain understandable without color.
+Color must never be the only status indicator. Every semantic state includes an icon and visible text.
 
-### 5.2 Background recipe
+### 3.2 Typography
 
-```css
-background:
-  radial-gradient(circle at 8% 4%, rgba(103, 232, 211, 0.18), transparent 28rem),
-  radial-gradient(circle at 92% 0%, rgba(14, 165, 201, 0.16), transparent 34rem),
-  linear-gradient(180deg, #f7fcfd 0%, #edf7fa 100%);
-```
+Use `Inter`, followed by `system-ui`, `-apple-system`, and `sans-serif`. Use `ui-monospace` only for meter values, reference numbers, and aligned financial data.
 
-### 5.3 Typography
+| Style | Mobile | Desktop | Weight | Usage |
+|---|---:|---:|---:|---|
+| Display | `32/38` | `40/46` | 750–800 | Login and major empty states only |
+| Page title | `24/30` | `28/34` | 750 | One per page |
+| Section title | `20/26` | `22/28` | 700 | Major content groups |
+| Card title | `16/22` | `18/24` | 650–700 | Card headings |
+| Body | `16/24` | `15/22` | 400 | Resident content and descriptions |
+| Data body | `14/20` | `14/20` | 400–500 | Tables and dense staff interfaces |
+| Label | `13/18` | `13/18` | 600 | Inputs, metadata, filters |
+| Caption | `12/16` | `12/16` | 500 | Supporting information |
+| Metric | `28/34` | `32/38` | 750–800 | KPI values and balances |
 
-Use `Inter`, then `system-ui`, for the application. Use `ui-monospace` only for meter readings, reference numbers, and tabular financial values.
+Rules:
 
-| Style | Mobile / Desktop | Weight | Use |
-|---|---|---:|---|
-| Display | `32/38` / `44/50` | 750–800 | Login or major empty state only |
-| Page title | `26/32` / `32/38` | 750 | One per page |
-| Section title | `20/26` / `24/30` | 700 | Content sections |
-| Card title | `16/22` / `18/24` | 650–700 | Card headings |
-| Body | `16/24` | 400 | Default resident content |
-| Data body | `14/20` | 400–500 | Dense administrator content |
-| Label | `13/18` | 600 | Inputs and metadata |
-| Caption | `12/16` | 500 | Supporting information |
+- Use sentence case for headings and actions.
+- Limit uppercase text to short eyebrow labels.
+- Use tabular numerals for currency, consumption, dates, and readings.
+- Keep body line lengths below approximately `75` characters.
 
-Do not use all-uppercase paragraphs. Uppercase eyebrow labels are limited to one short line with modest letter spacing.
-
-### 5.4 Spacing, shape, and depth
+### 3.3 Spacing and sizing
 
 - Spacing scale: `4, 8, 12, 16, 20, 24, 32, 40, 48, 64`
-- Control radius: `12px`
-- Card radius: `20px`
-- Hero, modal, and major panel radius: `24px`
-- Pill radius: `999px`
 - Mobile page gutter: `16px`
 - Tablet page gutter: `24px`
-- Desktop page gutter: `32px`
-- Standard shadow: `0 16px 48px rgba(15, 74, 110, 0.12)`
-- Raised shadow: `0 24px 72px rgba(8, 32, 50, 0.18)`
+- Desktop page gutter: `24px–32px`
+- Standard control height: `44px`
+- Field-operation control height: `48px`
+- Desktop sidebar width: `240px–256px`
+- Main content maximum width: `1440px`
 
-Avoid nesting multiple heavily rounded cards. Use dividers, spacing, or grouped rows inside a parent card.
+### 3.4 Borders and radii
 
-### 5.5 Icons
+| Element | Radius | Border |
+|---|---:|---|
+| Input and button | `10px–12px` | `1px solid var(--border-strong)` |
+| Standard card | `16px` | `1px solid var(--border)` |
+| Major panel | `20px` | `1px solid var(--border)` |
+| Modal and drawer | `20px–24px` | `1px solid var(--border)` |
+| Badge or chip | `999px` | Semantic or neutral border |
 
-- Use one outline icon family consistently.
-- Default sizes: `20px` in controls, `24px` in mobile navigation.
-- Icons supplement labels; they do not replace unfamiliar actions.
-- Icon-only buttons require an accessible name and tooltip on pointer devices.
+Avoid excessive nested rounded containers. Use spacing and dividers inside a parent card.
+
+### 3.5 Elevation
+
+| Token | Value | Usage |
+|---|---|---|
+| `--shadow-none` | `none` | Tables and grouped rows |
+| `--shadow-card` | `0 4px 16px rgba(15,43,64,.06)` | Standard cards |
+| `--shadow-raised` | `0 10px 30px rgba(15,43,64,.10)` | Menus, drawers, important summaries |
+| `--shadow-modal` | `0 24px 64px rgba(8,32,50,.20)` | Modals and dialogs |
+
+Shadows should communicate stacking, not decorate every surface.
 
 ---
 
-## 6. Responsive Layout
+## 4. Responsive Layout Architecture & Shell System
 
-WaterWise uses content-based adaptation rather than shrinking desktop layouts.
+### 4.1 Breakpoints
 
-| Breakpoint | Width | Behavior |
+| Breakpoint | Width | Primary behavior |
 |---|---:|---|
-| Base | `< 640px` | Single column, bottom navigation, card records |
-| `sm` | `≥ 640px` | Split fields and two-column summaries |
-| `lg` | `≥ 1024px` | Left sidebar, tables, multi-column workspaces |
-| `xl` | `≥ 1280px` | Expanded analytics and side-by-side detail panels |
+| Base | `< 640px` | Single column, mobile header, bottom navigation |
+| `sm` | `≥ 640px` | Split form fields and two-column metrics |
+| `lg` | `≥ 1024px` | Sticky desktop sidebar and table layouts |
+| `xl` | `≥ 1280px` | Expanded analytics and multi-column dashboards |
 
-### 6.1 Application shell
+### 4.2 Desktop application shell
 
-#### Mobile
-
-- Sticky glass header with brand, notification bell, and account menu.
-- Fixed glass bottom navigation with a maximum of four destinations.
-- Use safe-area insets and at least `96px` bottom content clearance.
-- Keep horizontal scrolling out of page-level layouts.
-- Drawers become full-height edge panels; long forms become full-screen dialogs.
+The desktop shell consists of a compact sticky header, a persistent left sidebar, and a flexible content canvas.
 
 ```text
-┌──────────────────────────────────┐
-│ WaterWise             Alerts  Me │
-├──────────────────────────────────┤
-│ Good morning, Maria              │
-│                                  │
-│ ┌──────────────────────────────┐ │
-│ │ Amount due          ₱ 420.00 │ │
-│ │ Due August 15       View bill│ │
-│ └──────────────────────────────┘ │
-│                                  │
-│ Water used this month            │
-│ [ 18 m³   ↑ 3 m³ from June ]     │
-│                                  │
-│ Recent updates                   │
-└──────────────────────────────────┘
-│   Home        Bills       Profile│
-└──────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ WaterWise        Current workspace              Alerts  Account │
+├───────────────┬──────────────────────────────────────────────────┤
+│ Workspace     │ Page title                       Primary action │
+│ Dashboard     │ Supporting description                          │
+│ Residents     │                                                  │
+│ Readings      │ [ KPI ] [ KPI ] [ KPI ] [ KPI ]                 │
+│ Billing       │                                                  │
+│ Payments      │ [ Main chart or records ] [ Attention panel ]   │
+│ ...           │                                                  │
+└───────────────┴──────────────────────────────────────────────────┘
 ```
 
-#### Desktop
+**Header**
 
-- Sticky glass header for global account and notification actions.
-- Sticky left navigation between `224px` and `256px`.
-- Main content width is capped at `1440px`.
-- Data pages may use the full content width; reading pages stay near `760px`.
-- Page-level primary actions align to the upper-right of the title block.
+- Height: `64px–72px`.
+- Solid white background with a bottom border.
+- Brand column aligns exactly with the sidebar width.
+- Center area identifies the active workspace without repeating the page title.
+- Right area contains notifications and the account menu.
+- The header remains sticky and does not cast a large shadow.
 
-### 6.2 Density by role
+**Sidebar**
 
-- **Resident:** comfortable spacing, `16px` body text, large summaries, minimal controls.
-- **Meter reader:** comfortable touch density, large numeric input, minimal navigation.
-- **Administrator:** compact but never below `14px` for functional text or `40px` for pointer targets.
+- Width: `240px–256px`.
+- Solid white background with a right border.
+- Navigation groups use small uppercase labels only when grouping improves scanning.
+- Items are `44px–48px` high.
+- Active item uses a pale water-teal background, strong text, icon, and a left indicator.
+- Hover uses a subtle neutral or teal tint without movement.
+- Logout remains inside the account menu rather than the primary navigation.
 
-Density is role-based, not device-based. An administrator on a phone still receives touch-friendly controls.
+**Content canvas**
+
+- Background: `var(--canvas)`.
+- Page gutter: `24px` on desktop.
+- Page sections use `20px–24px` vertical gaps.
+- Staff data pages may use the full available width up to `1440px`.
+- Focused entry flows should remain between `720px` and `880px` where practical.
+
+### 4.3 Mobile application shell
+
+- Sticky `64px` solid header with brand, alerts, and account access.
+- Fixed bottom navigation with a maximum of four visible destinations.
+- Administrator overflow destinations open through a labeled **More** sheet.
+- Bottom navigation accounts for device safe-area insets.
+- Page content includes at least `88px` bottom clearance.
+- No page-level horizontal scrolling.
+- Tables convert to record cards below tablet width.
+
+### 4.4 Grid system
+
+- KPI grid: one column at base, two columns at `sm`, three or four columns at `xl`.
+- Standard dashboard: `12` conceptual columns with `16px–20px` gaps.
+- Primary analytics region: `8` columns; supporting attention panel: `4` columns.
+- Two-panel forms: `7/5` or `8/4` split on desktop; single column on mobile.
+- Avoid layouts with more than three different card widths in one section.
+
+### 4.5 Page-header pattern
+
+All roles use the same page-header anatomy:
+
+1. Short eyebrow label
+2. Page title
+3. One-sentence description
+4. Optional status or primary action aligned right on desktop
+
+Page headers use a compact navy surface or a white surface with a strong title. Do not use large decorative hero areas for routine management pages.
 
 ---
 
-## 7. Navigation and Wayfinding
+## 5. Role-Aware Workspaces & Screen Layouts
 
-### 7.1 Active state
+### 5.1 Administrator workspace
 
-Active destinations use a water-tinted surface, strong text, and a left indicator on desktop or top indicator on mobile. Do not rely on icon color alone.
+**Navigation**
 
-### 7.2 Global header
+Dashboard, Residents, Readings, Billing, Payments, Events, Announcements, Analytics, Reports.
 
-The header contains:
+**Dashboard order**
 
-- WaterWise mark and product name
-- Current barangay/water-system name on wide screens
-- Notification trigger where applicable
-- Account menu with user name, role, and logout
+1. Page header and current reporting period
+2. KPI cards: active residents, monthly consumption, outstanding balance, completed readings
+3. Attention queue: overdue accounts, missing readings, anomalies, failed records
+4. Monthly and yearly trends
+5. Purok comparison
+6. Recent operational activity
 
-Do not repeat the page title in the global header and page body.
+The dashboard is an exception-monitoring workspace, not a wall of charts. Every attention item links to the corresponding pre-filtered page.
 
-### 7.3 Back behavior
+**Management pages**
 
-- Detail views use a labeled back link: **Back to residents**, not only a chevron.
-- Closing a modal returns focus to the control that opened it.
-- Browser Back must not discard an in-progress form without warning.
+- Page header with one primary action
+- Search and filter toolbar
+- Result count and active-filter summary
+- Table or record-card region
+- Pagination and current range
+- Details open as a page or side panel depending on complexity
+
+### 5.2 Meter-reader workspace
+
+**Navigation**
+
+Record Reading, with account access in the header.
+
+**Reading flow**
+
+1. Search and select resident
+2. Confirm account, purok, address, and meter number
+3. Compare previous and current readings
+4. Review calculated usage and anomaly warning
+5. Confirm submission
+6. Display a persistent recorded, pending, or failed result
+
+The interface uses one primary task panel rather than a dashboard grid. On desktop the flow stays centered; on mobile it fills the available width.
+
+### 5.3 Resident workspace
+
+**Navigation**
+
+Home, Bills, Profile.
+
+**Home layout**
+
+1. Amount due, due date, and payment state
+2. Water used this month and comparison with last month
+3. Leak or unusual-use warning when applicable
+4. Consumption chart
+5. Recent payment, bill, and announcement updates
+
+**Bills layout**
+
+- Current amount-due summary
+- Billing records ordered newest first
+- Status, billing period, amount, due date, and payment date
+- Explicit **View receipt** and **Download receipt** actions
+- Paid records remain visually quiet; overdue records receive clear semantic emphasis
+
+**Profile layout**
+
+- Account holder
+- Contact information
+- Service address and purok
+- Meter details
+- Latest reading
+- Read-only explanation and correction instructions
 
 ---
 
-## 8. Core Components
+## 6. Key UI Component Specifications
 
-### 8.1 Buttons
+### 6.1 KPI cards
 
-| Variant | Use |
-|---|---|
-| Primary | The single most important action in a region |
-| Secondary | Common supporting action |
-| Quiet | Low-emphasis action inside a card or row |
-| Danger | Destructive action after clear intent |
+**Anatomy**
+
+- Optional `36px–40px` icon container
+- Short descriptive label
+- Large tabular value
+- Unit beside or below the value
+- Comparison or timestamp
+- Optional overflow action for staff-only cards
+
+KPI cards use solid white surfaces, `16px` radius, `16px–20px` padding, and a subtle border. A dark emphasis variant is reserved for the most important balance or operational total.
+
+### 6.2 Billing summaries
+
+- Lead with **Amount due** rather than internal billing terminology.
+- Display due date and written status near the amount.
+- Use Philippine peso formatting with two decimals.
+- Separate bill status from payment status when the data model distinguishes them.
+- Provide only one primary action, such as **Record payment** or **View bill**.
+
+### 6.3 Anomaly alerts
+
+Anomaly alerts include:
+
+- Warning or danger icon
+- Plain-language title
+- Affected resident or purok
+- Observed change and comparison period
+- Recommended next step
+- Acknowledgement or review action
+
+Do not block a legitimate meter reading solely because it is unusual. Require acknowledgement when appropriate.
+
+### 6.4 Buttons
+
+| Variant | Treatment | Usage |
+|---|---|---|
+| Primary | Water-teal fill, white text | Main action in a region |
+| Secondary | Light neutral fill, navy text | Supporting action |
+| Outline | White fill, visible border | Filters and alternative actions |
+| Quiet | No container until hover | Row and card utilities |
+| Danger | Red fill or red outline | Destructive confirmation |
 
 Requirements:
 
-- Minimum touch target: `44 × 44px`; field-work controls should be `48px` high.
-- Use labels that describe the result.
-- Show loading without changing button width.
-- Disable only when necessary and explain why nearby.
-- After async actions, show an inline result or toast with a meaningful next step.
+- Minimum target: `44 × 44px`; field actions: `48px` high.
+- Labels describe outcomes: **Record payment**, not **Submit**.
+- Loading state preserves button width.
+- Disabled controls have a nearby explanation when the reason is not obvious.
 
-### 8.2 Forms
+### 6.5 Forms and validation
 
-- Labels remain visible above inputs; placeholders are examples, not labels.
-- Required fields use “Required” text where ambiguity is possible.
-- Help text appears before an error; errors appear directly below the field.
-- Preserve values after validation or network errors.
-- Use appropriate input modes (`numeric`, `decimal`, `tel`, `email`).
-- Destructive and financial forms include a review/confirmation step.
-- Long administrator forms are grouped into named sections, not one uninterrupted card.
+- Labels remain above inputs and never become red solely because the field is invalid.
+- Invalid styling applies to the input border, input icon, and inline message.
+- Show one concise message beneath only the incorrect field.
+- Use `aria-invalid` and `aria-describedby`.
+- Focus the first invalid field after submission.
+- Preserve entered values after server or validation errors.
+- Use `numeric`, `decimal`, `tel`, and `email` input modes appropriately.
+- Financial and irreversible actions include a review step.
 
-### 8.3 Status chips
+### 6.6 Tables and record lists
 
-Use concise labels: **Paid**, **Unpaid**, **Overdue**, **Pending**, **Recorded**, **Failed**. Chips are not interactive unless they visibly include a filter affordance.
+Desktop tables include:
 
-### 8.4 Cards
-
-Every card has one purpose. Recommended anatomy:
-
-1. Optional icon or status
-2. Short label
-3. Primary value or title
-4. Comparison/context
-5. One optional action
-
-Avoid making an entire card clickable when it contains other controls.
-
-### 8.5 Tables and record lists
-
-Administrator tables include:
-
-- Search and filters above the table
-- Result count and active-filter summary
-- Sticky header for long data sets
-- Sort indicators with accessible labels
+- Solid subtle header row
+- Sticky table header for long sets
+- Sort direction icons and accessible labels
 - Right-aligned numeric columns
-- Visible row action labels or a clearly named overflow menu
-- Pagination or progressive loading with current position
+- Status badges with icon and text
+- Clear row actions or a labeled overflow menu
+- Hover background without row movement
+- Pagination and result range
 
-At widths below `768px`, convert rows into cards that preserve the same field priority. Do not hide critical values merely to fit a table.
+Below `768px`, rows become cards that preserve the same field priority.
 
-### 8.6 Search and filters
+### 6.7 Charts and data visualization
 
-- Search starts after explicit submit or a short debounce.
-- Show the current query in the results summary.
-- Filters open in a bottom sheet on mobile and an anchored panel on desktop.
-- Provide **Clear all** only when filters are active.
-- Empty results retain search and filters so users can recover.
+- Primary data series uses `--water-600`.
+- Comparisons use a darker navy or a distinct dashed line.
+- Gridlines use `--border` at low visual emphasis.
+- Highlight only the selected or current point.
+- Tooltips use solid white, a border, and `--shadow-raised`.
+- Start quantitative axes at zero unless a documented analytical reason requires otherwise.
+- Label units consistently as `m³` or Philippine pesos.
+- Limit simultaneous series to five.
+- Provide a concise written insight and accessible data summary.
+- Avoid 3D charts, decorative gauges, and high-saturation rainbow palettes.
 
-### 8.7 Charts
+### 6.8 Status badges
 
-- Use blue as the primary series and aqua as comparison; reserve semantic colors for status.
-- Never encode multiple series by color alone—use labels, patterns, or distinct points.
-- Start quantitative axes at zero unless a clearly labeled exception improves analysis.
-- Use `m³` consistently and explain the comparison period.
-- Provide a concise insight above or below the chart.
-- Provide a table or accessible text summary for screen-reader and low-vision users.
-- Avoid 3D charts, decorative gauges, and charts with more than five simultaneous series.
+Badges use triple-redundant communication:
 
-### 8.8 Dialogs, drawers, and sheets
+1. Semantic color
+2. Recognizable icon or dot
+3. Visible status text
 
-- Use dialogs for focused decisions, drawers for supporting context, and pages for complex tasks.
-- Mobile receipts may use a bottom sheet; long financial forms use a full-screen dialog.
-- Keep the title and close action visible during scrolling.
-- Trap focus, close with `Escape`, restore focus, and prevent background interaction.
-- Destructive confirmations name the affected record and consequence.
+Recommended labels: **Paid**, **Unpaid**, **Overdue**, **Due soon**, **Pending**, **Recorded**, **Failed**, **Normal**, **Review needed**.
 
-### 8.9 Notifications and feedback
+### 6.9 Notification drawer
 
-- Use the notification center for durable account and community messages.
-- Use toasts only for short action feedback; they must not contain the only copy of important information.
-- Maximum one toast stack with up to three visible items.
-- Notification categories: **Bills**, **Payments**, **Announcements**, and **System**.
-- Unread state uses a dot, weight, and label—not a tinted background alone.
+- Opens from the right on desktop and mobile.
+- Width: up to `432px` desktop and `94vw` mobile.
+- Solid white surface with a left border and raised shadow.
+- Header remains sticky with title, unread count, and close action.
+- Categories: Bills, Payments, Announcements, System.
+- Unread items use a dot, stronger title weight, and **Unread** screen-reader text.
+- Opening an actionable notification navigates to the relevant record.
 
----
+### 6.10 Digital receipt modal
 
-## 9. Role-Specific Experiences
+- Mobile: full-width bottom sheet or full-screen dialog.
+- Desktop: centered modal with a maximum readable width.
+- Solid white background for screen, download, and print.
+- Sticky title and close action.
+- Group account, meter, usage, payment, and reference information.
+- Use monospaced tabular values for totals and reference numbers.
+- Actions: **Download receipt**, **Print**, **Close**.
 
-### 9.1 Resident home
+### 6.11 Search and filters
 
-The home view answers four questions in order:
-
-1. **Do I need to pay?** Amount due, due date, and status
-2. **How much water did I use?** Current use and change from last month
-3. **Is anything unusual?** Plain-language alert or reassurance
-4. **What is new?** Latest payment, bill, or barangay announcement
-
-Use one prominent financial card followed by consumption and recent updates. Advanced graphs belong lower on the page.
-
-### 9.2 Resident bills
-
-- Group records by billing period.
-- Show status, amount, due date, payment date, and receipt availability.
-- Default to the newest bill.
-- Keep paid bills visually calm; emphasize overdue bills without alarming language.
-- Receipt actions are explicit: **View receipt** and **Download receipt**.
-- Empty state: “No bills yet. Your first bill will appear here after a meter reading is recorded.”
-
-### 9.3 Resident profile
-
-- Separate identity, contact details, service address, and meter details.
-- Clearly mark information as read-only.
-- Explain how to request a correction through the barangay office.
-- Avoid showing internal IDs unless needed for support.
-
-### 9.4 Administrator dashboard
-
-The dashboard is an exception-monitoring workspace, not a wall of charts.
-
-Top row:
-
-- Total active residents
-- This month’s consumption
-- Outstanding balance
-- Readings completed
-
-Attention queue:
-
-- Overdue accounts
-- Missing readings
-- Unusual consumption
-- Failed or pending records
-
-Trends and purok comparisons follow the attention queue. Each item links to a pre-filtered destination.
-
-### 9.5 Resident management
-
-- Default search supports name, account number, meter number, and purok.
-- Resident detail opens as a page on mobile and may use a side panel on desktop.
-- Show account summary before editable information.
-- Adding or editing a resident uses grouped sections and a final review.
-
-### 9.6 Billing and payments
-
-- Separate bill status from payment status where the backend distinguishes them.
-- Display currency as Philippine pesos with consistent decimals: `₱1,250.00`.
-- Before recording payment, show resident, bill period, balance, entered amount, and resulting balance.
-- Success state includes reference number, timestamp, amount, and **View receipt**.
-- Never allow duplicate action through repeated taps while a payment is processing.
-
-### 9.7 Readings
-
-- Administrator reading views are read-only and optimized for review.
-- Meter-reader entry is a guided task optimized for speed and accuracy.
-- Always show units beside values.
-- Highlight the difference from the previous reading before submission.
-- An anomaly warning requires acknowledgement but should not automatically block a legitimate reading.
-
-### 9.8 Announcements and reports
-
-- Announcement composition shows audience and publishing status near the title.
-- Preview important announcements before publishing.
-- Reports use a short sequence: **Choose report → Set period/filters → Preview → Generate**.
-- Generated reports show format, filters, creator, date, and download status.
+- Search supports a short debounce or explicit submit.
+- Display the active query in the result summary.
+- Desktop filters use an anchored panel; mobile filters use a bottom sheet.
+- Show **Clear all** only when filters are active.
+- No-results states retain search and filters for recovery.
 
 ---
 
-## 10. Content Design
+## 7. Feedback, Loading & Accessibility Standards
 
-### 10.1 Voice and tone
+### 7.1 Required system states
 
-WaterWise is respectful, direct, and helpful. It sounds like a competent public-service assistant.
+Every data-driven region defines:
 
-- Prefer: “Payment recorded. Receipt WW-2026-0184 is ready.”
-- Avoid: “Transaction completed successfully!”
-- Prefer: “We couldn’t load your bills. Check your connection and try again.”
-- Avoid: “An unknown error occurred.”
+1. **Loading** — content-shaped shimmer skeleton
+2. **Success** — current content and freshness context where needed
+3. **Empty** — explanation and relevant next step
+4. **No results** — preserved search/filter controls and recovery guidance
+5. **Error** — plain-language message, retry, and preserved input
+6. **Offline/stale** — explicit freshness and submission status
 
-### 10.2 Local clarity
+### 7.2 Loading
 
-- Use familiar terms such as **barangay**, **purok**, **meter reading**, and **due date** consistently.
-- Write dates unambiguously: **30 July 2026**.
-- Use `m³` and provide “cubic meters” on first use or in help text.
-- Support English first with concise Filipino helper text where user testing shows it improves comprehension.
-- Never mix languages inside one sentence unless the phrase is commonly understood and tested.
-
-### 10.3 Confirmation language
-
-Confirmation prompts state:
-
-1. The action
-2. The affected record
-3. The consequence
-4. The exact confirmation action
-
-Example: “Record a ₱420.00 payment for Maria Santos? The remaining balance will be ₱0.00. This will create an official receipt.”
-
----
-
-## 11. System States
-
-Every data region must define all six states:
-
-1. **Loading:** content-shaped skeleton with stable dimensions
-2. **Success:** content plus last-updated context where freshness matters
-3. **Empty:** explanation plus a relevant next step
-4. **No results:** preserve query/filter controls and offer recovery
-5. **Error:** plain-language cause when known, retry, and preserved input
-6. **Offline/stale:** visible status and no false claim that data is current
-
-### 11.1 Loading
-
-- Use skeletons for initial page content.
-- Use a small inline progress indicator for local actions.
-- Prevent layout shift by matching the expected content shape.
+- Use skeletons shaped like the expected content.
+- Preserve layout dimensions to avoid cumulative layout shift.
+- Use inline progress for local actions such as recording a payment.
 - Disable shimmer under `prefers-reduced-motion`.
+- Do not replace an entire page when only one card is refreshing.
 
-### 11.2 Empty states
+### 7.3 Empty and no-results states
 
-Empty states are compact and useful. Use illustration only when it adds meaning. Do not celebrate the absence of records in serious contexts.
+- Keep empty states compact and factual.
+- Explain whether no data exists or filters returned no matches.
+- Offer one relevant action where possible.
+- Avoid decorative illustrations in dense staff workspaces.
 
-### 11.3 Error recovery
+### 7.4 Errors and validation
 
-- Keep global navigation usable.
-- Place the error beside the failed region.
-- Preserve entered information.
-- Offer one primary recovery action.
-- Include a support/reference code only when it helps staff resolve the issue.
+- Place errors beside the failed field or content region.
+- Do not remove global navigation after a local error.
+- Preserve user input.
+- Use one primary recovery action.
+- Authentication errors identify the affected field without duplicating a page-level banner.
+- Backend errors use plain language and include a support code only when it helps resolution.
 
-### 11.4 Connectivity
+### 7.5 Connectivity
 
 - Show a persistent offline banner when connection is lost.
 - Label cached information with its last successful update time.
-- Queue field submissions only if the system can safely prevent duplicates.
-- If queueing is not implemented, state: “Not submitted. Reconnect and try again.”
+- Queue submissions only when duplicate prevention is reliable.
+- Otherwise state: **Not submitted. Reconnect and try again.**
 
----
-
-## 12. Motion
-
-Motion should feel like water settling: smooth, short, and purposeful.
-
-| Interaction | Duration | Easing |
-|---|---:|---|
-| Hover/focus color | `120ms` | ease-out |
-| Button or chip state | `160ms` | ease-out |
-| Card/section reveal | `200ms` | ease-out |
-| Drawer or modal | `240ms` | cubic-bezier(.2,.8,.2,1) |
-
-- Use opacity and small transforms of no more than `8px`.
-- Do not animate large background gradients continuously.
-- Never delay user input for animation.
-- Under `prefers-reduced-motion: reduce`, remove nonessential movement and use instant or opacity-only changes.
-
----
-
-## 13. Accessibility and Inclusion
+### 7.6 Accessibility
 
 Target WCAG 2.2 Level AA.
 
-- Text contrast: at least `4.5:1`; large text and essential UI graphics: at least `3:1`.
-- Glass surfaces must pass contrast against their actual rendered background.
-- Keyboard focus uses a visible `2px` water-blue ring with `2px` offset.
-- Touch targets are at least `44 × 44px`.
-- Navigation, headings, landmarks, tables, dialogs, and status messages use correct semantics.
-- Errors are announced and linked to their fields.
-- Focus moves to the error summary after an unsuccessful form submission.
-- Do not use color, position, gesture, or hover as the only way to reveal meaning.
-- Charts include accessible summaries.
-- Session timeouts warn users and offer an extension before logout.
-- Authentication and core tasks do not depend on drag, precise pointer movement, or time-limited interaction.
-- Support browser zoom to `200%` without loss of content or function.
-- Respect reduced motion, increased contrast, and reduced transparency preferences.
+- Normal text contrast: at least `4.5:1`.
+- Large text and essential UI graphics: at least `3:1`.
+- Touch targets: at least `44 × 44px`; field workflows prefer `48px`.
+- Visible focus: `2px` water-teal ring with `2px` offset.
+- Logical keyboard order and correct landmarks.
+- Icon-only buttons require accessible names.
+- Dialogs trap focus, close with `Escape`, and restore focus to their trigger.
+- Errors are programmatically linked to fields.
+- Charts include written summaries or accessible tables.
+- Color is never the only status indicator.
+- Support browser zoom to `200%` without losing content or function.
+- Respect reduced-motion and increased-contrast preferences.
 
-### 13.1 Readability for mixed digital confidence
+### 7.7 Motion
 
-- Keep resident task language near Grade 6–8 reading level where possible.
-- Avoid abbreviations without an explanation.
-- Pair important icons with text.
-- Use examples in forms, especially for account numbers and meter readings.
-- Keep instructions beside the relevant action rather than in a separate help page.
+| Interaction | Duration | Easing |
+|---|---:|---|
+| Hover and focus | `120ms` | ease-out |
+| Button and badge state | `160ms` | ease-out |
+| Section reveal | `180ms` | ease-out |
+| Drawer and modal | `220ms` | cubic-bezier(.2,.8,.2,1) |
 
----
+Use opacity and transforms of no more than `6px`. Never delay user input or animate backgrounds continuously.
 
-## 14. Privacy, Trust, and Safety
+### 7.8 Completion checklist
 
-- Show only the minimum personal information needed for the current task.
-- Mask sensitive details in lists and notification previews where appropriate.
-- Do not include full account or payment details in toast messages.
-- Auto-dismiss menus and overlays on logout.
-- Receipts have a solid white print/download layout; glass effects are screen-only.
-- High-impact record changes should show who performed them and when if audit data exists.
-- Never use deceptive urgency, hidden fees, or preselected destructive choices.
+A screen is ready when:
 
----
-
-## 15. Performance and PWA Behavior
-
-- Core resident content should remain usable on mid-range mobile devices.
-- Use glass blur only on fixed-size interface surfaces; avoid full-page nested blur.
-- Lazy-load heavy charts and report modules below the fold.
-- Avoid large decorative images when gradients and CSS shapes are sufficient.
-- Keep the shell stable while content loads.
-- The PWA install prompt appears only after the browser’s installability event and never blocks a bill or reading task.
-- Do not cache billing, payment, or reading data as if it were current. Clearly label stale data.
-
-Suggested experience budgets:
-
-| Measure | Target |
-|---|---:|
-| Largest Contentful Paint | `< 2.5s` on a representative mobile connection |
-| Cumulative Layout Shift | `< 0.1` |
-| Interaction to Next Paint | `< 200ms` |
-| Initial route feedback | `< 100ms` visual acknowledgement |
-
----
-
-## 16. Component Architecture
-
-Shared primitives should express this system consistently:
-
-| Layer | Suggested components |
-|---|---|
-| Foundations | `GlassSurface`, `SolidSurface`, `Stack`, `Cluster`, `PageContainer` |
-| Navigation | `AppHeader`, `RoleNavigation`, `BottomNavigation`, `Breadcrumbs`, `AccountMenu` |
-| Actions | `Button`, `IconButton`, `Menu`, `ConfirmDialog` |
-| Forms | `Field`, `Select`, `SearchField`, `DateRange`, `FormErrorSummary` |
-| Data display | `MetricCard`, `StatusChip`, `DataTable`, `RecordCard`, `DescriptionList` |
-| Feedback | `Skeleton`, `InlineAlert`, `Toast`, `EmptyState`, `OfflineBanner` |
-| Overlays | `Dialog`, `Drawer`, `BottomSheet` |
-| Domain | `BalanceCard`, `ConsumptionSummary`, `ReadingReview`, `Receipt`, `AnnouncementCard` |
-
-Existing feature components should consume shared tokens and primitives rather than repeating long utility-class recipes.
-
----
-
-## 17. Implementation Roadmap
-
-### Phase 1 — Foundations
-
-- Add color, type, spacing, radius, shadow, and motion tokens.
-- Build solid and glass surface primitives with fallbacks.
-- Standardize buttons, fields, status chips, focus states, and system feedback.
-- Update the shell, header, sidebar, and mobile bottom navigation.
-
-### Phase 2 — Resident experience
-
-- Redesign Home/Usage Metrics around amount due and understandable consumption.
-- Simplify Bills and receipt access.
-- Reorganize Profile into clear read-only sections.
-- Redesign the notification center by category and priority.
-
-### Phase 3 — Field workflow
-
-- Convert reading entry into the four-step guided flow.
-- Add validation, review, anomaly acknowledgement, and connectivity states.
-- Test outdoors and on representative mobile devices.
-
-### Phase 4 — Administrator workspace
-
-- Standardize page headers, filters, data tables, and record detail views.
-- Reframe the dashboard around attention items and linked actions.
-- Apply the same payment, announcement, analytics, and report patterns.
-
-### Phase 5 — Validation and refinement
-
-- Run accessibility checks and keyboard-only task testing.
-- Test at `320px`, `390px`, `768px`, `1024px`, and `1440px`.
-- Test reduced motion, reduced transparency, high contrast, zoom, slow connection, offline, empty, and error states.
-- Validate terminology and workflows with barangay officials, meter readers, and residents.
-
----
-
-## 18. Definition of Done
-
-A redesigned screen is complete only when:
-
-- It follows the role-specific hierarchy in this document.
-- The primary task is obvious within five seconds.
-- It works from `320px` phone width through large desktop.
-- It defines loading, empty, no-results, error, and offline behavior.
-- It has no horizontal page overflow.
-- Keyboard order is logical and focus is always visible.
-- Text and controls meet WCAG 2.2 AA contrast.
-- Touch targets meet the `44 × 44px` minimum.
-- Glass effects have a readable solid fallback.
-- Financial values, dates, units, and statuses are formatted consistently.
-- Destructive and financial actions include clear review/confirmation.
-- Motion respects reduced-motion preferences.
+- The primary status and action are identifiable within five seconds.
+- It works from `320px` through large desktop widths.
+- It has no page-level horizontal overflow.
+- Loading, empty, no-results, error, and offline states are defined.
+- Keyboard focus is visible and ordered logically.
+- Text, controls, and charts meet contrast requirements.
+- Touch targets meet the minimum size.
+- Dates, units, currency, and statuses use consistent formatting.
+- Financial and destructive actions include clear confirmation.
+- Motion respects user preferences.
 - Existing role permissions and route guards still pass.
 - Production build and focused lint checks pass.
 
 ---
 
-## 19. Design Review Checklist
+## 8. Component Hierarchy Map
 
-Before approving a UI change, ask:
+```text
+WaterWiseApp
+├── AuthenticationShell
+│   ├── BrandPanel
+│   └── LoginForm
+│       ├── FormField
+│       ├── PasswordField
+│       ├── InlineFieldError
+│       └── PrimaryButton
+│
+└── AuthenticatedShell
+    ├── AppHeader
+    │   ├── Brand
+    │   ├── WorkspaceContext
+    │   ├── NotificationTrigger
+    │   └── AccountMenu
+    ├── RoleNavigation
+    │   ├── DesktopSidebar
+    │   ├── MobileBottomNavigation
+    │   └── MoreNavigationSheet
+    ├── OfflineBanner
+    ├── PageContainer
+    │   ├── PageHeader
+    │   ├── Toolbar
+    │   │   ├── SearchField
+    │   │   ├── FilterMenu
+    │   │   └── PrimaryAction
+    │   └── PageContent
+    │       ├── MetricGrid
+    │       │   └── KpiCard
+    │       ├── AttentionQueue
+    │       │   └── AnomalyAlert
+    │       ├── ChartPanel
+    │       │   ├── ChartHeader
+    │       │   ├── AccessibleChart
+    │       │   └── DataSummary
+    │       ├── DataTable
+    │       │   ├── TableToolbar
+    │       │   ├── StatusBadge
+    │       │   ├── RowActions
+    │       │   └── Pagination
+    │       ├── RecordCardList
+    │       └── SystemState
+    │           ├── Skeleton
+    │           ├── EmptyState
+    │           ├── NoResultsState
+    │           └── InlineError
+    ├── NotificationDrawer
+    ├── ConfirmationDialog
+    ├── DigitalReceiptModal
+    └── ToastRegion
+```
 
-- Can the intended user identify the most important status and action immediately?
-- Is the language understandable without technical knowledge?
-- Does the design still work without transparency, animation, or color?
-- Are dense administrator tools efficient without becoming visually cramped?
-- Can a meter reader complete the task one-handed on a phone?
-- Can a resident understand the bill, due date, usage change, and payment state?
-- Are error and offline states honest about what was saved?
-- Is personal and financial information shown only where needed?
-- Does the screen feel like WaterWise without adding decorative glass everywhere?
+### 8.1 Shared primitive layers
+
+| Layer | Components |
+|---|---|
+| Foundations | `Surface`, `RaisedSurface`, `Stack`, `Cluster`, `PageContainer`, `Divider` |
+| Navigation | `AppHeader`, `DesktopSidebar`, `BottomNavigation`, `Breadcrumbs`, `AccountMenu` |
+| Actions | `Button`, `IconButton`, `Menu`, `ConfirmDialog` |
+| Forms | `FormField`, `Select`, `SearchField`, `DateRange`, `FormErrorSummary` |
+| Data display | `KpiCard`, `StatusBadge`, `DataTable`, `RecordCard`, `DescriptionList` |
+| Feedback | `Skeleton`, `InlineAlert`, `Toast`, `EmptyState`, `OfflineBanner` |
+| Overlays | `Dialog`, `Drawer`, `BottomSheet` |
+| Domain | `BalanceSummary`, `ConsumptionSummary`, `ReadingReview`, `Receipt`, `AnnouncementCard`, `AnomalyAlert` |
+
+Feature components should consume these shared primitives and tokens instead of repeating long utility-class combinations. Visual consistency belongs in the design system; role-specific behavior belongs in feature components.

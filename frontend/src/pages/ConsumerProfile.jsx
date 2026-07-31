@@ -16,15 +16,15 @@ import { isCanceledRequest } from "../services/apiClient";
 
 function DetailItem({ Icon, label, value }) {
   return (
-    <div className="flex gap-3 rounded-2xl bg-slate-50/80 p-4 transition hover:bg-sky-50">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#0284C7] shadow-sm">
+    <div className="flex gap-3 rounded-2xl bg-slate-50 p-4 transition-colors hover:bg-water-50">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-water-600 shadow-sm">
         <Icon aria-hidden="true" className="h-5 w-5" />
       </span>
       <div className="min-w-0">
         <dt className="text-xs font-semibold text-slate-500">
           {label}
         </dt>
-        <dd className="mt-1 break-words text-sm font-bold text-[#0F172A] sm:text-base">
+        <dd className="mt-1 break-words text-sm font-bold text-navy-900 sm:text-base">
           {value}
         </dd>
       </div>
@@ -54,8 +54,8 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
   const pageHeader = (
     <header className="ww-page-header text-white">
       <p className="ww-eyebrow">Resident portal</p>
-      <h2 className="mt-2 font-extrabold tracking-tight">Household profile</h2>
-      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-sky-100">
+      <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Household profile</h1>
+      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-water-100">
         Review your account holder, service address, meter information, and latest reading.
       </p>
     </header>
@@ -101,11 +101,11 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <div className="ww-glass-strong rounded-[24px] p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
+        <div className="ww-glass-strong rounded-2xl p-5 sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
             Household account
           </p>
-          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A]">
+          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900">
             Contact and location
           </h3>
 
@@ -117,11 +117,11 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
           </dl>
         </div>
 
-        <div className="ww-glass-strong rounded-[24px] p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
+        <div className="ww-glass-strong rounded-2xl p-5 sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
             Latest reading
           </p>
-          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A]">
+          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900">
             Meter snapshot
           </h3>
 
@@ -130,7 +130,7 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Previous
               </p>
-              <p className="mt-2 font-mono text-xl font-bold text-[#0F172A]">
+              <p className="mt-2 font-mono text-xl font-bold text-navy-900">
                 {consumer.previousReading.toFixed(1)} m³
               </p>
             </div>
@@ -138,15 +138,15 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Current
               </p>
-              <p className="mt-2 font-mono text-xl font-bold text-[#0F172A]">
+              <p className="mt-2 font-mono text-xl font-bold text-navy-900">
                 {consumer.currentReading.toFixed(1)} m³
               </p>
             </div>
-            <div className="col-span-2 rounded-2xl bg-sky-50 p-4 sm:col-span-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0284C7]">
+            <div className="col-span-2 rounded-2xl bg-water-50 p-4 sm:col-span-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-water-600">
                 Consumed
               </p>
-              <p className="mt-2 font-mono text-xl font-bold text-[#0284C7]">
+              <p className="mt-2 font-mono text-xl font-bold text-water-600">
                 {consumptionDifference.toFixed(1)} m³
               </p>
             </div>
@@ -154,9 +154,9 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
 
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex gap-3">
-              <FiFileText aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#0284C7]" />
+              <FiFileText aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-water-600" />
               <div>
-                <p className="text-sm font-bold text-[#0F172A]">
+                <p className="text-sm font-bold text-navy-900">
                   Last reading date
                 </p>
                 <p className="mt-1 font-mono text-sm text-slate-600">
@@ -168,11 +168,11 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-5">
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
         <div className="flex gap-3">
-          <FiShield aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#16A34A]" />
+          <FiShield aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
           <div>
-            <p className="text-sm font-bold text-[#0F172A]">
+            <p className="text-sm font-bold text-navy-900">
               Need to correct your details?
             </p>
             <p className="mt-1 text-sm leading-6 text-slate-600">

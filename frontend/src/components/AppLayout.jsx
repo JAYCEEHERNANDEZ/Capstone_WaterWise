@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FiBarChart2,
   FiBookOpen,
@@ -20,15 +20,15 @@ import {
   fetchNotifications,
   markNotificationRead,
 } from "../services/consumerPortal.service";
+import NotificationPage from "../pages/NotificationPage";
 import Header from "./Header";
 import NotificationBadgeTrigger from "./NotificationBadgeTrigger";
-import NotificationPage from "../pages/NotificationPage";
 import Sidebar from "./Sidebar";
 
 const ROLE_CONFIG = {
   admin: {
     label: "Admin",
-    profile: "Barangay Official",
+    profile: "Barangay official",
     userName: "Barangay Admin",
     basePath: "/admin",
     homePath: "/admin/dashboard",
@@ -39,24 +39,32 @@ const ROLE_CONFIG = {
       { label: "Billing", path: "/admin/billings", Icon: FiFileText },
       { label: "Payments", path: "/admin/payments", Icon: FiCreditCard },
       { label: "Events", path: "/admin/events", Icon: FiCalendar },
-      { label: "Announcements", path: "/admin/announcements", Icon: FiMessageSquare },
+      {
+        label: "Announcements",
+        path: "/admin/announcements",
+        Icon: FiMessageSquare,
+      },
       { label: "Analytics", path: "/admin/analytics", Icon: FiBarChart2 },
       { label: "Reports", path: "/admin/reports", Icon: FiFileText },
     ],
   },
   "meter-reader": {
     label: "Meter Reader",
-    profile: "Field Personnel",
+    profile: "Field personnel",
     userName: "Meter Reader",
     basePath: "/meter-reader",
     homePath: "/meter-reader/readings-entry",
     links: [
-      { label: "Readings Entry", path: "/meter-reader/readings-entry", Icon: FiBookOpen },
+      {
+        label: "Readings Entry",
+        path: "/meter-reader/readings-entry",
+        Icon: FiBookOpen,
+      },
     ],
   },
   consumer: {
-    label: "Consumer",
-    profile: "Community Portal",
+    label: "Resident",
+    profile: "Community resident",
     userName: "Iverene Grace M. Causapin",
     basePath: "/consumer",
     homePath: "/consumer/usage-metrics",
@@ -77,14 +85,16 @@ function getRoleFromPath(pathname) {
 export default function AppLayout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const notificationCloseRef = useRef(null);
   const pathRole = getRoleFromPath(location.pathname);
   const [account, setAccount] = useState(getStoredAccount);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isNotificationLoading, setIsNotificationLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [accountName, setAccountName] = useState("");
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
-  const activeRole = account?.role ?? pathRole;
-  const activeRoleConfig = ROLE_CONFIG[activeRole];
+  const activeRole = account?.role ?? pathRole ?? "consumer";
+  const activeRoleConfig = ROLE_CONFIG[activeRole] ?? ROLE_CONFIG.consumer;
 
   const unreadCount = notifications.filter((item) => !item.isRead).length;
 
@@ -115,7 +125,9 @@ export default function AppLayout({ children }) {
       });
 
     if (activeRole === "consumer") {
-      const refreshNotifications = () =>
+      queueMicrotask(() => setIsNotificationLoading(true));
+
+      const refreshNotifications = (isInitialLoad = false) =>
         fetchNotifications({ signal: controller.signal })
           .then((incomingNotifications) =>
             setNotifications((currentNotifications) =>
@@ -126,17 +138,25 @@ export default function AppLayout({ children }) {
                   currentNotifications.some(
                     (current) => current.id === incoming.id && current.isRead,
                   ),
-              }))
-            )
+              })),
+            ),
           )
           .catch((error) => {
             if (!isCanceledRequest(error)) setNotifications([]);
+          })
+          .finally(() => {
+            if (isInitialLoad && !controller.signal.aborted) {
+              setIsNotificationLoading(false);
+            }
           });
 
-      refreshNotifications();
+      refreshNotifications(true);
       notificationIntervalId = window.setInterval(refreshNotifications, 15000);
     } else {
-      queueMicrotask(() => setNotifications([]));
+      queueMicrotask(() => {
+        setNotifications([]);
+        setIsNotificationLoading(false);
+      });
     }
 
     return () => {
@@ -147,13 +167,35 @@ export default function AppLayout({ children }) {
     };
   }, [activeRole, navigate]);
 
+  // The drawer behaves as a focused modal on smaller screens and restores focus
+  // to the originating control when it closes.
+  useEffect(() => {
+    if (!isNotificationOpen) return undefined;
+
+    const previouslyFocusedElement = document.activeElement;
+    const originalOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsNotificationOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+    notificationCloseRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocusedElement?.focus?.();
+    };
+  }, [isNotificationOpen]);
+
   const handleLogout = async () => {
     try {
       await logout();
     } finally {
-    setAccount(null);
-    setIsNotificationOpen(false);
-    navigate("/login");
+      setAccount(null);
+      setIsNotificationOpen(false);
+      navigate("/login");
     }
   };
 
@@ -178,73 +220,86 @@ export default function AppLayout({ children }) {
   };
 
   return (
-    <div className={`ww-app min-h-screen bg-transparent font-sans text-slate-900 ${activeRole === "admin" ? "admin-workspace" : ""}`}>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <Header
         accountName={accountName || activeRoleConfig.userName}
         activeRole={activeRole}
         activeRoleLabel={activeRoleConfig.label}
-        notificationSlot={activeRole === "consumer" ? (
-          <NotificationBadgeTrigger
-            onToggleHub={() => setIsNotificationOpen((isOpen) => !isOpen)}
-            unreadCount={unreadCount}
-          />
-        ) : null}
+        notificationSlot={
+          activeRole === "consumer" ? (
+            <NotificationBadgeTrigger
+              onToggleHub={() => setIsNotificationOpen((isOpen) => !isOpen)}
+              unreadCount={unreadCount}
+            />
+          ) : null
+        }
         onLogout={handleLogout}
         title="WaterWise"
-        compact
       />
 
       {!isOnline && (
-        <div className="sticky top-16 z-20 flex min-h-11 items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-700 sm:top-[72px]" role="status">
+        <div
+          className="sticky top-16 z-30 flex min-h-11 items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-800"
+          role="status"
+        >
           <FiWifiOff aria-hidden="true" className="h-4 w-4 shrink-0" />
-          You are offline. New changes are not submitted until you reconnect.
+          You are offline. New changes will be submitted after you reconnect.
         </div>
       )}
 
+      {/* Desktop content is anchored beside the fixed-width sidebar; mobile
+          content reserves space for the persistent bottom navigation. */}
       <div className="w-full lg:flex">
         <Sidebar
           activeRoleLabel={activeRoleConfig.label}
           items={activeRoleConfig.links}
-          compact
         />
 
-        <main className="ww-workspace min-w-0 flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
-          <div className="h-full px-4 py-4 sm:px-5 lg:px-6">
-            <div className="w-full">
-              {children}
-            </div>
+        <main
+          className="ww-workspace min-w-0 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+          id="main-content"
+        >
+          <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+            {children}
           </div>
         </main>
       </div>
 
-      <div
-        aria-hidden={!isNotificationOpen}
+      <button
+        aria-label="Close notification center"
         className={[
-          "fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] transition-opacity",
+          "fixed inset-0 z-40 bg-slate-950/45 transition-opacity duration-200",
           isNotificationOpen ? "opacity-100" : "pointer-events-none opacity-0",
         ].join(" ")}
         onClick={() => setIsNotificationOpen(false)}
+        tabIndex={isNotificationOpen ? 0 : -1}
+        type="button"
       />
 
       <aside
+        aria-hidden={!isNotificationOpen}
         aria-label="Notification center"
+        aria-modal={isNotificationOpen ? "true" : undefined}
         className={[
-          "ww-glass-strong fixed inset-y-0 right-0 z-50 h-full w-[min(94vw,27rem)] border-l border-white/70 shadow-[0_24px_80px_rgba(8,32,50,0.2)] transition-transform duration-300 ease-out",
+          "fixed inset-y-0 right-0 z-50 h-full w-[min(94vw,27rem)] border-l border-slate-200 bg-white shadow-2xl transition-transform duration-200 ease-out",
           isNotificationOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
+        inert={!isNotificationOpen}
+        role="dialog"
       >
-        <div className="flex h-[72px] items-center justify-between border-b border-slate-200/70 bg-white/70 px-5">
+        <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
           <div>
-            <p className="text-sm font-bold text-slate-900">
-              Notification Center
-            </p>
+            <h2 className="text-sm font-bold text-slate-900">
+              Notification center
+            </h2>
             <p className="text-xs font-medium text-slate-500">
               {unreadCount} unread alert{unreadCount === 1 ? "" : "s"}
             </p>
           </div>
           <button
+            ref={notificationCloseRef}
             aria-label="Close notification center"
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white/90 text-sky-700 transition hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:border-water-200 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2"
             onClick={() => setIsNotificationOpen(false)}
             type="button"
           >
@@ -252,11 +307,14 @@ export default function AppLayout({ children }) {
           </button>
         </div>
 
-        <NotificationPage
-          notifications={notifications}
-          onNotificationClick={handleNotificationClick}
-          onMarkAsRead={handleMarkNotificationAsRead}
-        />
+        <div className="h-[calc(100%-4rem)] overflow-y-auto">
+          <NotificationPage
+            isLoading={isNotificationLoading}
+            notifications={notifications}
+            onNotificationClick={handleNotificationClick}
+            onMarkAsRead={handleMarkNotificationAsRead}
+          />
+        </div>
       </aside>
     </div>
   );

@@ -126,41 +126,41 @@ export default function Login() {
   return (
     <main className="ww-app min-h-screen px-4 py-4 font-sans text-slate-900 sm:px-8 sm:py-8 lg:px-10">
       <section className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
-        <div className="ww-glass-strong grid w-full overflow-hidden rounded-[28px] lg:grid-cols-[0.94fr_1.06fr]">
+        <div className="ww-glass-strong grid w-full overflow-hidden rounded-2xl lg:grid-cols-[0.94fr_1.06fr]">
           <aside className="ww-page-header relative flex flex-col justify-between rounded-none border-0 p-6 text-white shadow-none sm:p-10 lg:min-h-[650px]">
             <div>
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-950/30"><FiDroplet aria-hidden="true" className="h-5 w-5" /></span>
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-water-600 text-white shadow-sm"><FiDroplet aria-hidden="true" className="h-5 w-5" /></span>
                 <div>
                   <p className="text-sm font-extrabold tracking-[-0.02em] text-white">WaterWise</p>
-                  <p className="text-xs font-medium text-sky-200">Sucol Water System</p>
+                  <p className="text-xs font-medium text-water-200">Sucol Water System</p>
                 </div>
               </div>
               <h1 className="mt-6 max-w-md text-3xl font-extrabold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
                 Every drop, clearly understood.
               </h1>
-              <p className="mt-4 max-w-md text-sm leading-6 text-sky-100 sm:text-base">One secure place for water readings, bills, payments, and barangay updates.</p>
+              <p className="mt-4 max-w-md text-sm leading-6 text-water-100 sm:text-base">One secure place for water readings, bills, payments, and barangay updates.</p>
             </div>
 
             <div className="mt-8 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
               {roles.map(({ Icon, eyebrow, id, label }) => (
-                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-sm" key={id}>
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-cyan-300">
+                <div className="flex items-center gap-3 rounded-2xl border border-slate-700 bg-navy-900 p-3" key={id}>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-water-900 text-water-300">
                     <Icon aria-hidden="true" className="h-5 w-5" />
                   </span>
                   <div>
                     <p className="text-sm font-bold text-white">{label}</p>
-                    <p className="text-xs text-sky-200">{eyebrow}</p>
+                    <p className="text-xs text-water-200">{eyebrow}</p>
                   </div>
                 </div>
               ))}
             </div>
           </aside>
 
-          <div className="bg-white/55 p-6 sm:p-10 lg:flex lg:items-center lg:p-12">
+          <div className="bg-white p-6 sm:p-10 lg:flex lg:items-center lg:p-12">
             <div className="mx-auto max-w-xl">
               <div className="mb-7">
-                <p className="ww-eyebrow !text-sky-700">
+                <p className="ww-eyebrow !text-water-700">
                   Secure sign in
                 </p>
                 <h2 className="mt-2 text-3xl font-extrabold leading-tight tracking-[-0.04em] text-slate-900 sm:text-4xl">
@@ -233,7 +233,7 @@ export default function Login() {
                     <button
                       aria-label={showPassword ? "Hide password" : "Show password"}
                       aria-pressed={showPassword}
-                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-600"
+                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-water-600"
                       onClick={() => setShowPassword((visible) => !visible)}
                       type="button"
                     >
@@ -252,7 +252,7 @@ export default function Login() {
                 </div>
 
                 <button
-                  className="ww-primary-button min-h-12 w-full px-5 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
+                  className="ww-primary-button min-h-12 w-full px-5 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2"
                   disabled={isSubmitting}
                   type="submit"
                 >
@@ -266,7 +266,7 @@ export default function Login() {
 
                 {message && (
                   <p
-                    className="rounded-xl border border-slate-200 bg-white/75 px-4 py-3 text-sm font-medium text-slate-900"
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900"
                     role="status"
                   >
                     {message}

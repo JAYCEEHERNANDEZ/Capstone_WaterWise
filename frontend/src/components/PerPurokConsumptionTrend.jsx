@@ -19,6 +19,7 @@ import {
   fetchAllPuroksYearlyHistory,
   fetchAllPuroksYearlyPrediction,
 } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const DEFAULT_PUROKS = [
   "Purok 1",
@@ -106,7 +107,7 @@ border-slate-200
 bg-white
 px-4
 py-3
-shadow-lg
+shadow-raised
 "
     >
       <p
@@ -326,7 +327,7 @@ function PerPurokConsumptionTrend() {
     <section
     data-testid="purok-consumption-trend"
       className="
-rounded-3xl
+rounded-2xl
 border
 border-slate-200
 bg-white
@@ -352,7 +353,7 @@ text-xs
 font-bold
 uppercase
 tracking-[0.18em]
-text-sky-600
+text-water-600
 "
           >
             Consumption Trend
@@ -392,14 +393,14 @@ gap-2
               onClick={() => setPeriod("Monthly")}
               className={`
 
-rounded-lg
+rounded-xl
 px-4
 py-2
 text-xs
 font-semibold
 
 ${
-  period === "Monthly" ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700"
+  period === "Monthly" ? "bg-water-600 text-white" : "bg-slate-100 text-slate-700"
 }
 
 `}
@@ -411,13 +412,13 @@ ${
               onClick={() => setPeriod("Yearly")}
               className={`
 
-rounded-lg
+rounded-xl
 px-4
 py-2
 text-xs
 font-semibold
 
-${period === "Yearly" ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700"}
+${period === "Yearly" ? "bg-water-600 text-white" : "bg-slate-100 text-slate-700"}
 
 `}
             >
@@ -460,26 +461,8 @@ ${loading ? "animate-spin" : ""}
       {/* LOADING */}
 
       {loading && (
-        <div
-          className="
-grid
-grid-cols-1
-gap-6
-md:grid-cols-2
-xl:grid-cols-3
-"
-        >
-          {DEFAULT_PUROKS.map((purok) => (
-            <div
-              key={purok}
-              className="
-h-80
-animate-pulse
-rounded-2xl
-bg-slate-100
-"
-            />
-          ))}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {DEFAULT_PUROKS.map((purok) => <LoadingSkeleton key={purok} label={`Loading ${purok} trend`} variant="card" />)}
         </div>
       )}
 
@@ -637,7 +620,7 @@ h-60
                           type="monotone"
                           dataKey="consumption"
                           name="Historical"
-                          stroke="#0284c7"
+                          stroke="#07968F"
                           strokeWidth={3}
                         />
 

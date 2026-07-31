@@ -73,18 +73,17 @@ const MeterReading = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="mx-auto max-w-7xl">
+    <section className="space-y-6">
+      <div className="mx-auto max-w-5xl">
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">
-            Meter Reading Management
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-600">Field operations</p>
+          <h1 className="mt-2 text-2xl font-extrabold text-navy-900 sm:text-3xl">
+            Meter reading management
           </h1>
 
-          <p className="mt-2 text-gray-600">
-            Create, update, and manage
-            consumer meter reading
-            records.
+          <p className="mt-2 text-slate-600">
+            Create, update, and review resident meter readings.
           </p>
         </div>
 
@@ -101,7 +100,7 @@ const MeterReading = () => {
         />
 
       </div>
-    </div>
+    </section>
   );
 };
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiCreditCard, FiPlus, FiSearch, FiUsers, FiX } from "react-icons/fi";
+import { FiCheckCircle, FiPlus, FiSearch, FiUsers, FiX } from "react-icons/fi";
 import ConsumerForm from "../components/ConsumerForm";
 import ConsumerListTable from "../components/ConsumerListTable";
 import { createConsumer, fetchConsumerDirectory, updateConsumer } from "../services/consumerDirectoryAPI";
@@ -11,7 +11,7 @@ function toManagementConsumer(consumer) {
     fullName: consumer.full_name ?? consumer.consumerName ?? consumer.name ?? "",
     purok: consumer.purok ?? (consumer.purok_no == null ? "Unassigned" : `Purok ${consumer.purok_no}`),
     email: consumer.email ?? "Not available",
-    paymentStatus: consumer.paymentStatus ?? "No billing record",
+    status: consumer.status ?? "inactive",
   };
 }
 
@@ -30,23 +30,37 @@ function ConsumerManagementPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let isActive = true;
 
     fetchConsumerDirectory({ signal: controller.signal })
-      .then((records) => setConsumers(records.map(toManagementConsumer)))
+      .then((records) => {
+        if (isActive) {
+          setConsumers(records.map(toManagementConsumer));
+        }
+      })
       .catch((requestError) => {
-        if (requestError.code !== "ERR_CANCELED") {
+        if (isActive && requestError.code !== "ERR_CANCELED") {
           setError(requestError.response?.data?.message ?? "Unable to load consumers.");
         }
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      });
 
     const intervalId = window.setInterval(() => {
       fetchConsumerDirectory()
-        .then((records) => setConsumers(records.map(toManagementConsumer)))
+        .then((records) => {
+          if (isActive) {
+            setConsumers(records.map(toManagementConsumer));
+          }
+        })
         .catch(() => {});
     }, 15000);
 
     return () => {
+      isActive = false;
       controller.abort();
       window.clearInterval(intervalId);
     };
@@ -62,7 +76,7 @@ function ConsumerManagementPage() {
         fullName: created.full_name ?? created.name,
         purok: created.purok,
         email: created.email,
-        paymentStatus: "No billing record",
+        status: created.status ?? "active",
       };
       setConsumers((current) => [savedConsumer, ...current]);
       setSelectedConsumer(null);
@@ -128,16 +142,16 @@ function ConsumerManagementPage() {
 
   return (
     <main className="space-y-6">
-      <header className="ww-page-header p-6 text-white sm:p-8">
+      <header className="ww-page-header p-5 text-white sm:p-6">
         <p className="ww-eyebrow">Resident accounts</p>
         <div className="mt-2 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-3xl font-extrabold tracking-tight">Resident management</h2>
+            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Resident management</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Register community accounts, review service locations, and monitor billing readiness from one workspace.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:min-w-80">
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><FiUsers className="text-sky-300" /><p className="mt-3 text-2xl font-bold">{consumers.length}</p><p className="text-xs text-slate-300">Total consumers</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><FiCreditCard className="text-emerald-300" /><p className="mt-3 text-2xl font-bold">{consumers.filter((item) => item.paymentStatus === "Paid").length}</p><p className="text-xs text-slate-300">Paid accounts</p></div>
+            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4"><FiUsers className="text-water-300" /><p className="mt-3 font-mono text-2xl font-bold tabular-nums">{consumers.length}</p><p className="text-xs text-slate-300">Total residents</p></div>
+            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4"><FiCheckCircle className="text-emerald-300" /><p className="mt-3 font-mono text-2xl font-bold tabular-nums">{consumers.filter((item) => item.status?.toLowerCase() === "active").length}</p><p className="text-xs text-slate-300">Active accounts</p></div>
           </div>
         </div>
       </header>
@@ -146,16 +160,16 @@ function ConsumerManagementPage() {
         <div
           aria-labelledby="consumer-form-title"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4 "
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) closeForm();
           }}
           role="dialog"
         >
-          <div className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl shadow-2xl">
+          <div className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl shadow-2xl">
             <button
               aria-label="Close consumer form"
-              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-navy-900"
               onClick={closeForm}
               type="button"
             >
@@ -186,16 +200,16 @@ function ConsumerManagementPage() {
       <label className="relative block max-w-xl flex-1">
         <span className="sr-only">Search consumers</span>
         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100" onChange={(event) => setQuery(event.target.value)} placeholder="Search account, name, email, or purok" type="search" value={query} />
+        <input className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-water-500 focus:ring-4 focus:ring-water-100" onChange={(event) => setQuery(event.target.value)} placeholder="Search account, name, email, or purok" type="search" value={query} />
       </label>
-      <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 font-bold text-white hover:bg-sky-700" onClick={() => { setSelectedConsumer(null); setFormMode("add"); }} type="button"><FiPlus />Add Consumer</button>
+      <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-water-600 px-5 py-3 font-bold text-white hover:bg-water-700" onClick={() => { setSelectedConsumer(null); setFormMode("add"); }} type="button"><FiPlus />Add Consumer</button>
       </div>
 
-      {isLoading ? (
-        <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-500">Loading consumers...</p>
-      ) : (
-        <ConsumerListTable consumers={visibleConsumers} onEdit={selectConsumer} />
-      )}
+      <ConsumerListTable
+        consumers={visibleConsumers}
+        isLoading={isLoading}
+        onEdit={selectConsumer}
+      />
     </main>
   );
 }

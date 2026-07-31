@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import AnnouncementForm from "../components/AnnouncementForm";
 import AnnouncementPage from "../components/AnnouncementPage";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import {
   createAnnouncement,
   fetchAnnouncements,
@@ -114,29 +115,28 @@ export default function AnnouncementManagementPage() {
 
   return (
     <main className="space-y-6">
-      <header className="ww-page-header relative p-6 text-white sm:p-8">
-        <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-cyan-300/10 blur-3xl" />
+      <header className="ww-page-header relative p-5 text-white sm:p-6">
         <div className="relative grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-700 bg-emerald-950 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">
               <Megaphone className="h-3.5 w-3.5" />
               Community communication
             </span>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">
               Announcement Management
-            </h2>
+            </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
               Publish clear community updates and review every system-wide message delivered to consumers.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:min-w-72">
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
               <Send className="h-5 w-5 text-emerald-300" />
               <p className="mt-3 text-2xl font-extrabold">{announcements.length}</p>
               <p className="text-xs text-slate-300">Published</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-              <CalendarClock className="h-5 w-5 text-sky-300" />
+            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
+              <CalendarClock className="h-5 w-5 text-water-300" />
               <p className="mt-3 text-2xl font-extrabold">{datedToday}</p>
               <p className="text-xs text-slate-300">Dated today</p>
             </div>
@@ -196,11 +196,7 @@ export default function AnnouncementManagementPage() {
           </section>
 
           {loading ? (
-            <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6">
-              {[1, 2, 3].map((item) => (
-                <div className="h-32 animate-pulse rounded-2xl bg-slate-100" key={item} />
-              ))}
-            </div>
+            <LoadingSkeleton label="Loading announcements" variant="list" />
           ) : (
             <AnnouncementPage announcements={filteredAnnouncements} />
           )}

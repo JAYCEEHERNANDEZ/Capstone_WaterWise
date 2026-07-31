@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Droplets, RefreshCw } from "lucide-react";
 
 import { fetchOverallMonthlyPrediction } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 function AdminMonthlyConsumptionCard() {
   const [prediction, setPrediction] = useState(null);
@@ -74,13 +75,12 @@ function AdminMonthlyConsumptionCard() {
 
   return (
     <div data-testid="monthly-consumption-card"
-    className="group relative h-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sky-200 hover:shadow-md">
-      <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-sky-100/70 blur-2xl" />
+    className="relative h-48 overflow-hidden rounded-2xl bg-navy-950 p-5 text-white shadow-card">
 
       <div className="relative flex h-full flex-col">
         <div className="flex items-start justify-between">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100">
-            <Droplets className="h-6 w-6 text-sky-600" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-water-900">
+            <Droplets className="h-6 w-6 text-water-300" />
           </div>
 
           <button
@@ -89,21 +89,18 @@ function AdminMonthlyConsumptionCard() {
             disabled={loading}
             aria-label="Refresh overall monthly prediction"
             title="Refresh prediction"
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700 bg-navy-900 text-slate-300 transition-colors hover:border-water-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
 
-        <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+        <p className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-water-300">
           Overall Monthly Prediction
         </p>
 
         {loading && (
-          <div className="mt-3">
-            <div className="h-9 w-28 animate-pulse rounded bg-slate-200" />
-            <div className="mt-3 h-4 w-40 animate-pulse rounded bg-slate-200" />
-          </div>
+          <LoadingSkeleton className="mt-3 opacity-30" label="Loading monthly prediction" variant="inline" />
         )}
 
         {!loading && error && (
@@ -117,16 +114,16 @@ function AdminMonthlyConsumptionCard() {
         {!loading && !error && (
           <>
             <div className="mt-2 flex items-end gap-1">
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              <h1 className="text-3xl font-extrabold tracking-tight">
                 {formattedValue}
               </h1>
 
-              <span className="mb-1 text-xs font-semibold text-slate-400">
+              <span className="mb-1 text-xs font-semibold text-slate-300">
                 m³
               </span>
             </div>
 
-            <p className="mt-2 text-xs leading-5 text-slate-500">{subtitle}</p>
+            <p className="mt-2 text-xs leading-5 text-slate-300">{subtitle}</p>
           </>
         )}
       </div>

@@ -9,8 +9,8 @@ export default function CurrentBillingCard({ outstandingBalance = 0, dueDate = "
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <FiFileText aria-hidden="true" className="h-4 w-4 text-sky-300" />
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">
+            <FiFileText aria-hidden="true" className="h-4 w-4 text-water-300" />
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-water-300">
               Amount due
             </span>
           </div>
@@ -22,9 +22,9 @@ export default function CurrentBillingCard({ outstandingBalance = 0, dueDate = "
           </h2>
         </div>
 
-        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm sm:min-w-60">
+        <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4 sm:min-w-60">
           <div className="flex items-center gap-2">
-            <FiCalendar aria-hidden="true" className="h-4 w-4 text-sky-300" />
+            <FiCalendar aria-hidden="true" className="h-4 w-4 text-water-300" />
             <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-300">
               Due date
             </span>

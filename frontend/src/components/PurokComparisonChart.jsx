@@ -14,6 +14,7 @@ import {
 } from "recharts";
 
 import { fetchAllPuroksMonthlyHistory } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const DEFAULT_PUROKS = [
   "Purok 1",
@@ -40,12 +41,12 @@ const MONTHS = [
 ];
 
 const BAR_COLORS = [
-  "#0284c7",
-  "#0ea5e9",
-  "#38bdf8",
-  "#0369a1",
-  "#075985",
-  "#0c4a6e",
+  "#07968F",
+  "#07968F",
+  "#07968F",
+  "#07968F",
+  "#07968F",
+  "#07968F",
 ];
 
 const formatValue = (value) =>
@@ -86,7 +87,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   const record = payload[0]?.payload;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg">
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-raised">
       <p className="font-bold text-slate-900">{label}</p>
 
       <p className="mt-1 text-sm text-slate-600">
@@ -251,10 +252,10 @@ function PurokComparisonChart({
 
   return (
     <section data-testid="purok-comparison-chart"
-    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-water-600">
             Purok Analytics
           </p>
 
@@ -274,14 +275,14 @@ function PurokComparisonChart({
           disabled={loading}
           aria-label="Refresh purok comparison"
           title="Refresh"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {loading && (
-        <div className="h-96 animate-pulse rounded-2xl bg-slate-100" />
+        <LoadingSkeleton label="Loading purok comparison" variant="chart" />
       )}
 
       {!loading && error && (

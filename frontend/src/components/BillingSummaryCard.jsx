@@ -22,12 +22,12 @@ function BillingSummaryCard({
 
   const summaryCards = [
     {
-      title: "Total Bills",
+      title: "Total bills",
       value: totalBills,
       testId: "total-bills-value",
     },
     {
-      title: "Paid Bills",
+      title: "Paid bills",
       value: paidBills,
       testId: "paid-bills-value",
     },
@@ -37,12 +37,12 @@ function BillingSummaryCard({
       testId: "partially-paid-value",
     },
     {
-      title: "Unpaid Bills",
+      title: "Unpaid bills",
       value: unpaidBills,
       testId: "unpaid-bills-value",
     },
     {
-      title: "Total Billing",
+      title: "Total billed",
       value: `₱${totalBilling.toLocaleString(
         "en-US",
         {
@@ -55,26 +55,26 @@ function BillingSummaryCard({
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+    <section aria-label="Billing summary" className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       {summaryCards.map((card) => (
         <div
           key={card.title}
-          className="bg-white rounded-lg shadow p-5"
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card"
           data-testid={card.testId.replace("-value", "-card")}
         >
-          <h3 className="text-gray-500 text-sm font-medium">
+          <h3 className="text-sm font-semibold text-slate-500">
             {card.title}
           </h3>
 
           <p
-            className="text-3xl font-bold mt-2"
+            className="mt-2 font-mono text-3xl font-extrabold tabular-nums text-navy-900"
             data-testid={card.testId}
           >
             {card.value}
           </p>
         </div>
       ))}
-    </div>
+    </section>
   );
 }
 

@@ -43,17 +43,17 @@ export default function ConsumptionEntryPanel({ consumer, onSave, previousReadin
   };
 
   return (
-    <section className="ww-glass-strong rounded-[24px] p-5 sm:p-6">
-      <p className="ww-eyebrow !text-sky-700">{isReviewing ? "Step 3 of 4" : "Step 2 of 4"}</p>
+    <section className="ww-glass-strong rounded-2xl p-5 sm:p-6">
+      <p className="ww-eyebrow !text-water-700">{isReviewing ? "Step 3 of 4" : "Step 2 of 4"}</p>
       <h2 className="mt-1 text-2xl font-extrabold text-slate-900">{isReviewing ? "Review the reading" : "Enter the meter reading"}</h2>
       <p className="mt-1 text-sm leading-6 text-slate-600">
         {isReviewing ? "Confirm the resident, meter values, date, and calculated consumption before recording." : "Use the exact number shown on the resident's meter."}
       </p>
 
-      <div className="mt-5 rounded-2xl bg-gradient-to-br from-slate-950 to-sky-900 p-5 text-white">
-        <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Selected resident</p>
+      <div className="mt-5 rounded-2xl bg-navy-950 p-5 text-white">
+        <p className="text-xs font-bold uppercase tracking-wider text-water-300">Selected resident</p>
         <p className="mt-2 text-xl font-extrabold">{consumer.consumerName}</p>
-        <p className="mt-1 text-sm text-sky-100">{consumer.consumerNo} · {consumer.purok}</p>
+        <p className="mt-1 text-sm text-water-100">{consumer.consumerNo} · {consumer.purok}</p>
       </div>
 
       {!isReviewing ? (
@@ -79,9 +79,9 @@ export default function ConsumptionEntryPanel({ consumer, onSave, previousReadin
             Reading date
             <input aria-readonly="true" className="ww-field mt-2 cursor-not-allowed bg-slate-100 p-3 text-slate-600" readOnly type="date" value={readingDate} />
           </label>
-          <div className="rounded-xl border border-sky-100 bg-sky-50 p-4">
-            <p className="text-xs font-bold text-sky-700">Calculated consumption</p>
-            <p className="ww-data-value mt-2 text-2xl font-extrabold text-sky-800">{Math.max(consumption, 0).toLocaleString()} m³</p>
+          <div className="rounded-xl border border-water-100 bg-water-50 p-4">
+            <p className="text-xs font-bold text-water-700">Calculated consumption</p>
+            <p className="ww-data-value mt-2 text-2xl font-extrabold text-water-800">{Math.max(consumption, 0).toLocaleString()} m³</p>
           </div>
           {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 sm:col-span-2" role="alert">{error}</p>}
           <button className="ww-primary-button px-5 py-3 sm:col-span-2" type="submit">Review reading</button>
@@ -95,7 +95,7 @@ export default function ConsumptionEntryPanel({ consumer, onSave, previousReadin
               ["Water consumed", `${Math.max(consumption, 0).toLocaleString()} m³`],
               ["Reading date", readingDate],
             ].map(([label, value]) => (
-              <div className="rounded-xl border border-slate-200 bg-white/75 p-4" key={label}>
+              <div className="rounded-xl border border-slate-200 bg-white p-4" key={label}>
                 <dt className="text-xs font-semibold text-slate-500">{label}</dt>
                 <dd className="ww-data-value mt-1 font-mono text-lg font-bold text-slate-900">{value}</dd>
               </div>
@@ -104,7 +104,7 @@ export default function ConsumptionEntryPanel({ consumer, onSave, previousReadin
 
           {showsAnomaly && (
             <label className="mt-4 flex cursor-pointer gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <input className="mt-1 h-5 w-5 accent-sky-600" checked={anomalyAcknowledged} onChange={(event) => setAnomalyAcknowledged(event.target.checked)} type="checkbox" />
+              <input className="mt-1 h-5 w-5 accent-water-600" checked={anomalyAcknowledged} onChange={(event) => setAnomalyAcknowledged(event.target.checked)} type="checkbox" />
               <span>
                 <span className="flex items-center gap-2 text-sm font-bold text-amber-700"><AlertTriangle aria-hidden="true" className="h-4 w-4" /> Unusual increase</span>
                 <span className="mt-1 block text-sm leading-6 text-slate-600">This reading is much higher than the previous value. I checked the meter and confirm it is correct.</span>

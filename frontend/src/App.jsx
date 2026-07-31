@@ -84,11 +84,11 @@ function MockPortalPage() {
 
   return (
     <AppLayout>
-      <section className="ww-glass-strong rounded-[24px] p-6 sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#0284C7]">
+      <section className="ww-glass-strong rounded-2xl p-6 sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-water-600">
           Mock workspace
         </p>
-        <h2 className="mt-3 text-2xl font-bold leading-tight tracking-[-0.02em] text-[#0F172A]">
+        <h2 className="mt-3 text-2xl font-bold leading-tight tracking-[-0.02em] text-navy-900">
           {pageTitle}
         </h2>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">

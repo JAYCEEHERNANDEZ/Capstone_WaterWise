@@ -16,6 +16,7 @@ import {
   fetchYearlyHistory,
   fetchOverallYearlyPrediction,
 } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const formatValue = (value) =>
   Number(value || 0).toLocaleString("en-PH", {
@@ -28,7 +29,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg">
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-raised">
       <p className="mb-2 text-sm font-bold text-slate-900">{label}</p>
 
       {payload.map((entry) => (
@@ -159,10 +160,10 @@ function YearlyConsumptionTrend() {
 
   return (
     <section data-testid="yearly-consumption-trend"
-    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-water-600">
             Annual Analytics
           </p>
 
@@ -181,14 +182,14 @@ function YearlyConsumptionTrend() {
           disabled={loading}
           aria-label="Refresh yearly trend"
           title="Refresh yearly trend"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {loading && (
-        <div className="h-96 animate-pulse rounded-2xl bg-slate-100" />
+        <LoadingSkeleton label="Loading yearly consumption trend" variant="chart" />
       )}
 
       {!loading && error && (
@@ -255,17 +256,17 @@ function YearlyConsumptionTrend() {
                 type="monotone"
                 dataKey="consumption"
                 name="Historical"
-                stroke="#0284c7"
+                stroke="#07968F"
                 strokeWidth={3}
                 dot={{
                   r: 5,
                   fill: "#ffffff",
-                  stroke: "#0284c7",
+                  stroke: "#07968F",
                   strokeWidth: 3,
                 }}
                 activeDot={{
                   r: 7,
-                  fill: "#0284c7",
+                  fill: "#07968F",
                   stroke: "#ffffff",
                   strokeWidth: 3,
                 }}
@@ -276,18 +277,18 @@ function YearlyConsumptionTrend() {
                 type="monotone"
                 dataKey="predicted"
                 name="Prediction"
-                stroke="#16a34a"
+                stroke="#0B2B40"
                 strokeWidth={3}
                 strokeDasharray="8 6"
                 dot={{
                   r: 5,
                   fill: "#ffffff",
-                  stroke: "#16a34a",
+                  stroke: "#0B2B40",
                   strokeWidth: 3,
                 }}
                 activeDot={{
                   r: 7,
-                  fill: "#16a34a",
+                  fill: "#0B2B40",
                   stroke: "#ffffff",
                   strokeWidth: 3,
                 }}

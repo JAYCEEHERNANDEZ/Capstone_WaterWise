@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import AnalyticsSummaryGrid from "../components/AnalyticsSummaryGrid";
 import ConsumptionTrendGraph from "../components/ConsumptionTrendGraph";
 import LoadingSkeleton from "../components/LoadingSkeleton";
@@ -59,10 +60,10 @@ export default function UsageMetrics({
   const previousUsage = displayedHistory.at(-2)?.volume;
   const usageDifference = previousUsage === undefined ? null : latestUsage - previousUsage;
   const pageHeader = (
-    <header className="ww-page-header text-white">
+    <header className="ww-page-header p-5 text-white sm:p-6">
       <p className="ww-eyebrow">Resident portal</p>
-      <h2 className="mt-2 font-extrabold tracking-tight">Water usage overview</h2>
-      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-sky-100">
+      <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Water usage overview</h1>
+      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-water-100">
         Review your current balance, latest water use, and monthly consumption history.
       </p>
     </header>
@@ -84,9 +85,9 @@ export default function UsageMetrics({
     <div className="space-y-5 sm:space-y-6">
       {pageHeader}
 
-      <section className="ww-glass flex flex-col gap-3 rounded-[20px] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <section className="ww-glass flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div>
-          <p className="ww-eyebrow !text-sky-700">Your water at a glance</p>
+          <p className="ww-eyebrow !text-water-700">Your water at a glance</p>
           <p className="mt-1.5 text-sm leading-6 text-slate-600">
             {usageDifference === null
               ? "Your latest bill and water-use records appear here."
@@ -95,7 +96,8 @@ export default function UsageMetrics({
                 : `Your latest water use is ${Math.abs(usageDifference).toLocaleString("en-US", { maximumFractionDigits: 1 })} m³ ${usageDifference > 0 ? "higher" : "lower"} than the previous month.`}
           </p>
         </div>
-        <span className={`inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-bold ${displayedAmountDue > 0 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+        <span className={`inline-flex min-h-8 w-fit shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${displayedAmountDue > 0 ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+          {displayedAmountDue > 0 ? <AlertCircle aria-hidden="true" className="h-3.5 w-3.5" /> : <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" />}
           {displayedAmountDue > 0 ? "Payment needed" : "Account up to date"}
         </span>
       </section>

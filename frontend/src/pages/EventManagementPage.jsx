@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import EventForm from "../components/EventForm";
 import EventRecordsTable from "../components/EventRecordsTable";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import {
   createEvent as createEventRequest,
   deleteEvent as deleteEventRequest,
@@ -80,11 +81,11 @@ export default function EventManagementPage() {
 
   return (
     <main className="space-y-6">
-      <header className="ww-page-header p-6 text-white sm:p-8">
+      <header className="ww-page-header p-5 text-white sm:p-6">
         <p className="ww-eyebrow">
           Community schedule
         </p>
-        <h2 className="mt-3 text-3xl font-extrabold tracking-tight">Event Management</h2>
+        <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Event management</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
           Create, review, and manage tagged community events.
         </p>
@@ -94,8 +95,8 @@ export default function EventManagementPage() {
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)]">
         <EventForm initialEvent={selectedEvent} key={selectedEvent?.id ?? "new-event"} onCancel={() => setSelectedEvent(null)} onSubmit={saveEvent} submitting={saving} />
-        <aside className="ww-glass-strong overflow-hidden rounded-[24px] p-6">
-          <p className="ww-eyebrow !text-sky-700">Event preview</p><h3 className="mt-1 text-xl font-extrabold">Selected event</h3>
+        <aside className="ww-glass-strong overflow-hidden rounded-2xl p-6">
+          <p className="ww-eyebrow !text-water-700">Event preview</p><h3 className="mt-1 text-xl font-extrabold">Selected event</h3>
           {selectedEvent ? (
             <dl className="mt-4 space-y-3 text-sm">
               <div><dt className="font-semibold text-slate-500">Title</dt><dd>{selectedEvent.title}</dd></div>
@@ -111,7 +112,7 @@ export default function EventManagementPage() {
         </aside>
       </section>
 
-      {loading ? <div className="grid gap-3">{[1, 2, 3].map((item) => <div className="h-16 animate-pulse rounded-xl bg-slate-100" key={item} />)}</div> : <EventRecordsTable events={events} onDelete={deleteEvent} onEdit={setSelectedEvent} />}
+      {loading ? <LoadingSkeleton label="Loading event records" variant="table" /> : <EventRecordsTable events={events} onDelete={deleteEvent} onEdit={setSelectedEvent} />}
     </main>
   );
 }

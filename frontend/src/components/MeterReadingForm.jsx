@@ -1,19 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { AlertTriangle, CheckCircle2, Gauge } from "lucide-react";
 
-const initialForm = {
-  consumerNo: "",
-  consumerName: "",
-  purok: "",
-  previousReading: "",
-  currentReading: "",
-  readingDate: "",
-  status: "Recorded",
-};
+const emptyReading = { consumerNo: "", consumerName: "", purok: "", previousReading: "", currentReading: "", readingDate: "", status: "Recorded" };
 
 function initialFormFor(selectedReading) {
-  if (!selectedReading) return initialForm;
-
-  return {
+  return selectedReading ? {
     consumerNo: selectedReading.consumerNo,
     consumerName: selectedReading.consumerName,
     purok: selectedReading.purok,
@@ -21,360 +12,68 @@ function initialFormFor(selectedReading) {
     currentReading: selectedReading.currentReading,
     readingDate: selectedReading.readingDate,
     status: selectedReading.status,
-  };
+  } : emptyReading;
 }
 
-const MeterReadingFormFields = ({
-  onSave,
-  selectedReading,
-  onCancel,
-}) => {
-  const [formData, setFormData] =
-    useState(() => initialFormFor(selectedReading));
+function MeterReadingFormFields({ onSave, selectedReading, onCancel }) {
+  const formRef = useRef(null);
+  const [formData, setFormData] = useState(() => initialFormFor(selectedReading));
+  const [errors, setErrors] = useState({});
+  const consumption = formData.previousReading !== "" && formData.currentReading !== "" ? Number(formData.currentReading) - Number(formData.previousReading) : 0;
+  const hasLowReading = consumption < 0;
 
-  const [errors, setErrors] =
-    useState({});
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    setErrors((prev) => ({
-      ...prev,
-      [name]: "",
-    }));
+  const handleChange = ({ target }) => {
+    setFormData((previous) => ({ ...previous, [target.name]: target.value }));
+    setErrors((previous) => ({ ...previous, [target.name]: "" }));
   };
 
   const validate = () => {
-    const validationErrors = {};
-
-    if (!formData.consumerNo.trim()) {
-      validationErrors.consumerNo =
-        "Consumer number is required.";
-    }
-
-    if (!formData.consumerName.trim()) {
-      validationErrors.consumerName =
-        "Consumer name is required.";
-    }
-
-    if (!formData.purok) {
-      validationErrors.purok =
-        "Purok is required.";
-    }
-
-    if (formData.previousReading === "") {
-      validationErrors.previousReading =
-        "Previous reading is required.";
-    }
-
-    if (formData.currentReading === "") {
-      validationErrors.currentReading =
-        "Current reading is required.";
-    }
-
-    if (
-      formData.previousReading !== "" &&
-      formData.currentReading !== "" &&
-      Number(formData.currentReading) <
-        Number(formData.previousReading)
-    ) {
-      validationErrors.currentReading =
-        "Current reading must be greater than or equal to previous reading.";
-    }
-
-    if (!formData.readingDate) {
-      validationErrors.readingDate =
-        "Reading date is required.";
-    }
-
-    setErrors(validationErrors);
-
-    return (
-      Object.keys(validationErrors)
-        .length === 0
-    );
+    const nextErrors = {};
+    if (!formData.consumerNo.trim()) nextErrors.consumerNo = "Enter the resident account number.";
+    if (!formData.consumerName.trim()) nextErrors.consumerName = "Enter the resident name.";
+    if (!formData.purok) nextErrors.purok = "Select the resident's purok.";
+    if (formData.previousReading === "") nextErrors.previousReading = "Enter the previous meter value.";
+    if (formData.currentReading === "") nextErrors.currentReading = "Enter the current meter value.";
+    else if (hasLowReading) nextErrors.currentReading = "The current value cannot be below the previous reading.";
+    if (!formData.readingDate) nextErrors.readingDate = "Select the reading date.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) requestAnimationFrame(() => formRef.current?.querySelector('[aria-invalid="true"]')?.focus());
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
+  const handleSubmit = (event) => {
+    event.preventDefault();
     if (!validate()) return;
-
-    onSave({
-      ...formData,
-      previousReading: Number(
-        formData.previousReading
-      ),
-      currentReading: Number(
-        formData.currentReading
-      ),
-      consumption:
-        Number(formData.currentReading) -
-        Number(formData.previousReading),
-    });
-
-    if (!selectedReading) {
-      setFormData(initialForm);
-    }
-
+    onSave({ ...formData, previousReading: Number(formData.previousReading), currentReading: Number(formData.currentReading), consumption });
+    if (!selectedReading) setFormData(emptyReading);
     setErrors({});
   };
 
-  const consumption =
-    formData.previousReading !== "" &&
-    formData.currentReading !== ""
-      ? Number(formData.currentReading) -
-        Number(formData.previousReading)
-      : 0;
+  const fieldClass = (name, readOnly = false) => `mt-2 min-h-12 w-full rounded-xl border bg-white px-4 text-navy-900 outline-none transition-colors focus:ring-4 ${errors[name] ? "border-red-600 focus:border-red-600 focus:ring-red-100" : "border-slate-300 focus:border-water-600 focus:ring-water-100"} ${readOnly ? "cursor-not-allowed bg-slate-100" : ""}`;
+  const fieldA11y = (name) => ({ "aria-describedby": errors[name] ? `${name}-error` : undefined, "aria-invalid": Boolean(errors[name]) });
+  const error = (name) => errors[name] && <p className="mt-1.5 text-sm font-semibold text-red-700" id={`${name}-error`} role="alert">{errors[name]}</p>;
+  const labelClass = "text-sm font-bold text-navy-900";
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white rounded-lg shadow-md p-6 mb-6"
-    >
-      <h2 className="text-xl font-bold mb-6">
-        {selectedReading
-          ? "Edit Meter Reading"
-          : "Create Meter Reading"}
-      </h2>
+    <form className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card" onSubmit={handleSubmit} ref={formRef}>
+      <header className="border-b border-slate-200 bg-slate-50 p-5 sm:p-6"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-water-100 text-water-700"><Gauge aria-hidden="true" className="h-5 w-5" /></span><h2 className="mt-4 text-xl font-bold text-navy-900">{selectedReading ? "Edit meter reading" : "Record meter reading"}</h2><p className="mt-1 text-sm text-slate-600">Confirm the account and compare the previous value before saving.</p></header>
+      <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+        <div><label className={labelClass} htmlFor="consumerNo">Account number</label><input {...fieldA11y("consumerNo")} className={fieldClass("consumerNo")} id="consumerNo" name="consumerNo" onChange={handleChange} value={formData.consumerNo} />{error("consumerNo")}</div>
+        <div><label className={labelClass} htmlFor="consumerName">Resident name</label><input {...fieldA11y("consumerName")} className={fieldClass("consumerName")} id="consumerName" name="consumerName" onChange={handleChange} value={formData.consumerName} />{error("consumerName")}</div>
+        <div><label className={labelClass} htmlFor="purok">Purok</label><select {...fieldA11y("purok")} className={fieldClass("purok")} id="purok" name="purok" onChange={handleChange} value={formData.purok}><option value="">Select purok</option>{[1, 2, 3, 4, 5, 6].map((number) => <option key={number} value={`Purok ${number}`}>Purok {number}</option>)}</select>{error("purok")}</div>
+        <div><label className={labelClass} htmlFor="readingDate">Reading date</label><input {...fieldA11y("readingDate")} className={fieldClass("readingDate")} id="readingDate" name="readingDate" onChange={handleChange} type="date" value={formData.readingDate} />{error("readingDate")}</div>
+        <div><label className={labelClass} htmlFor="previousReading">Previous reading (m³)</label><input {...fieldA11y("previousReading")} className={`${fieldClass("previousReading")} font-mono tabular-nums`} id="previousReading" inputMode="decimal" min="0" name="previousReading" onChange={handleChange} step="0.01" type="number" value={formData.previousReading} />{error("previousReading")}</div>
+        <div><label className={labelClass} htmlFor="currentReading">Current reading (m³)</label><input {...fieldA11y("currentReading")} className={`${fieldClass("currentReading")} font-mono tabular-nums`} id="currentReading" inputMode="decimal" min="0" name="currentReading" onChange={handleChange} step="0.01" type="number" value={formData.currentReading} />{error("currentReading")}</div>
 
-      <div className="grid grid-cols-2 gap-4">
-
-        <div>
-          <label
-            htmlFor="consumerNo"
-            className="font-medium block mb-1"
-          >
-            Consumer Number
-          </label>
-
-          <input
-            id="consumerNo"
-            name="consumerNo"
-            type="text"
-            value={formData.consumerNo}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
-
-          {errors.consumerNo && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.consumerNo}
-            </p>
-          )}
+        <div className={`rounded-2xl border p-4 sm:col-span-2 ${hasLowReading ? "border-red-200 bg-red-50" : "border-water-200 bg-water-50"}`}>
+          <div className="flex items-start gap-3">{hasLowReading ? <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 text-red-700" /> : <CheckCircle2 aria-hidden="true" className="mt-0.5 h-5 w-5 text-water-700" />}<div><p className={`font-bold ${hasLowReading ? "text-red-800" : "text-navy-900"}`}>Calculated water use</p><p className="mt-1 font-mono text-2xl font-extrabold tabular-nums">{consumption.toLocaleString()} m³</p><p className="mt-1 text-sm text-slate-600">Current reading minus the previous recorded value.</p></div></div>
         </div>
-
-        <div>
-          <label
-            htmlFor="consumerName"
-            className="font-medium block mb-1"
-          >
-            Consumer Name
-          </label>
-
-          <input
-            id="consumerName"
-            name="consumerName"
-            type="text"
-            value={formData.consumerName}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
-
-          {errors.consumerName && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.consumerName}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label
-            htmlFor="purok"
-            className="font-medium block mb-1"
-          >
-            Purok
-          </label>
-
-          <select
-            id="purok"
-            name="purok"
-            value={formData.purok}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          >
-            <option value="">
-              Select Purok
-            </option>
-            <option value="Purok 1">
-              Purok 1
-            </option>
-            <option value="Purok 2">
-              Purok 2
-            </option>
-            <option value="Purok 3">
-              Purok 3
-            </option>
-            <option value="Purok 4">
-              Purok 4
-            </option>
-            <option value="Purok 5">
-              Purok 5
-            </option>
-            <option value="Purok 6">
-              Purok 6
-            </option>
-          </select>
-
-          {errors.purok && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.purok}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label
-            htmlFor="readingDate"
-            className="font-medium block mb-1"
-          >
-            Reading Date
-          </label>
-
-          <input
-            id="readingDate"
-            name="readingDate"
-            type="date"
-            value={formData.readingDate}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
-
-          {errors.readingDate && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.readingDate}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label
-            htmlFor="previousReading"
-            className="font-medium block mb-1"
-          >
-            Previous Reading
-          </label>
-
-          <input
-            id="previousReading"
-            name="previousReading"
-            type="number"
-            value={formData.previousReading}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
-
-          {errors.previousReading && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.previousReading}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label
-            htmlFor="currentReading"
-            className="font-medium block mb-1"
-          >
-            Current Reading
-          </label>
-
-          <input
-            id="currentReading"
-            name="currentReading"
-            type="number"
-            value={formData.currentReading}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-          />
-
-          {errors.currentReading && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.currentReading}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label
-            htmlFor="consumption"
-            className="font-medium block mb-1"
-          >
-            Consumption
-          </label>
-
-          <input
-            id="consumption"
-            type="number"
-            readOnly
-            value={consumption}
-            className="w-full border rounded p-2 bg-gray-100"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="status"
-            className="font-medium block mb-1"
-          >
-            Status
-          </label>
-
-          <input
-            id="status"
-            type="text"
-            readOnly
-            value={formData.status}
-            className="w-full border rounded p-2 bg-gray-100"
-          />
-        </div>
-
-      </div>
-
-      <div className="flex gap-3 mt-6">
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-        >
-          {selectedReading
-            ? "Update"
-            : "Save"}
-        </button>
-
-        {selectedReading && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-        )}
+        <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:col-span-2 sm:flex-row sm:justify-end">{selectedReading && <button className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50" onClick={onCancel} type="button">Cancel</button>}<button className="min-h-12 rounded-xl bg-water-600 px-6 font-bold text-white hover:bg-water-700" type="submit">{selectedReading ? "Update reading" : "Record reading"}</button></div>
       </div>
     </form>
   );
-};
+}
 
-const MeterReadingForm = (props) => (
-  <MeterReadingFormFields
-    key={props.selectedReading?.id ?? "new-reading"}
-    {...props}
-  />
-);
+const MeterReadingForm = (props) => <MeterReadingFormFields key={props.selectedReading?.id ?? "new-reading"} {...props} />;
 
 export default MeterReadingForm;

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Droplets, RefreshCw } from "lucide-react";
 
 import { fetchOverallConsumptionHistory } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 function AdminOverallConsumptionCard() {
   const [consumption, setConsumption] = useState(null);
@@ -141,15 +142,12 @@ function AdminOverallConsumptionCard() {
       : "Total historical water consumption";
 
   return (
-    <div className="group relative h-56 overflow-hidden rounded-2xl bg-slate-900 p-5 text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-      {/* Background glow */}
-      <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-sky-500/20 blur-2xl" />
-
+    <div className="relative h-48 overflow-hidden rounded-2xl bg-navy-950 p-5 text-white shadow-card">
       <div className="relative flex h-full flex-col">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500/20">
-            <Droplets className="h-6 w-6 text-sky-300" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-water-900">
+            <Droplets className="h-6 w-6 text-water-300" />
           </div>
 
           <button
@@ -158,7 +156,7 @@ function AdminOverallConsumptionCard() {
             disabled={loading}
             aria-label="Refresh overall consumption"
             title="Refresh overall consumption"
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-slate-300 transition hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700 bg-navy-900 text-slate-300 transition-colors hover:border-water-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </button>
@@ -166,25 +164,21 @@ function AdminOverallConsumptionCard() {
 
         {/* Title */}
         <p data-testid="overall-consumption-card"
-        className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">
+        className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-water-300">
           Overall Consumption Prediction
         </p>
 
         {/* Loading */}
         {loading && (
-          <div className="mt-3">
-            <div className="h-9 w-32 animate-pulse rounded-lg bg-white/10" />
-
-            <div className="mt-3 h-4 w-48 animate-pulse rounded bg-white/10" />
-          </div>
+          <LoadingSkeleton className="mt-3 opacity-30" label="Loading overall consumption" variant="inline" />
         )}
 
         {/* Error */}
         {!loading && error && (
           <div className="mt-3 flex items-start gap-2">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
 
-            <p className="line-clamp-3 text-xs leading-5 text-rose-200">
+            <p className="line-clamp-3 text-xs leading-5 text-red-200">
               {error}
             </p>
           </div>

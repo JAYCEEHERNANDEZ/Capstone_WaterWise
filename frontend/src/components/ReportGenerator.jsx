@@ -1,305 +1,61 @@
 import { useState } from "react";
+import { Check, FileDown, LoaderCircle, Printer } from "lucide-react";
+import { downloadReportPDF, generateReport } from "../services/reportAPI";
 
-import { FileDown, Printer, LoaderCircle } from "lucide-react";
+const reportSections = ["summary", "analytics", "consumption", "billing", "residents"];
 
-import { generateReport, downloadReportPDF } from "../services/reportAPI";
-
-function ReportGenerator({ onGenerated }) {
+export default function ReportGenerator({ onGenerated }) {
   const [loading, setLoading] = useState(false);
-
   const [preview, setPreview] = useState(null);
-
   const [error, setError] = useState("");
+  const [form, setForm] = useState({ type: "consumption", startDate: "", endDate: "", sections: ["summary", "analytics"] });
 
-  const [form, setForm] = useState({
-    type: "consumption",
-
-    startDate: "",
-
-    endDate: "",
-
-    sections: ["summary", "analytics"],
-  });
-
-  const updateForm = (event) => {
-    setForm({
-      ...form,
-
-      [event.target.name]: event.target.value,
-    });
-  };
-
-  const toggleSection = (section) => {
-    setForm({
-      ...form,
-
-      sections: form.sections.includes(section)
-        ? form.sections.filter((item) => item !== section)
-        : [...form.sections, section],
-    });
-  };
+  const updateForm = ({ target }) => setForm((current) => ({ ...current, [target.name]: target.value }));
+  const toggleSection = (section) => setForm((current) => ({ ...current, sections: current.sections.includes(section) ? current.sections.filter((item) => item !== section) : [...current.sections, section] }));
 
   const handleGenerate = async () => {
+    if (!form.startDate || !form.endDate) { setError("Select both the start and end dates."); return; }
+    if (form.endDate < form.startDate) { setError("The end date must be on or after the start date."); return; }
     try {
-      setError("");
-
-      if (!form.startDate || !form.endDate) {
-        setError("Please select report date range.");
-
-        return;
-      }
-
-      setLoading(true);
-
+      setLoading(true); setError("");
       const response = await generateReport(form);
-
       setPreview(response);
-
-      if (onGenerated) {
-        onGenerated();
-      }
+      onGenerated?.();
     } catch {
-      setError("Failed to generate report.");
-    } finally {
-      setLoading(false);
-    }
+      setError("The report could not be generated. Check the selected dates and try again.");
+    } finally { setLoading(false); }
   };
 
   const downloadPDF = async () => {
     try {
       if (!preview?.id) return;
-
       const file = await downloadReportPDF(preview.id);
-
       const url = window.URL.createObjectURL(file);
-
       const link = document.createElement("a");
-
-      link.href = url;
-
-      link.download = "generated-report.pdf";
-
-      document.body.appendChild(link);
-
-      link.click();
-
-      document.body.removeChild(link);
-
+      link.href = url; link.download = "generated-report.pdf";
+      document.body.appendChild(link); link.click(); link.remove();
       window.URL.revokeObjectURL(url);
-    } catch {
-      setError("Failed to download PDF.");
-    }
+    } catch { setError("The PDF could not be downloaded. Try again."); }
   };
 
+  const fieldClass = "mt-2 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-navy-900 outline-none focus:border-water-600 focus:ring-4 focus:ring-water-100";
+
   return (
-    <div
-      className="
-bg-white
-rounded-xl
-shadow
-p-6
-space-y-6
-"
-    >
-      <h2
-        className="
-text-lg
-font-semibold
-"
-      >
-        Generate Report
-      </h2>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
+      <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-water-600">Report builder</p><h2 className="mt-1 text-xl font-bold text-navy-900">Generate a report</h2><p className="mt-1 text-sm text-slate-600">Choose the scope, reporting period, and sections to include.</p></div>
+      {error && <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800" role="alert">{error}</div>}
 
-      {error && (
-        <p
-          className="
-text-red-500
-"
-        >
-          {error}
-        </p>
-      )}
-
-      <div
-        className="
-grid
-grid-cols-1
-md:grid-cols-3
-gap-4
-"
-      >
-        <select
-          name="type"
-          value={form.type}
-          onChange={updateForm}
-          className="
-border
-rounded-lg
-p-2
-"
-        >
-          <option value="consumption">Consumption Report</option>
-
-          <option value="billing">Billing Report</option>
-
-          <option value="consumer">Consumer Report</option>
-
-          <option value="analytics">Analytics Report</option>
-        </select>
-
-        <input
-          type="date"
-          name="startDate"
-          value={form.startDate}
-          onChange={updateForm}
-          className="
-border
-rounded-lg
-p-2
-"
-        />
-
-        <input
-          type="date"
-          name="endDate"
-          value={form.endDate}
-          onChange={updateForm}
-          className="
-border
-rounded-lg
-p-2
-"
-        />
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div><label className="text-sm font-bold text-navy-900" htmlFor="report-type">Report type</label><select className={fieldClass} id="report-type" name="type" onChange={updateForm} value={form.type}><option value="consumption">Consumption</option><option value="billing">Billing</option><option value="consumer">Residents</option><option value="analytics">Analytics</option></select></div>
+        <div><label className="text-sm font-bold text-navy-900" htmlFor="report-start">Start date</label><input aria-invalid={Boolean(error && !form.startDate)} className={fieldClass} id="report-start" name="startDate" onChange={updateForm} type="date" value={form.startDate} /></div>
+        <div><label className="text-sm font-bold text-navy-900" htmlFor="report-end">End date</label><input aria-invalid={Boolean(error && !form.endDate)} className={fieldClass} id="report-end" name="endDate" onChange={updateForm} type="date" value={form.endDate} /></div>
       </div>
 
-      <div>
-        <p
-          className="
-font-medium
-mb-2
-"
-        >
-          Report Sections
-        </p>
+      <fieldset className="mt-6"><legend className="text-sm font-bold text-navy-900">Report sections</legend><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{reportSections.map((section) => { const selected = form.sections.includes(section); return <label className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 text-sm font-semibold capitalize ${selected ? "border-water-300 bg-water-50 text-water-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`} key={section}><input checked={selected} className="sr-only" onChange={() => toggleSection(section)} type="checkbox" /><span className={`flex h-5 w-5 items-center justify-center rounded-md border ${selected ? "border-water-600 bg-water-600 text-white" : "border-slate-300 bg-white"}`}>{selected && <Check aria-hidden="true" className="h-3.5 w-3.5" />}</span>{section}</label>; })}</div></fieldset>
 
-        <div
-          className="
-flex
-gap-4
-flex-wrap
-"
-        >
-          {["summary", "analytics", "consumption", "billing", "consumer"].map(
-            (section) => (
-              <label
-                key={section}
-                className="
-flex
-items-center
-gap-2
-"
-              >
-                <input
-                  type="checkbox"
-                  checked={form.sections.includes(section)}
-                  onChange={() => toggleSection(section)}
-                />
+      <button className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white hover:bg-water-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto" disabled={loading} onClick={handleGenerate} type="button">{loading && <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />}{loading ? "Generating report…" : "Generate report"}</button>
 
-                {section}
-              </label>
-            ),
-          )}
-        </div>
-      </div>
-
-      <button
-        onClick={handleGenerate}
-        disabled={loading}
-        className="
-bg-blue-600
-text-white
-px-5
-py-2
-rounded-lg
-flex
-items-center
-gap-2
-"
-      >
-        {loading ? (
-          <LoaderCircle
-            className="
-animate-spin
-"
-          />
-        ) : (
-          "Generate Report"
-        )}
-      </button>
-
-      {preview && (
-        <div
-          className="
-border
-rounded-lg
-p-5
-space-y-4
-"
-        >
-          <h3
-            className="
-font-semibold
-"
-          >
-            Report Preview
-          </h3>
-
-          <p>{preview.title ?? "Generated Report"}</p>
-
-          <div
-            className="
-flex
-gap-3
-"
-          >
-            <button
-              onClick={downloadPDF}
-              className="
-bg-green-600
-text-white
-px-4
-py-2
-rounded-lg
-flex
-items-center
-gap-2
-"
-            >
-              <FileDown size={18} />
-              Download PDF
-            </button>
-
-            <button
-              onClick={() => window.print()}
-              className="
-bg-gray-700
-text-white
-px-4
-py-2
-rounded-lg
-flex
-items-center
-gap-2
-"
-            >
-              <Printer size={18} />
-              Print
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      {preview && <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5"><div className="flex items-start gap-3"><Check aria-hidden="true" className="mt-0.5 h-5 w-5 text-emerald-700" /><div className="min-w-0 flex-1"><p className="font-bold text-emerald-900">Report ready</p><p className="mt-1 text-sm text-emerald-800">{preview.title ?? "Generated report"}</p></div></div><div className="mt-4 flex flex-col gap-2 sm:flex-row"><button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-water-600 px-4 font-bold text-white hover:bg-water-700" onClick={downloadPDF} type="button"><FileDown aria-hidden="true" className="h-4 w-4" />Download PDF</button><button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 font-bold text-navy-900 hover:bg-slate-50" onClick={() => window.print()} type="button"><Printer aria-hidden="true" className="h-4 w-4" />Print</button></div></div>}
+    </section>
   );
 }
-
-export default ReportGenerator;

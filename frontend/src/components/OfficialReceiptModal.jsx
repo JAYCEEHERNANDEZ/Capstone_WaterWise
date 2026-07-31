@@ -1,11 +1,12 @@
-import { FiDownload, FiX } from "react-icons/fi";
+import { useEffect, useRef } from "react";
+import { FiDownload, FiPrinter, FiX } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
 
 function ReceiptRow({ label, testId, value }) {
   return (
     <tr className="border-b border-slate-100">
       <td className="py-3 pr-4 text-sm font-semibold text-slate-500">{label}</td>
-      <td className="py-3 text-right font-mono text-sm font-bold text-[#0F172A]" data-testid={testId}>
+      <td className="py-3 text-right font-mono text-sm font-bold text-navy-900" data-testid={testId}>
         {value}
       </td>
     </tr>
@@ -13,6 +14,17 @@ function ReceiptRow({ label, testId, value }) {
 }
 
 export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
+  const closeButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previouslyFocused = document.activeElement;
+    const closeOnEscape = (event) => { if (event.key === "Escape") onClose(); };
+    document.addEventListener("keydown", closeOnEscape);
+    closeButtonRef.current?.focus();
+    return () => { document.removeEventListener("keydown", closeOnEscape); previouslyFocused?.focus?.(); };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !receiptData) return null;
 
   const {
@@ -51,26 +63,29 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[#0F172A]/45 sm:items-center sm:px-4 sm:py-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/45 sm:items-center sm:px-4 sm:py-6"
+      aria-label="Official receipt"
+      aria-modal="true"
       data-testid="receipt-modal"
       onClick={onClose}
+      role="dialog"
     >
       <div
-        className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-[28px] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)] sm:rounded-3xl"
+        className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-3xl border border-slate-200 bg-white shadow-modal sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/95 p-4 backdrop-blur sm:p-5">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white p-4  sm:p-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0284C7]">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-water-600">
               Sucol Water System
             </p>
-            <h1 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A] sm:text-2xl">
+            <h1 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
               Sucol Water System Official Receipt
             </h1>
           </div>
           <div className="flex gap-2">
             <button
-              className="flex h-11 items-center gap-2 rounded-xl bg-sky-50 px-3 text-sm font-bold text-[#0284C7] transition hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7]"
+              className="flex h-11 items-center gap-2 rounded-xl bg-water-50 px-3 text-sm font-bold text-water-600 transition hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
               data-testid="download-official-receipt-image"
               onClick={handleDownload}
               type="button"
@@ -78,9 +93,11 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
               <FiDownload aria-hidden="true" className="h-4 w-4" />
               Download
             </button>
+            <button aria-label="Print official receipt" className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" onClick={() => window.print()} type="button"><FiPrinter aria-hidden="true" className="h-4 w-4" /></button>
             <button
+              ref={closeButtonRef}
               aria-label="Close official receipt"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7]"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
               data-testid="close-modal"
               onClick={onClose}
               type="button"
@@ -91,17 +108,17 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
         </div>
 
         <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <div className="rounded-2xl bg-sky-50 p-4">
+          <div className="rounded-2xl bg-water-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
               Meter name
             </p>
-            <div className="mt-1 font-bold text-[#0F172A]" data-testid="receipt-meter-name">
+            <div className="mt-1 font-bold text-navy-900" data-testid="receipt-meter-name">
               {meterName}
             </div>
             <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
               Run date
             </p>
-            <div className="mt-1 font-mono text-sm font-bold text-[#0F172A]" data-testid="receipt-run-date">
+            <div className="mt-1 font-mono text-sm font-bold text-navy-900" data-testid="receipt-run-date">
               {runDate}
             </div>
           </div>
@@ -120,20 +137,20 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
 
         <div className="px-4 pb-5 sm:px-6 sm:pb-6">
           <div className="grid gap-3 rounded-2xl bg-slate-50 p-4 sm:grid-cols-3" data-testid="arrears-matrix">
-            <span className="font-mono text-sm font-bold text-[#0F172A]" data-testid="arrears-30">
+            <span className="font-mono text-sm font-bold text-navy-900" data-testid="arrears-30">
               Over 30 Days: ₱{arrears30Days.toFixed(2)}
             </span>
-            <span className="font-mono text-sm font-bold text-[#0F172A]" data-testid="arrears-60">
+            <span className="font-mono text-sm font-bold text-navy-900" data-testid="arrears-60">
               Over 60 Days: ₱{arrears60Days.toFixed(2)}
             </span>
-            <span className="font-mono text-sm font-bold text-[#0F172A]" data-testid="arrears-90">
+            <span className="font-mono text-sm font-bold text-navy-900" data-testid="arrears-90">
               Over 90 Days: ₱{arrears90Days.toFixed(2)}
             </span>
           </div>
 
-          <div className="mt-4 flex items-center justify-between rounded-2xl bg-[#0F172A] p-4 text-white">
+          <div className="mt-4 flex items-center justify-between rounded-2xl bg-navy-950 p-4 text-white">
             <strong className="text-sm font-bold text-white">Total Bill Sum:</strong>
-            <span className="font-mono text-xl font-bold text-sky-200" data-testid="receipt-final-total">
+            <span className="font-mono text-xl font-bold text-water-200" data-testid="receipt-final-total">
               ₱{finalTotalBill.toFixed(2)}
             </span>
           </div>

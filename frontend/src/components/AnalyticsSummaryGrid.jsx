@@ -38,8 +38,8 @@ export default function AnalyticsSummaryGrid({ amountDue = 0, consumptionHistory
 
 function SummaryCard({ label, testId, value }) {
   return (
-    <section className="ww-glass min-h-36 rounded-[20px] p-4 sm:min-h-44 sm:p-5">
-      <span className="text-[11px] font-bold leading-4 text-sky-700 sm:text-xs">
+    <section className="ww-glass min-h-36 rounded-2xl p-4 sm:min-h-44 sm:p-5">
+      <span className="text-[11px] font-bold leading-4 text-water-700 sm:text-xs">
         {label}
       </span>
       <h3

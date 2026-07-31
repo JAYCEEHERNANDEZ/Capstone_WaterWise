@@ -4,471 +4,183 @@
 @theme {
   --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --color-canvas: #f4f7fa;
 
-  --color-slate-50: #f4fafb;
-  --color-slate-100: #e8f5f8;
-  --color-slate-200: #d8e2e8;
-  --color-slate-300: #b8cad4;
-  --color-slate-400: #829aa8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #496273;
-  --color-slate-700: #334155;
-  --color-slate-800: #17384c;
-  --color-slate-900: #0b2b40;
-  --color-slate-950: #082032;
+  /* Ocean & Sky Blue Water Palette (Replacing Teal) */
+  --color-water-50: #f0f9ff;
+  --color-water-100: #e0f2fe;
+  --color-water-200: #bae6fd;
+  --color-water-300: #7dd3fc;
+  --color-water-400: #38bdf8;
+  --color-water-500: #0ea5e9;
+  --color-water-600: #0284c7; /* Primary Water Action Color */
+  --color-water-700: #0369a1;
+  --color-water-800: #075985;
+  --color-water-900: #0c4a6e;
 
-  --color-gray-50: #f4fafb;
-  --color-gray-100: #e8f5f8;
-  --color-gray-200: #d8e2e8;
-  --color-gray-300: #b8cad4;
-  --color-gray-400: #829aa8;
-  --color-gray-500: #64748b;
-  --color-gray-600: #496273;
-  --color-gray-700: #334155;
-  --color-gray-800: #17384c;
-  --color-gray-900: #0b2b40;
-
-  --color-sky-50: #edf9fb;
-  --color-sky-100: #d7f1f5;
-  --color-sky-200: #afe4ec;
-  --color-sky-300: #78d3e1;
-  --color-sky-400: #38bad0;
-  --color-sky-500: #0ea5c9;
-  --color-sky-600: #0284b8;
-  --color-sky-700: #036e9f;
-  --color-sky-800: #095878;
-  --color-sky-900: #0f3d57;
-  --color-sky-950: #082b3e;
-
-  --color-blue-50: #edf9fb;
-  --color-blue-100: #d7f1f5;
-  --color-blue-200: #afe4ec;
-  --color-blue-300: #78d3e1;
-  --color-blue-400: #38bad0;
-  --color-blue-500: #0ea5c9;
-  --color-blue-600: #0284b8;
-  --color-blue-700: #036e9f;
-  --color-blue-800: #095878;
-  --color-blue-900: #0f3d57;
-
-  --color-indigo-50: #edf9fb;
-  --color-indigo-100: #d7f1f5;
-  --color-indigo-200: #afe4ec;
-  --color-indigo-300: #78d3e1;
-  --color-indigo-400: #38bad0;
-  --color-indigo-500: #0ea5c9;
-  --color-indigo-600: #0284b8;
-  --color-indigo-700: #036e9f;
-  --color-indigo-800: #095878;
-  --color-indigo-900: #0f3d57;
-  --color-indigo-950: #082b3e;
-
-  --color-violet-50: #edf9fb;
-  --color-violet-100: #d7f1f5;
-  --color-violet-200: #afe4ec;
-  --color-violet-300: #78d3e1;
-  --color-violet-400: #38bad0;
-  --color-violet-500: #0ea5c9;
-  --color-violet-600: #0284b8;
-  --color-violet-700: #036e9f;
-  --color-violet-800: #095878;
-  --color-violet-900: #0f3d57;
-  --color-violet-950: #082b3e;
-
-  --color-cyan-50: #effdfb;
-  --color-cyan-100: #ccfbf1;
-  --color-cyan-200: #99f6e4;
-  --color-cyan-300: #67e8d3;
-  --color-cyan-400: #2dd4bf;
-  --color-cyan-500: #14b8a6;
-  --color-cyan-600: #0d9488;
-  --color-cyan-700: #0f766e;
-  --color-cyan-800: #115e59;
-  --color-cyan-900: #134e4a;
-
-  --color-emerald-50: #effaf3;
-  --color-emerald-100: #d8f3e2;
-  --color-emerald-200: #b4e7c7;
-  --color-emerald-500: #22a95a;
-  --color-emerald-600: #15803d;
-  --color-emerald-700: #116932;
-
-  --color-amber-50: #fff9e8;
-  --color-amber-100: #fef0bd;
-  --color-amber-200: #fde38a;
-  --color-amber-600: #b77908;
-  --color-amber-700: #925d06;
-
-  --color-red-50: #fff5f5;
-  --color-red-100: #fee2e2;
-  --color-red-200: #fecaca;
-  --color-red-500: #dc4545;
-  --color-red-600: #c92f2f;
-  --color-red-700: #b91c1c;
-  --color-red-800: #991b1b;
-
-  --color-rose-50: #fff5f5;
-  --color-rose-100: #fee2e2;
-  --color-rose-200: #fecaca;
-  --color-rose-300: #fda4a4;
-  --color-rose-500: #dc4545;
-  --color-rose-600: #c92f2f;
-  --color-rose-700: #b91c1c;
+  --color-navy-700: #1e293b;
+  --color-navy-900: #0f172a;
+  --color-navy-950: #080d1a;
+  --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-raised: 0 10px 30px rgba(15, 23, 42, 0.1);
+  --shadow-modal: 0 24px 64px rgba(8, 13, 26, 0.2);
 }
 
-:root {
-  color: #0b2b40;
-  background: #f4fafb;
-  font-family: var(--font-sans);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  --ww-ocean-950: #082032;
-  --ww-ocean-900: #0b2b40;
-  --ww-ocean-800: #0f3d57;
-  --ww-water-700: #036e9f;
-  --ww-water-600: #0284b8;
-  --ww-water-500: #0ea5c9;
-  --ww-aqua-300: #67e8d3;
-  --ww-mist-100: #e8f5f8;
-  --ww-mist-50: #f4fafb;
-  --ww-border: rgba(184, 202, 212, 0.72);
-  --ww-glass: rgba(255, 255, 255, 0.74);
-  --ww-glass-strong: rgba(255, 255, 255, 0.9);
-  --ww-shadow: 0 16px 48px rgba(15, 74, 110, 0.12);
-  --ww-shadow-raised: 0 24px 72px rgba(8, 32, 50, 0.18);
+@layer base {
+  :root {
+    color: var(--color-navy-900);
+    background: var(--color-canvas);
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    min-height: 100%;
+    background: var(--color-canvas);
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background: var(--color-canvas);
+    color: var(--color-navy-900);
+    font-family: var(--font-sans);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select,
+  [tabindex] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:not(:disabled),
+  a[href],
+  select {
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    color: var(--color-navy-900);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-slate-400);
+    opacity: 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-water-600);
+    outline-offset: 2px;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  ::selection {
+    color: #ffffff;
+    background: var(--color-water-600);
+  }
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  min-width: 320px;
-  min-height: 100%;
-  background: var(--ww-mist-50);
-}
-
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-  color: var(--ww-ocean-900);
-  background:
-    radial-gradient(circle at 8% 4%, rgba(103, 232, 211, 0.18), transparent 28rem),
-    radial-gradient(circle at 92% 0%, rgba(14, 165, 201, 0.16), transparent 34rem),
-    linear-gradient(180deg, #f7fcfd 0%, #edf7fa 100%);
-  background-attachment: fixed;
-  font-family: var(--font-sans);
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-button,
-a,
-input,
-textarea,
-select,
-[tabindex] {
-  -webkit-tap-highlight-color: transparent;
-}
-
-button:not(:disabled),
-a[href],
-select {
-  cursor: pointer;
-}
-
-input,
-textarea,
-select {
-  color: var(--ww-ocean-900);
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #829aa8;
-  opacity: 1;
-}
-
-:focus-visible {
-  outline: 2px solid var(--ww-water-600);
-  outline-offset: 2px;
-}
-
-#root {
-  min-height: 100vh;
-}
-
-::selection {
-  color: #ffffff;
-  background: var(--ww-water-600);
-}
-
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  border: 3px solid transparent;
-  border-radius: 999px;
-  background: rgba(73, 98, 115, 0.34);
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(3, 110, 159, 0.55);
-  background-clip: padding-box;
-}
-
-.ww-app {
-  position: relative;
-  isolation: isolate;
-}
-
-.ww-app::before,
-.ww-app::after {
-  position: fixed;
-  z-index: -1;
-  width: 28rem;
-  height: 28rem;
-  border-radius: 999px;
-  content: "";
-  pointer-events: none;
-  filter: blur(10px);
-}
-
-.ww-app::before {
-  top: 12rem;
-  right: -17rem;
-  background: rgba(14, 165, 201, 0.08);
-}
-
-.ww-app::after {
-  bottom: -20rem;
-  left: -15rem;
-  background: rgba(103, 232, 211, 0.11);
-}
-
-.ww-glass {
-  border: 1px solid rgba(255, 255, 255, 0.64);
-  background: var(--ww-glass);
-  box-shadow: var(--ww-shadow);
-  -webkit-backdrop-filter: blur(18px) saturate(135%);
-  backdrop-filter: blur(18px) saturate(135%);
+/*
+ * Shared structural utilities mirror the reusable primitives in DESIGN.md.
+ * They intentionally use solid surfaces and the documented token scale.
+ */
+.ww-glass,
+.ww-surface {
+  @apply rounded-2xl border border-slate-200 bg-white shadow-card;
 }
 
 .ww-glass-strong {
-  border: 1px solid rgba(255, 255, 255, 0.76);
-  background: var(--ww-glass-strong);
-  box-shadow: var(--ww-shadow);
-  -webkit-backdrop-filter: blur(20px) saturate(135%);
-  backdrop-filter: blur(20px) saturate(135%);
-}
-
-.ww-surface {
-  border: 1px solid var(--ww-border);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.93);
-  box-shadow: 0 12px 36px rgba(15, 74, 110, 0.08);
+  @apply border border-slate-200 bg-white shadow-raised;
 }
 
 .ww-page-header {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  border: 1px solid rgba(103, 232, 211, 0.16);
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 88% 14%, rgba(103, 232, 211, 0.2), transparent 16rem),
-    linear-gradient(135deg, #082032 0%, #0b2b40 48%, #095878 100%);
-  color: #ffffff;
-  box-shadow: 0 20px 56px rgba(8, 32, 50, 0.2);
-}
-
-.ww-page-header::after {
-  position: absolute;
-  right: -2.5rem;
-  bottom: -5.5rem;
-  z-index: -1;
-  width: 16rem;
-  height: 16rem;
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 999px;
-  content: "";
-  box-shadow:
-    0 0 0 28px rgba(255, 255, 255, 0.025),
-    0 0 0 56px rgba(255, 255, 255, 0.018);
+  @apply overflow-hidden rounded-2xl border border-navy-900 bg-navy-950 text-white shadow-card;
 }
 
 .ww-eyebrow {
-  color: #67e8d3;
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  @apply text-xs font-bold uppercase tracking-[0.14em] text-water-300;
 }
 
 .ww-field {
-  min-height: 48px;
-  width: 100%;
-  border: 1px solid #b8cad4;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  transition:
-    border-color 160ms ease-out,
-    box-shadow 160ms ease-out,
-    background-color 160ms ease-out;
-}
-
-.ww-field:hover {
-  border-color: #829aa8;
-}
-
-.ww-field:focus {
-  border-color: var(--ww-water-600);
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(2, 132, 184, 0.12);
+  @apply min-h-12 w-full rounded-xl border border-slate-300 bg-white text-navy-900 transition-colors duration-150 placeholder:text-slate-400 hover:border-slate-400 focus:border-water-600 focus:outline-none focus:ring-4 focus:ring-water-600/10;
 }
 
 .ww-field[aria-invalid="true"] {
-  border-color: #dc4545;
-  background: rgba(255, 245, 245, 0.88);
-  color: #991b1b;
-}
-
-.ww-field[aria-invalid="true"]:focus {
-  border-color: #b91c1c;
-  box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.12);
+  @apply border-red-600 bg-red-50 text-red-800 focus:border-red-600 focus:ring-red-600/10;
 }
 
 .ww-primary-button {
-  min-height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--ww-water-600), var(--ww-water-700));
-  color: #ffffff;
-  font-weight: 700;
-  box-shadow: 0 10px 24px rgba(2, 132, 184, 0.22);
-  transition:
-    transform 120ms ease-out,
-    box-shadow 160ms ease-out,
-    filter 160ms ease-out;
+  @apply min-h-11 rounded-xl bg-water-600 font-bold text-white shadow-sm transition-colors duration-150 hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
 }
 
-.ww-primary-button:hover:not(:disabled) {
-  filter: brightness(0.96);
-  box-shadow: 0 14px 30px rgba(2, 132, 184, 0.28);
-  transform: translateY(-1px);
-}
-
-.ww-primary-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.ww-primary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
-  box-shadow: none;
-}
-
-.ww-data-value {
+.ww-data-value,
+.ww-workspace .font-mono,
+.ww-workspace table {
   font-variant-numeric: tabular-nums;
 }
 
-.ww-offline-safe {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 420px;
-}
-
-/* Compatibility aliases keep older feature components on the new token system. */
-.text-\[\#0F172A\] {
-  color: var(--ww-ocean-900);
-}
-
-.text-\[\#0284C7\] {
-  color: var(--ww-water-600);
-}
-
-.text-\[\#16A34A\] {
-  color: #15803d;
-}
-
-.text-\[\#DC2626\] {
-  color: #b91c1c;
-}
-
-.bg-\[\#0F172A\] {
-  background-color: var(--ww-ocean-900);
-}
-
-.bg-\[\#0284C7\] {
-  background-color: var(--ww-water-600);
-}
-
-.bg-\[\#F8FAFC\] {
-  background-color: var(--ww-mist-50);
-}
-
-.border-\[\#0284C7\] {
-  border-color: var(--ww-water-600);
-}
-
-.ring-\[\#0284C7\] {
-  --tw-ring-color: var(--ww-water-600);
-}
-
-/* Bring existing feature surfaces into one coherent system while they migrate to shared primitives. */
-.ww-workspace :where(.rounded-2xl, .rounded-3xl).border.bg-white,
-.ww-workspace :where(.rounded-2xl, .rounded-3xl).border.bg-white\/95,
-.ww-workspace :where(.rounded-2xl, .rounded-3xl).border.bg-slate-50 {
-  border-color: var(--ww-border);
-  box-shadow: 0 12px 36px rgba(15, 74, 110, 0.08);
-}
-
-.ww-workspace :where(input, textarea, select):not([type="checkbox"]):not([type="radio"]) {
+.ww-workspace input:not([type="checkbox"]):not([type="radio"]),
+.ww-workspace textarea,
+.ww-workspace select {
   min-height: 44px;
 }
 
-.ww-workspace :where(table) {
-  font-variant-numeric: tabular-nums;
+.ww-workspace thead {
+  color: var(--color-slate-600);
 }
 
-.ww-workspace :where(thead) {
-  color: #496273;
-}
-
-.ww-workspace :where(tbody tr) {
+.ww-workspace tbody tr {
   transition: background-color 120ms ease-out;
 }
 
-.ww-workspace :where(tbody tr:hover) {
-  background: rgba(232, 245, 248, 0.62);
+.ww-workspace tbody tr:hover {
+  background: var(--color-slate-50);
 }
 
-.ww-workspace :where(.font-mono) {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Every role uses the same compact page-header rhythm as the admin workspace. */
+/* Shared page-header sizing keeps all role workspaces visually consistent. */
 .ww-workspace .ww-page-header {
-  padding: 1.25rem !important;
-  border-radius: 20px !important;
+  padding: 1.25rem;
 }
 
 .ww-workspace .ww-page-header :where(h1, h2) {
-  font-size: 1.5rem !important;
-  line-height: 1.9rem !important;
+  font-size: 1.5rem;
+  line-height: 1.9rem;
+}
+
+@media (min-width: 640px) {
+  .ww-workspace .ww-page-header {
+    padding: 1.5rem;
+  }
+
+  .ww-workspace .ww-page-header :where(h1, h2) {
+    font-size: 1.75rem;
+    line-height: 2.125rem;
+  }
 }
 
 @keyframes waterwise-skeleton-shimmer {
@@ -484,117 +196,9 @@ textarea::placeholder {
   animation: waterwise-skeleton-shimmer 1.8s ease-in-out infinite;
 }
 
-/* Administrators need compact data density, while touch targets remain usable. */
-.admin-workspace .text-4xl {
-  font-size: 1.875rem;
-  line-height: 2.25rem;
-}
-
-.admin-workspace .text-3xl {
-  font-size: 1.625rem;
-  line-height: 2rem;
-}
-
-.admin-workspace .text-2xl {
-  font-size: 1.3rem;
-  line-height: 1.75rem;
-}
-
-.admin-workspace .text-xl {
-  font-size: 1.1rem;
-  line-height: 1.55rem;
-}
-
-.admin-workspace .text-base {
-  font-size: 0.925rem;
-  line-height: 1.4rem;
-}
-
-.admin-workspace .text-sm {
-  font-size: 0.8125rem;
-  line-height: 1.25rem;
-}
-
-.admin-workspace .text-xs {
-  font-size: 0.72rem;
-  line-height: 1rem;
-}
-
-.admin-workspace main > header {
-  margin-bottom: 1rem;
-  padding: 1.25rem !important;
-  border-radius: 20px !important;
-}
-
-.admin-workspace main > * + * {
-  margin-top: 1rem !important;
-}
-
-.admin-workspace main > header h2 {
-  font-size: 1.5rem !important;
-  line-height: 1.9rem !important;
-}
-
-.admin-workspace [data-testid="analytics-dashboard"] > section,
-.admin-workspace [data-testid="admin-dashboard"] > section {
-  margin-top: 1rem;
-}
-
-.admin-workspace [data-testid="monthly-consumption-card"],
-.admin-workspace [data-testid="yearly-consumption-card"] {
-  height: 10rem;
-}
-
-.admin-workspace [data-testid="analytics-dashboard"] {
-  min-height: 0;
-}
-
-/* Admin data is refreshed by the feature modules; duplicated refresh icons stay hidden. */
-.admin-workspace button:has(.lucide-refresh-cw) {
-  display: none;
-}
-
-@media (max-width: 639px) {
-  .ww-page-header {
-    border-radius: 20px;
-  }
-
-  .ww-workspace :where(.rounded-3xl) {
-    border-radius: 20px;
-  }
-
-  .admin-workspace .text-sm {
-    font-size: 0.875rem;
-    line-height: 1.35rem;
-  }
-
-  .admin-workspace .text-xs {
-    font-size: 0.75rem;
-    line-height: 1rem;
-  }
-}
-
 @media (display-mode: standalone) {
   body {
     overscroll-behavior-y: none;
-  }
-}
-
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .ww-glass,
-  .ww-glass-strong {
-    border-color: #d8e2e8;
-    background: #ffffff;
-  }
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .ww-glass,
-  .ww-glass-strong {
-    border-color: #d8e2e8;
-    background: #ffffff;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 }
 
@@ -620,11 +224,11 @@ textarea::placeholder {
 
   .ww-glass,
   .ww-glass-strong,
-  .ww-surface {
-    border-color: #d8e2e8;
+  .ww-surface,
+  .ww-page-header {
+    border-color: var(--color-slate-300);
     background: #ffffff;
+    color: var(--color-slate-900);
     box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 }

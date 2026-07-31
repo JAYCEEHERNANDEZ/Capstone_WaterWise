@@ -16,6 +16,7 @@ import {
   fetchMonthlyHistory,
   fetchOverallMonthlyPrediction,
 } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const MONTH_ORDER = [
   "january",
@@ -160,10 +161,10 @@ function MonthlyConsumptionTrend() {
 
   return (
     <section data-testid="monthly-consumption-trend"
-    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-water-600">
             Consumption Trend
           </p>
 
@@ -182,14 +183,14 @@ function MonthlyConsumptionTrend() {
           disabled={loading}
           aria-label="Refresh monthly trend"
           title="Refresh monthly trend"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {loading && (
-        <div className="h-96 animate-pulse rounded-2xl bg-slate-100" />
+        <LoadingSkeleton label="Loading monthly consumption trend" variant="chart" />
       )}
 
       {!loading && error && (
@@ -256,7 +257,7 @@ function MonthlyConsumptionTrend() {
                 type="monotone"
                 dataKey="consumption"
                 name="Historical"
-                stroke="#0284c7"
+                stroke="#07968F"
                 strokeWidth={3}
                 dot={{ r: 5 }}
                 activeDot={{ r: 7 }}

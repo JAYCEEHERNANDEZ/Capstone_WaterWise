@@ -4,6 +4,7 @@ import {
   downloadReportPDF,
   fetchGeneratedReports,
 } from "../services/reportAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -74,11 +75,11 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
   };
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.07)] sm:p-6">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-4">
-        <div><p className="text-xs font-bold uppercase tracking-wider text-sky-600">Report archive</p><h2 className="mt-1 text-2xl font-extrabold">Generated Reports</h2></div>
+        <div><p className="text-xs font-bold uppercase tracking-wider text-water-600">Report archive</p><h2 className="mt-1 text-2xl font-extrabold">Generated Reports</h2></div>
         <button
-          className="flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 font-bold text-white shadow-lg shadow-sky-200 hover:bg-sky-700"
+          className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 font-bold text-navy-900 transition-colors hover:border-water-300 hover:bg-water-50 hover:text-water-700"
           onClick={loadReports}
           type="button"
         >
@@ -87,7 +88,7 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
         </button>
       </div>
 
-      {loading && <p>Loading reports...</p>}
+      {loading && <LoadingSkeleton label="Loading generated reports" variant="table" />}
       {error && <p className="mb-3 text-red-500">{error}</p>}
       {!loading && !error && reports.length === 0 && (
         <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500">No reports generated yet.</p>
@@ -107,11 +108,11 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
             </thead>
             <tbody>
               {reports.map((report) => (
-                <tr className="border-b transition last:border-0 hover:bg-sky-50/40" key={report.id}>
+                <tr className="border-b transition last:border-0 hover:bg-water-50" key={report.id}>
                   <td className="px-3 py-4 font-semibold">
                     {report.title ?? "Generated Report"}
                   </td>
-                  <td className="px-3 py-4 capitalize"><span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">{report.type ?? "—"}</span></td>
+                  <td className="px-3 py-4 capitalize"><span className="rounded-full bg-water-50 px-3 py-1.5 text-xs font-bold text-water-700">{report.type ?? "—"}</span></td>
                   <td className="px-3 py-4">
                     {formatDate(report.start_date)} – {formatDate(report.end_date)}
                   </td>
@@ -120,7 +121,7 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
                     <div className="flex justify-end gap-2">
                       <button
                         aria-label={`Download ${report.title ?? "report"}`}
-                        className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+                        className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
                         disabled={downloadingId === report.id}
                         onClick={() => downloadReport(report)}
                         type="button"
@@ -129,7 +130,7 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
                       </button>
                       <button
                         aria-label={`Print ${report.title ?? "report"}`}
-                        className="rounded-xl bg-slate-100 p-2.5 text-slate-700 hover:bg-slate-200"
+                        className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                         onClick={() => window.print()}
                         type="button"
                       >

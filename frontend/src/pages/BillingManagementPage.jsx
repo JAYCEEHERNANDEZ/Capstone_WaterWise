@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CircleDollarSign, Search, TrendingUp, WalletCards } from "lucide-react";
 import BillingHistoryTable from "../components/BillingHistoryTable";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import BillingSummaryCard from "../components/BillingSummaryCard";
 import DigitalReceiptModal from "../components/DigitalReceiptModal";
 import PaymentForm from "../components/PaymentForm";
@@ -95,37 +96,37 @@ export default function BillingManagementPage() {
 
   return (
     <main className="space-y-6">
-      <header className="ww-page-header p-6 text-white sm:p-8">
+      <header className="ww-page-header p-5 text-white sm:p-6">
         <span className="ww-eyebrow">Billing administration</span>
         <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_auto] xl:items-end">
           <div>
-            <h2 className="text-3xl font-extrabold tracking-tight">Billing and payment management</h2>
+            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Billing and payment management</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Track bill status, collection progress, account balances, and payment receipts across the community.</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><CircleDollarSign className="h-5 w-5 text-sky-300" /><p className="mt-3 text-xl font-extrabold">₱{totalBilled.toLocaleString()}</p><p className="text-xs text-slate-300">Total billed</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><WalletCards className="h-5 w-5 text-rose-300" /><p className="mt-3 text-xl font-extrabold">₱{outstanding.toLocaleString()}</p><p className="text-xs text-slate-300">Outstanding</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><TrendingUp className="h-5 w-5 text-emerald-300" /><p className="mt-3 text-xl font-extrabold">{collectionRate.toFixed(0)}%</p><p className="text-xs text-slate-300">Collected</p></div>
+            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4"><CircleDollarSign className="h-5 w-5 text-water-300" /><p className="mt-3 font-mono text-xl font-extrabold tabular-nums">₱{totalBilled.toLocaleString()}</p><p className="text-xs text-slate-300">Total billed</p></div>
+            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4"><WalletCards className="h-5 w-5 text-red-300" /><p className="mt-3 font-mono text-xl font-extrabold tabular-nums">₱{outstanding.toLocaleString()}</p><p className="text-xs text-slate-300">Outstanding</p></div>
+            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4"><TrendingUp className="h-5 w-5 text-emerald-300" /><p className="mt-3 font-mono text-xl font-extrabold tabular-nums">{collectionRate.toFixed(0)}%</p><p className="text-xs text-slate-300">Collected</p></div>
           </div>
         </div>
       </header>
 
       <BillingSummaryCard billingData={billingHistory} />
 
-      <section className="ww-glass-strong overflow-hidden rounded-[24px]">
+      <section className="ww-glass-strong overflow-hidden rounded-2xl">
         <div className="border-b border-slate-100 p-5 sm:p-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-            <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-600">Account records</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Record Billing</h3><p className="mt-1 text-sm text-slate-500">Review consumer names, puroks, billing periods, usage, amounts, and receipts.</p></div>
+            <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">Account records</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Record Billing</h3><p className="mt-1 text-sm text-slate-500">Review consumer names, puroks, billing periods, usage, amounts, and receipts.</p></div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <label className="relative block sm:w-80"><span className="sr-only">Search billing history</span><Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100" onChange={(event) => setQuery(event.target.value)} placeholder="Search consumer, invoice, or period" type="search" value={query} /></label>
-              <label><span className="sr-only">Filter billing status</span><select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-100 sm:w-44" onChange={(event) => setStatus(event.target.value)} value={status}><option value="all">All statuses</option><option value="Paid">Paid</option><option value="Partially Paid">Partially Paid</option><option value="Unpaid">Unpaid</option></select></label>
+              <label className="relative block sm:w-80"><span className="sr-only">Search billing history</span><Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-water-500 focus:bg-white focus:ring-4 focus:ring-water-100" onChange={(event) => setQuery(event.target.value)} placeholder="Search consumer, invoice, or period" type="search" value={query} /></label>
+              <label><span className="sr-only">Filter billing status</span><select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-water-500 focus:ring-4 focus:ring-water-100 sm:w-44" onChange={(event) => setStatus(event.target.value)} value={status}><option value="all">All statuses</option><option value="Paid">Paid</option><option value="Partially Paid">Partially Paid</option><option value="Unpaid">Unpaid</option></select></label>
             </div>
           </div>
         </div>
         <div className="p-4 sm:p-6">
           {error && <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{error}</span><button className="font-bold underline" onClick={loadBillingHistory} type="button">Try again</button></div>}
           {success && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700" role="status">{success}</div>}
-          {loading ? <div className="grid gap-3">{[1, 2, 3].map((item) => <div className="h-16 animate-pulse rounded-xl bg-slate-100" key={item} />)}</div> : <BillingHistoryTable historyData={visibleHistory} onSelectReceipt={setSelectedReceipt} onPayBalance={handlePayBalance} />}
+          {loading ? <LoadingSkeleton label="Loading billing records" variant="table" /> : <BillingHistoryTable historyData={visibleHistory} onSelectReceipt={setSelectedReceipt} onPayBalance={handlePayBalance} />}
         </div>
       </section>
 
@@ -139,8 +140,8 @@ function PaymentModal({ isOpen, onClose, record, onSubmit, billingHistory }) {
   if (!isOpen || !record) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/50" onClick={onClose}>
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/50" onClick={onClose}>
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-raised" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
           <h3 className="text-lg font-bold text-slate-900">Record Payment</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close">

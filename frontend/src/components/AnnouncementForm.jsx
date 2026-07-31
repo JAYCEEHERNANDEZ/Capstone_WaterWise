@@ -39,15 +39,15 @@ export default function AnnouncementForm({
   };
 
   const inputClass =
-    "mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100";
+    "mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-navy-900 outline-none transition-colors placeholder:text-slate-400 focus:border-water-600 focus:ring-4 focus:ring-water-100";
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-      <header className="bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-6 text-white">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+      <header className="bg-navy-950 p-6 text-white">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-water-900 text-water-300">
           <Megaphone className="h-5 w-5" />
         </span>
-        <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
+        <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-water-300">
           Publishing desk
         </p>
         <h2 className="mt-2 text-2xl font-extrabold">
@@ -142,7 +142,7 @@ export default function AnnouncementForm({
 
         <div className="flex gap-3 pt-1">
           <button
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white transition-colors hover:bg-water-700 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={submitting}
             type="submit"
           >
@@ -155,7 +155,7 @@ export default function AnnouncementForm({
           </button>
           {initialData && (
             <button
-              className="rounded-xl bg-slate-100 px-5 py-3 font-bold text-slate-700"
+              className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50"
               onClick={onCancel}
               type="button"
             >

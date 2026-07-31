@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import ConsumerSelectionList from "../components/ConsumerSelectionList";
 import ConsumptionEntryPanel from "../components/ConsumptionEntryPanel";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import { fetchConsumerDirectory } from "../services/consumerDirectoryAPI";
 import { createMeterReading, fetchMeterReadings } from "../services/meterReadingAPI";
 
@@ -67,15 +68,15 @@ export default function RecordConsumptionPage() {
 
   return (
     <main className="space-y-6">
-      <header className="ww-page-header p-6 text-white sm:p-8"><p className="ww-eyebrow">Field workspace</p><h2 className="mt-3 text-3xl font-extrabold">Record a meter reading</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100">Select the resident, enter the meter value, review the details, and confirm the record.</p></header>
+      <header className="ww-page-header p-5 text-white sm:p-6"><p className="ww-eyebrow">Field workspace</p><h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">Record a meter reading</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-water-100">Select the resident, enter the meter value, review the details, and confirm the record.</p></header>
       {error && <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{error}</span><button className="font-bold underline" onClick={loadData} type="button">Try again</button></div>}
       {success && <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700" role="status"><span aria-hidden="true">✓</span><span>Step 4 of 4 · {success}</span></div>}
-      {loading ? <div className="grid gap-3">{[1, 2, 3].map((item) => <div className="h-20 animate-pulse rounded-2xl bg-slate-100" key={item} />)}</div> : <div className="w-full"><ConsumerSelectionList consumers={visibleConsumers} onSelect={(consumer) => { setSelectedConsumer(consumer); setError(""); setSuccess(""); }} query={query} selectedId={selectedConsumer?.id} setQuery={setQuery} /></div>}
+      {loading ? <LoadingSkeleton label="Loading assigned residents" variant="list" /> : <div className="w-full"><ConsumerSelectionList consumers={visibleConsumers} onSelect={(consumer) => { setSelectedConsumer(consumer); setError(""); setSuccess(""); }} query={query} selectedId={selectedConsumer?.id} setQuery={setQuery} /></div>}
 
       {selectedConsumer && (
-        <div aria-label="Record consumption dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => !saving && setSelectedConsumer(null)} role="dialog">
+        <div aria-label="Record consumption dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/55 p-0  sm:items-center sm:p-4" onClick={() => !saving && setSelectedConsumer(null)} role="dialog">
           <div className="relative w-full max-w-2xl sm:my-auto" onClick={(event) => event.stopPropagation()}>
-            <button aria-label="Close record consumption dialog" className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-50" disabled={saving} onClick={() => setSelectedConsumer(null)} type="button"><X className="h-5 w-5" /></button>
+            <button aria-label="Close record consumption dialog" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-50" disabled={saving} onClick={() => setSelectedConsumer(null)} type="button"><X className="h-5 w-5" /></button>
             {error && <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{error}</div>}
             <ConsumptionEntryPanel consumer={selectedConsumer} key={`${selectedConsumer.id}-${latestReading?.id ?? "new"}`} onSave={saveReading} previousReading={latestReading?.currentReading ?? 0} saving={saving} />
           </div>

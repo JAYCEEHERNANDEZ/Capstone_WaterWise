@@ -1,6 +1,6 @@
 const STATUS_STYLES = {
   NORMAL: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  LOW: "border-sky-200 bg-sky-50 text-sky-700",
+  LOW: "border-water-200 bg-water-50 text-water-700",
   MEDIUM: "border-amber-200 bg-amber-50 text-amber-700",
   HIGH: "border-orange-200 bg-orange-50 text-orange-700",
   CRITICAL: "border-red-200 bg-red-50 text-red-700",

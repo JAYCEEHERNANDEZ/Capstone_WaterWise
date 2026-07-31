@@ -35,8 +35,8 @@ export default function BillingLedger({
   const pageHeader = (
     <header className="ww-page-header text-white">
       <p className="ww-eyebrow">Resident portal</p>
-      <h2 className="mt-2 font-extrabold tracking-tight">Bills and payment history</h2>
-      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-sky-100">
+      <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Bills and payment history</h1>
+      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-water-100">
         Check the amount due, payment status, billing periods, and available receipts.
       </p>
     </header>
@@ -82,13 +82,13 @@ export default function BillingLedger({
         outstandingBalance={ledgerAccount.outstandingBalance}
       />
 
-      <section className="ww-glass-strong rounded-[24px] p-4 sm:p-6">
+      <section className="ww-glass-strong rounded-2xl p-4 sm:p-6">
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
               Your records
             </p>
-            <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A] sm:text-2xl">
+            <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
               Bill history
             </h3>
           </div>
