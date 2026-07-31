@@ -123,8 +123,8 @@ export default function PaymentProcessingPage() {
 
   return (
     <main className="space-y-6">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] sm:p-8">
-        <span className="inline-flex rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">Payment administration</span>
+      <header className="ww-page-header p-6 text-white sm:p-8">
+        <span className="ww-eyebrow">Payment administration</span>
         <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_auto] xl:items-end">
           <div><h2 className="text-3xl font-extrabold tracking-tight">Payment processing</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Record consumer payments, monitor remaining balances, and issue downloadable digital receipts.</p></div>
           <div className="grid grid-cols-3 gap-3">
@@ -145,7 +145,7 @@ export default function PaymentProcessingPage() {
 
       <PaymentForm billingRecords={billingRecords} onSubmit={recordPayment} />
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.07)]">
+      <section className="ww-glass-strong overflow-hidden rounded-[24px]">
         <div className="border-b border-slate-100 p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-600">Transaction ledger</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Payment History</h3><p className="mt-1 text-sm text-slate-500">Payments loaded from the server and newly recorded transactions.</p></div>
         {loading ? (
           <div className="grid gap-3 p-6">{[1, 2, 3].map((item) => <div className="h-16 animate-pulse rounded-xl bg-slate-100" key={item} />)}</div>

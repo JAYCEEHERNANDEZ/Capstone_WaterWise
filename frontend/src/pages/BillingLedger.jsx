@@ -34,7 +34,7 @@ export default function BillingLedger({
   const officialReceipt = usesApi ? ledger?.officialReceipt : officialReceiptProp;
 
   if (error) {
-    return <div className="rounded-[8px] border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>;
+    return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>;
   }
 
   if (!ledgerAccount) {
@@ -62,14 +62,14 @@ export default function BillingLedger({
         outstandingBalance={ledgerAccount.outstandingBalance}
       />
 
-      <section className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-6">
+      <section className="ww-glass-strong rounded-[24px] p-4 sm:p-6">
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
-              Billing records
+              Your records
             </p>
             <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A] sm:text-2xl">
-              Billing History
+              Bill history
             </h3>
           </div>
         </div>

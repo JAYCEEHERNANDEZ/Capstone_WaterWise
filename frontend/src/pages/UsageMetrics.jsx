@@ -55,6 +55,9 @@ export default function UsageMetrics({
 
   const displayedHistory = usesApi ? history : usageHistory;
   const displayedAmountDue = usesApi ? amountDue : amountDueProp ?? 0;
+  const latestUsage = displayedHistory.at(-1)?.volume ?? 0;
+  const previousUsage = displayedHistory.at(-2)?.volume;
+  const usageDifference = previousUsage === undefined ? null : latestUsage - previousUsage;
 
   if (isLoading) {
     return (
@@ -67,6 +70,22 @@ export default function UsageMetrics({
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      <section className="ww-glass flex flex-col gap-3 rounded-[20px] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div>
+          <p className="ww-eyebrow !text-sky-700">Your water at a glance</p>
+          <p className="mt-1.5 text-sm leading-6 text-slate-600">
+            {usageDifference === null
+              ? "Your latest bill and water-use records appear here."
+              : usageDifference === 0
+                ? "Your latest water use is the same as the previous month."
+                : `Your latest water use is ${Math.abs(usageDifference).toLocaleString("en-US", { maximumFractionDigits: 1 })} m³ ${usageDifference > 0 ? "higher" : "lower"} than the previous month.`}
+          </p>
+        </div>
+        <span className={`inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-bold ${displayedAmountDue > 0 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+          {displayedAmountDue > 0 ? "Payment needed" : "Account up to date"}
+        </span>
+      </section>
+
       {error && (
         <div
           className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between"
@@ -74,7 +93,7 @@ export default function UsageMetrics({
         >
           <span>{error}</span>
           <button
-            className="rounded-[6px] bg-red-700 px-4 py-2 font-bold text-white hover:bg-red-800"
+            className="min-h-11 rounded-xl bg-red-700 px-4 py-2 font-bold text-white hover:bg-red-800"
             onClick={retry}
             type="button"
           >

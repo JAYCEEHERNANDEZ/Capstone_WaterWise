@@ -4,7 +4,7 @@ export default function NotificationBadgeTrigger({ unreadCount = 0, onToggleHub 
   return (
     <button
       aria-label="Open system notifications"
-      className="relative flex h-10 w-10 items-center justify-center rounded-[8px] border border-slate-200 bg-white text-[#0284C7] transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7] focus-visible:ring-offset-2"
+      className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/80 bg-white/75 text-sky-700 shadow-sm transition hover:border-sky-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
       data-testid="notification-trigger"
       onClick={onToggleHub}
       type="button"

@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { FiBookOpen, FiDroplet, FiFileText, FiGrid, FiMessageSquare, FiUsers, FiX } from "react-icons/fi";
+import {
+  FiBarChart2,
+  FiBookOpen,
+  FiCalendar,
+  FiCreditCard,
+  FiDroplet,
+  FiFileText,
+  FiGrid,
+  FiMessageSquare,
+  FiUsers,
+  FiWifiOff,
+  FiX,
+} from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router";
 import { getCurrentAccount, logout } from "../services/auth.service";
 import { getStoredAccount } from "../services/authToken";
@@ -22,12 +34,14 @@ const ROLE_CONFIG = {
     homePath: "/admin/dashboard",
     links: [
       { label: "Dashboard", path: "/admin/dashboard", Icon: FiGrid },
-      { label: "Consumers", path: "/admin/consumers", Icon: FiUsers },
+      { label: "Residents", path: "/admin/consumers", Icon: FiUsers },
       { label: "Readings", path: "/admin/readings", Icon: FiBookOpen },
-      { label: "Billings", path: "/admin/billings", Icon: FiFileText },
+      { label: "Billing", path: "/admin/billings", Icon: FiFileText },
+      { label: "Payments", path: "/admin/payments", Icon: FiCreditCard },
+      { label: "Events", path: "/admin/events", Icon: FiCalendar },
       { label: "Announcements", path: "/admin/announcements", Icon: FiMessageSquare },
-      { label: "Analytics", path: "/admin/analytics", Icon: FiGrid },
-      
+      { label: "Analytics", path: "/admin/analytics", Icon: FiBarChart2 },
+      { label: "Reports", path: "/admin/reports", Icon: FiFileText },
     ],
   },
   "meter-reader": {
@@ -47,9 +61,9 @@ const ROLE_CONFIG = {
     basePath: "/consumer",
     homePath: "/consumer/usage-metrics",
     links: [
-      { label: "Usage Metrics", path: "/consumer/usage-metrics", Icon: FiDroplet },
-      { label: "Billing Ledger", path: "/consumer/billing-ledger", Icon: FiFileText },
-      { label: "Profile Details", path: "/consumer/profile-details", Icon: FiUsers },
+      { label: "Home", path: "/consumer/usage-metrics", Icon: FiDroplet },
+      { label: "Bills", path: "/consumer/billing-ledger", Icon: FiFileText },
+      { label: "Profile", path: "/consumer/profile-details", Icon: FiUsers },
     ],
   },
 };
@@ -76,10 +90,23 @@ export default function AppLayout({ children }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [accountName, setAccountName] = useState("");
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const activeRole = account?.role ?? pathRole;
   const activeRoleConfig = ROLE_CONFIG[activeRole];
 
   const unreadCount = notifications.filter((item) => !item.isRead).length;
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -159,7 +186,7 @@ export default function AppLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-transparent font-[Inter,system-ui,sans-serif] text-[#0F172A]">
+    <div className={`ww-app min-h-screen bg-transparent font-sans text-slate-900 ${activeRole === "admin" ? "admin-workspace" : ""}`}>
       <Header
         accountName={accountName || activeRoleConfig.userName}
         activeRole={activeRole}
@@ -175,6 +202,13 @@ export default function AppLayout({ children }) {
         compact={activeRole === "admin"}
       />
 
+      {!isOnline && (
+        <div className="sticky top-16 z-20 flex min-h-11 items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-700 sm:top-[72px]" role="status">
+          <FiWifiOff aria-hidden="true" className="h-4 w-4 shrink-0" />
+          You are offline. New changes are not submitted until you reconnect.
+        </div>
+      )}
+
       <div className="mx-auto max-w-[1600px] lg:flex">
         <Sidebar
           activeRoleLabel={activeRoleConfig.label}
@@ -183,11 +217,11 @@ export default function AppLayout({ children }) {
           compact={activeRole === "admin"}
         />
 
-        <main className={`min-w-0 flex-1 pb-24 lg:pb-0 ${activeRole === "admin" ? "admin-auto-refresh" : ""}`}>
+        <main className="ww-workspace min-w-0 flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
           <div className={activeRole === "admin" ? "h-full px-4 py-4 sm:px-5 lg:px-6" : "h-full px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8"}>
             <div className="mx-auto max-w-7xl">
               {activeRole !== "admin" && <div className="mb-5 sm:mb-7">
-                <h1 className="mt-1.5 text-2xl font-extrabold leading-tight tracking-[-0.04em] text-[#0F172A] sm:text-3xl">
+                <h1 className="mt-1.5 text-[26px] font-extrabold leading-8 tracking-[-0.035em] text-slate-900 sm:text-[32px] sm:leading-[38px]">
                   {formatPageTitle(location.pathname, activeRole)}
                 </h1>
               </div>}
@@ -200,7 +234,7 @@ export default function AppLayout({ children }) {
       <div
         aria-hidden={!isNotificationOpen}
         className={[
-          "fixed inset-0 z-40 bg-[#0F172A]/25 transition-opacity",
+          "fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] transition-opacity",
           isNotificationOpen ? "opacity-100" : "pointer-events-none opacity-0",
         ].join(" ")}
         onClick={() => setIsNotificationOpen(false)}
@@ -209,13 +243,13 @@ export default function AppLayout({ children }) {
       <aside
         aria-label="Notification center"
         className={[
-          "fixed inset-y-0 right-0 z-50 h-full w-[min(92vw,26rem)] border-l border-slate-200 bg-[#F8FAFC] shadow-[0_24px_80px_rgba(15,23,42,0.2)] transition-transform duration-300 ease-out",
+          "ww-glass-strong fixed inset-y-0 right-0 z-50 h-full w-[min(94vw,27rem)] border-l border-white/70 shadow-[0_24px_80px_rgba(8,32,50,0.2)] transition-transform duration-300 ease-out",
           isNotificationOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
       >
-        <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-5">
+        <div className="flex h-[72px] items-center justify-between border-b border-slate-200/70 bg-white/70 px-5">
           <div>
-            <p className="text-sm font-bold text-[#0F172A]">
+            <p className="text-sm font-bold text-slate-900">
               Notification Center
             </p>
             <p className="text-xs font-medium text-slate-500">
@@ -224,7 +258,7 @@ export default function AppLayout({ children }) {
           </div>
           <button
             aria-label="Close notification center"
-            className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-slate-200 bg-white text-[#0284C7] transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7] focus-visible:ring-offset-2"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white/90 text-sky-700 transition hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
             onClick={() => setIsNotificationOpen(false)}
             type="button"
           >

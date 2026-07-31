@@ -16,7 +16,7 @@ import { isCanceledRequest } from "../services/apiClient";
 
 function DetailItem({ Icon, label, value }) {
   return (
-    <div className="flex gap-3 rounded-2xl bg-slate-50 p-4 transition hover:bg-sky-50">
+    <div className="flex gap-3 rounded-2xl bg-slate-50/80 p-4 transition hover:bg-sky-50">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#0284C7] shadow-sm">
         <Icon aria-hidden="true" className="h-5 w-5" />
       </span>
@@ -53,7 +53,7 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
   const consumer = usesApi ? loadedConsumer : consumerProp;
 
   if (error) {
-    return <div className="rounded-[8px] border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>;
+    return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>;
   }
 
   if (!consumer) {
@@ -81,9 +81,9 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-6">
+        <div className="ww-glass-strong rounded-[24px] p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
-            Account registry
+            Household account
           </p>
           <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A]">
             Contact and location
@@ -97,7 +97,7 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
           </dl>
         </div>
 
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-6">
+        <div className="ww-glass-strong rounded-[24px] p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
             Latest reading
           </p>
@@ -153,12 +153,12 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
           <FiShield aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#16A34A]" />
           <div>
             <p className="text-sm font-bold text-[#0F172A]">
-              Consumer read-only boundary
+              Need to correct your details?
             </p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              This portal can inspect account data but cannot create, update, or
-              delete billing records. Mutation requests remain reserved for
-              authorized administrative workflows.
+              Your account details are read-only for your protection. Contact
+              the barangay office if your name, contact information, service
+              address, or meter details need to be corrected.
             </p>
           </div>
         </div>

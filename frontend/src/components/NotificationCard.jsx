@@ -24,10 +24,10 @@ export default function NotificationCard({ item, onDelete, onMarkAsRead, onNotif
       data-id={item.id}
       data-is-read={item.isRead}
       
-      className={`mb-3 cursor-pointer rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${
+      className={`mb-3 cursor-pointer rounded-2xl border bg-white/75 p-4 transition-all hover:border-sky-300 hover:shadow-md ${
         item.isRead
-          ? 'border-slate-200 bg-slate-50 text-slate-500'
-          : 'border-sky-200 bg-sky-50 text-[#0F172A] font-semibold shadow-sm'
+          ? "border-slate-200 text-slate-500"
+          : "border-sky-200 text-slate-900 font-semibold shadow-sm"
       }`}
       onClick={handleClick}
     >
@@ -36,7 +36,11 @@ export default function NotificationCard({ item, onDelete, onMarkAsRead, onNotif
           <Icon aria-hidden="true" className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h5 className="text-sm font-bold leading-5">{item.title}</h5>
+          <div className="flex items-center gap-2">
+            {!item.isRead && <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-sky-600" />}
+            <h5 className="text-sm font-bold leading-5">{item.title}</h5>
+            {!item.isRead && <span className="sr-only">Unread</span>}
+          </div>
           <p className="mt-1 text-sm font-normal leading-5">{item.message}</p>
         </div>
         {onDelete && (

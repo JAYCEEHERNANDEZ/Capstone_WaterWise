@@ -95,8 +95,8 @@ export default function BillingManagementPage() {
 
   return (
     <main className="space-y-6">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] sm:p-8">
-        <span className="inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Billing administration</span>
+      <header className="ww-page-header p-6 text-white sm:p-8">
+        <span className="ww-eyebrow">Billing administration</span>
         <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_auto] xl:items-end">
           <div>
             <h2 className="text-3xl font-extrabold tracking-tight">Billing and payment management</h2>
@@ -112,7 +112,7 @@ export default function BillingManagementPage() {
 
       <BillingSummaryCard billingData={billingHistory} />
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.07)]">
+      <section className="ww-glass-strong overflow-hidden rounded-[24px]">
         <div className="border-b border-slate-100 p-5 sm:p-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-600">Account records</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Record Billing</h3><p className="mt-1 text-sm text-slate-500">Review consumer names, puroks, billing periods, usage, amounts, and receipts.</p></div>

@@ -66,14 +66,14 @@ export default function PWAInstallPrompt() {
 
           <div className="mt-4 flex gap-2">
             <button
-              className="rounded-[8px] bg-[#0284C7] px-4 py-2 text-sm font-bold text-white transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7] focus-visible:ring-offset-2"
+              className="ww-primary-button px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
               onClick={handleInstall}
               type="button"
             >
               Install app
             </button>
             <button
-              className="rounded-[8px] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7] focus-visible:ring-offset-2"
+              className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
               onClick={handleDismiss}
               type="button"
             >
@@ -84,7 +84,7 @@ export default function PWAInstallPrompt() {
 
         <button
           aria-label="Dismiss install prompt"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] text-slate-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
           onClick={handleDismiss}
           type="button"
         >

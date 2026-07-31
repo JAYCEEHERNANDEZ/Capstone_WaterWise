@@ -80,8 +80,8 @@ export default function EventManagementPage() {
 
   return (
     <main className="space-y-6">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950 p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-300">
+      <header className="ww-page-header p-6 text-white sm:p-8">
+        <p className="ww-eyebrow">
           Community schedule
         </p>
         <h2 className="mt-3 text-3xl font-extrabold tracking-tight">Event Management</h2>
@@ -94,8 +94,8 @@ export default function EventManagementPage() {
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)]">
         <EventForm initialEvent={selectedEvent} key={selectedEvent?.id ?? "new-event"} onCancel={() => setSelectedEvent(null)} onSubmit={saveEvent} submitting={saving} />
-        <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.07)]">
-          <p className="text-xs font-bold uppercase tracking-wider text-violet-600">Event preview</p><h3 className="mt-1 text-xl font-extrabold">Selected Event</h3>
+        <aside className="ww-glass-strong overflow-hidden rounded-[24px] p-6">
+          <p className="ww-eyebrow !text-sky-700">Event preview</p><h3 className="mt-1 text-xl font-extrabold">Selected event</h3>
           {selectedEvent ? (
             <dl className="mt-4 space-y-3 text-sm">
               <div><dt className="font-semibold text-slate-500">Title</dt><dd>{selectedEvent.title}</dd></div>

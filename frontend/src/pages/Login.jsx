@@ -29,8 +29,8 @@ const roles = [
   },
   {
     id: "consumer",
-    label: "Consumer",
-    eyebrow: "Community portal",
+    label: "Resident",
+    eyebrow: "Household account",
     Icon: FiDroplet,
     route: "/consumer/usage-metrics",
   },
@@ -78,31 +78,46 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28rem)] px-4 py-4 font-[Inter,system-ui,sans-serif] text-[#0F172A] sm:px-8 sm:py-8 lg:px-10">
+    <main className="ww-app min-h-screen px-4 py-4 font-sans text-slate-900 sm:px-8 sm:py-8 lg:px-10">
       <section className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
-        <div className="grid w-full overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.12)] lg:grid-cols-[0.9fr_1.1fr]">
-          <aside className="relative flex flex-col justify-between overflow-hidden bg-gradient-to-br from-[#0F172A] via-slate-900 to-sky-950 p-6 text-white sm:p-10 lg:min-h-[650px]">
-            <div aria-hidden="true" className="absolute -right-20 -top-20 h-56 w-56 rounded-full border-[32px] border-sky-400/10" />
+        <div className="ww-glass-strong grid w-full overflow-hidden rounded-[28px] lg:grid-cols-[0.94fr_1.06fr]">
+          <aside className="ww-page-header relative flex flex-col justify-between rounded-none border-0 p-6 text-white shadow-none sm:p-10 lg:min-h-[650px]">
             <div>
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500 text-white shadow-lg shadow-sky-950/30"><FiDroplet aria-hidden="true" className="h-5 w-5" /></span>
-                <p className="text-sm font-bold uppercase tracking-[0.16em] text-sky-200">WaterWise</p>
+                <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-950/30"><FiDroplet aria-hidden="true" className="h-5 w-5" /></span>
+                <div>
+                  <p className="text-sm font-extrabold tracking-[-0.02em] text-white">WaterWise</p>
+                  <p className="text-xs font-medium text-sky-200">Sucol Water System</p>
+                </div>
               </div>
               <h1 className="mt-6 max-w-md text-3xl font-extrabold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
                 Every drop, clearly understood.
               </h1>
-              <p className="mt-3 max-w-md text-sm leading-6 text-slate-300 sm:text-base">Secure access to Sucol Water System services, wherever you are.</p>
+              <p className="mt-4 max-w-md text-sm leading-6 text-sky-100 sm:text-base">One secure place for water readings, bills, payments, and barangay updates.</p>
             </div>
 
+            <div className="mt-8 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+              {roles.map(({ Icon, eyebrow, id, label }) => (
+                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-sm" key={id}>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-cyan-300">
+                    <Icon aria-hidden="true" className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-bold text-white">{label}</p>
+                    <p className="text-xs text-sky-200">{eyebrow}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </aside>
 
-          <div className="p-6 sm:p-10 lg:flex lg:items-center lg:p-12">
+          <div className="bg-white/55 p-6 sm:p-10 lg:flex lg:items-center lg:p-12">
             <div className="mx-auto max-w-xl">
               <div className="mb-7">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
+                <p className="ww-eyebrow !text-sky-700">
                   Secure sign in
                 </p>
-                <h2 className="mt-2 text-3xl font-extrabold leading-tight tracking-[-0.04em] text-[#0F172A] sm:text-4xl">
+                <h2 className="mt-2 text-3xl font-extrabold leading-tight tracking-[-0.04em] text-slate-900 sm:text-4xl">
                   Sign in to your account
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -122,7 +137,7 @@ export default function Login() {
                     <FiMail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
                       autoComplete="username"
-                      className="min-h-12 w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-12 pr-4 text-base text-[#0F172A] outline-none transition placeholder:text-slate-400 focus:border-[#0284C7] focus:bg-white focus:ring-4 focus:ring-[#0284C7]/10"
+                    className="ww-field py-3 pl-12 pr-4 text-base"
                       id="login-identifier"
                       onChange={(event) => setIdentifier(event.target.value)}
                       placeholder="name@sucolwater.gov"
@@ -143,7 +158,7 @@ export default function Login() {
                     <FiLock aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
                       autoComplete="current-password"
-                      className="min-h-12 w-full rounded-xl border border-slate-300 bg-slate-50 py-3 pl-12 pr-12 text-base text-[#0F172A] outline-none transition placeholder:text-slate-400 focus:border-[#0284C7] focus:bg-white focus:ring-4 focus:ring-[#0284C7]/10"
+                    className="ww-field py-3 pl-12 pr-12 text-base"
                       id="login-password"
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="Enter password"
@@ -153,7 +168,7 @@ export default function Login() {
                     <button
                       aria-label={showPassword ? "Hide password" : "Show password"}
                       aria-pressed={showPassword}
-                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-[#0284C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0284C7]"
+                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-600"
                       onClick={() => setShowPassword((visible) => !visible)}
                       type="button"
                     >
@@ -167,7 +182,7 @@ export default function Login() {
                 </div>
 
                 <button
-                  className="min-h-12 w-full rounded-xl bg-[#0284C7] px-5 py-3 text-base font-bold text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7] focus-visible:ring-offset-2 disabled:opacity-60"
+                  className="ww-primary-button min-h-12 w-full px-5 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
                   disabled={isSubmitting}
                   type="submit"
                 >
@@ -176,12 +191,12 @@ export default function Login() {
 
                 <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-500">
                   <FiCheckCircle aria-hidden="true" className="h-4 w-4 text-emerald-500" />
-                  Account access is routed by the matching database role.
+                  Your account opens only the tools assigned to your role.
                 </div>
 
                 {message && (
                   <p
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-[#0F172A]"
+                    className="rounded-xl border border-slate-200 bg-white/75 px-4 py-3 text-sm font-medium text-slate-900"
                     role="status"
                   >
                     {message}

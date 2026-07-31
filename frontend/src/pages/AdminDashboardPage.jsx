@@ -6,13 +6,13 @@ import PurokHistoricalConsumptionGraphs from "../components/PurokHistoricalConsu
 export default function AdminDashboardPage() {
   return (
     <main className="space-y-5" data-testid="admin-dashboard">
-      <header className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 p-5 text-white shadow-[0_16px_45px_rgba(15,23,42,0.16)]">
+      <header className="ww-page-header p-5 text-white">
         <div className="max-w-3xl">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Operations overview</p>
+          <p className="ww-eyebrow">Operations overview</p>
           <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
             Water operations overview
           </h2>
-          <p className="mt-1.5 text-sm leading-6 text-slate-300">
+          <p className="mt-1.5 text-sm leading-6 text-sky-100">
             Review recorded consumption using historical water data.
           </p>
         </div>

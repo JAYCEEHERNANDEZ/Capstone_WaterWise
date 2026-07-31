@@ -114,8 +114,8 @@ export default function AnnouncementManagementPage() {
 
   return (
     <main className="space-y-6">
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] sm:p-8">
-        <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
+      <header className="ww-page-header relative p-6 text-white sm:p-8">
+        <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-cyan-300/10 blur-3xl" />
         <div className="relative grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">
