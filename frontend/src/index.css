@@ -460,6 +460,17 @@ textarea::placeholder {
   font-variant-numeric: tabular-nums;
 }
 
+/* Every role uses the same compact page-header rhythm as the admin workspace. */
+.ww-workspace .ww-page-header {
+  padding: 1.25rem !important;
+  border-radius: 20px !important;
+}
+
+.ww-workspace .ww-page-header :where(h1, h2) {
+  font-size: 1.5rem !important;
+  line-height: 1.9rem !important;
+}
+
 @keyframes waterwise-skeleton-shimmer {
   0% {
     background-position: 200% 0;

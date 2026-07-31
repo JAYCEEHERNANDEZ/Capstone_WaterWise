@@ -32,13 +32,32 @@ export default function BillingLedger({
   const historyData = usesApi ? ledger?.historyData ?? [] : historyDataProp;
   const ledgerAccount = usesApi ? ledger?.ledgerAccount : ledgerAccountProp;
   const officialReceipt = usesApi ? ledger?.officialReceipt : officialReceiptProp;
+  const pageHeader = (
+    <header className="ww-page-header text-white">
+      <p className="ww-eyebrow">Resident portal</p>
+      <h2 className="mt-2 font-extrabold tracking-tight">Bills and payment history</h2>
+      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-sky-100">
+        Check the amount due, payment status, billing periods, and available receipts.
+      </p>
+    </header>
+  );
 
   if (error) {
-    return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>;
+    return (
+      <div className="space-y-5">
+        {pageHeader}
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>
+      </div>
+    );
   }
 
   if (!ledgerAccount) {
-    return <LoadingSkeleton label="Loading billing ledger" variant="billing" />;
+    return (
+      <div className="space-y-5">
+        {pageHeader}
+        <LoadingSkeleton label="Loading billing ledger" variant="billing" />
+      </div>
+    );
   }
 
   const handleSelectReceipt = (receipt) => {
@@ -56,6 +75,7 @@ export default function BillingLedger({
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      {pageHeader}
 
       <CurrentBillingCard
         dueDate={ledgerAccount.dueDate}

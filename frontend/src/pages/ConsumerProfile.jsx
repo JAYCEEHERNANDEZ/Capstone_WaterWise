@@ -51,13 +51,32 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
   }, [usesApi]);
 
   const consumer = usesApi ? loadedConsumer : consumerProp;
+  const pageHeader = (
+    <header className="ww-page-header text-white">
+      <p className="ww-eyebrow">Resident portal</p>
+      <h2 className="mt-2 font-extrabold tracking-tight">Household profile</h2>
+      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-sky-100">
+        Review your account holder, service address, meter information, and latest reading.
+      </p>
+    </header>
+  );
 
   if (error) {
-    return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>;
+    return (
+      <div className="space-y-5">
+        {pageHeader}
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>
+      </div>
+    );
   }
 
   if (!consumer) {
-    return <LoadingSkeleton label="Loading consumer profile" variant="profile" />;
+    return (
+      <div className="space-y-5">
+        {pageHeader}
+        <LoadingSkeleton label="Loading consumer profile" variant="profile" />
+      </div>
+    );
   }
 
   const consumptionDifference = Number(
@@ -66,6 +85,7 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      {pageHeader}
       
       <section className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         <ConsumerInfoGrid

@@ -58,18 +58,32 @@ export default function UsageMetrics({
   const latestUsage = displayedHistory.at(-1)?.volume ?? 0;
   const previousUsage = displayedHistory.at(-2)?.volume;
   const usageDifference = previousUsage === undefined ? null : latestUsage - previousUsage;
+  const pageHeader = (
+    <header className="ww-page-header text-white">
+      <p className="ww-eyebrow">Resident portal</p>
+      <h2 className="mt-2 font-extrabold tracking-tight">Water usage overview</h2>
+      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-sky-100">
+        Review your current balance, latest water use, and monthly consumption history.
+      </p>
+    </header>
+  );
 
   if (isLoading) {
     return (
-      <LoadingSkeleton
-        label="Loading your consumption history"
-        variant="metrics"
-      />
+      <div className="space-y-5">
+        {pageHeader}
+        <LoadingSkeleton
+          label="Loading your consumption history"
+          variant="metrics"
+        />
+      </div>
     );
   }
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      {pageHeader}
+
       <section className="ww-glass flex flex-col gap-3 rounded-[20px] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div>
           <p className="ww-eyebrow !text-sky-700">Your water at a glance</p>
