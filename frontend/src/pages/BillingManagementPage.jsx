@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CircleDollarSign, Search, TrendingUp, WalletCards } from "lucide-react";
+import { CircleDollarSign, TrendingUp, WalletCards } from "lucide-react";
 import BillingHistoryTable from "../components/BillingHistoryTable";
+import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import BillingSummaryCard from "../components/BillingSummaryCard";
 import DigitalReceiptModal from "../components/DigitalReceiptModal";
 import PaymentForm from "../components/PaymentForm";
+import Search from "../components/Search";
 import { fetchBillingHistory } from "../services/billingAPI";
 import { recordPayment as recordPaymentRequest } from "../services/paymentAPI";
 
@@ -118,8 +120,8 @@ export default function BillingManagementPage() {
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">Account records</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Record Billing</h3><p className="mt-1 text-sm text-slate-500">Review consumer names, puroks, billing periods, usage, amounts, and receipts.</p></div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <label className="relative block sm:w-80"><span className="sr-only">Search billing history</span><Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-water-500 focus:bg-white focus:ring-4 focus:ring-water-100" onChange={(event) => setQuery(event.target.value)} placeholder="Search consumer, invoice, or period" type="search" value={query} /></label>
-              <label><span className="sr-only">Filter billing status</span><select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-water-500 focus:ring-4 focus:ring-water-100 sm:w-44" onChange={(event) => setStatus(event.target.value)} value={status}><option value="all">All statuses</option><option value="Paid">Paid</option><option value="Partially Paid">Partially Paid</option><option value="Unpaid">Unpaid</option></select></label>
+              <Search ariaLabel="Search billing history" className="sm:w-80" onValueChange={setQuery} placeholder="Search consumer, invoice, or period" value={query} />
+              <Filter ariaLabel="Filter billing status" className="sm:w-48" onValueChange={setStatus} options={[{ label: "All statuses", value: "all" }, { label: "Paid", value: "Paid" }, { label: "Partially paid", value: "Partially Paid" }, { label: "Unpaid", value: "Unpaid" }]} value={status} />
             </div>
           </div>
         </div>

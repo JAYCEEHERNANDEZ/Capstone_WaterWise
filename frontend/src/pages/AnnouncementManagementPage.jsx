@@ -3,12 +3,13 @@ import {
   CalendarClock,
   Megaphone,
   RefreshCw,
-  Search,
   Send,
 } from "lucide-react";
 import AnnouncementForm from "../components/AnnouncementForm";
 import AnnouncementPage from "../components/AnnouncementPage";
+import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import Search from "../components/Search";
 import {
   createAnnouncement,
   fetchAnnouncements,
@@ -162,27 +163,25 @@ export default function AnnouncementManagementPage() {
 
         <div className="min-w-0 space-y-4">
           <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row">
-            <label className="relative min-w-0 flex-1">
-              <span className="sr-only">Search announcements</span>
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search title, message, or category"
-                type="search"
-                value={query}
-              />
-            </label>
-            <select
-              className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-              onChange={(event) => setCategory(event.target.value)}
+            <Search
+              ariaLabel="Search announcements"
+              className="flex-1"
+              onValueChange={setQuery}
+              placeholder="Search title, message, or category"
+              tone="emerald"
+              value={query}
+            />
+            <Filter
+              ariaLabel="Filter announcements by category"
+              className="sm:w-52"
+              onValueChange={setCategory}
+              options={[
+                { label: "All categories", value: "all" },
+                ...categories.map((item) => ({ label: item, value: item })),
+              ]}
+              tone="emerald"
               value={category}
-            >
-              <option value="all">All categories</option>
-              {categories.map((item) => (
-                <option key={item} value={item}>{item}</option>
-              ))}
-            </select>
+            />
             <button
               aria-label="Refresh announcements"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"

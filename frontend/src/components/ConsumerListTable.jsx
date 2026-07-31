@@ -49,7 +49,7 @@ function ConsumerListTable({ consumers = [], isLoading = false, onEdit = () => {
         <div className="px-5 py-12 text-center">
           <p className="font-bold text-navy-900">No residents found</p>
           <p className="mt-1 text-sm text-slate-500">
-            Adjust the search or add a resident to the directory.
+            Adjust the search or purok filter, or add a resident to the directory.
           </p>
         </div>
       ) : (
@@ -58,8 +58,8 @@ function ConsumerListTable({ consumers = [], isLoading = false, onEdit = () => {
           <table className="block w-full text-left text-sm md:table">
             <thead className="hidden bg-slate-50 text-xs font-bold uppercase tracking-[0.08em] text-slate-500 md:table-header-group">
               <tr>
-                <th className="px-4 py-3">Account</th>
-                <th className="px-4 py-3">Resident</th>
+                <th className="px-4 py-3">Username</th>
+                <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Purok</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Status</th>
@@ -72,10 +72,10 @@ function ConsumerListTable({ consumers = [], isLoading = false, onEdit = () => {
                   className="grid grid-cols-2 gap-4 p-4 transition-colors hover:bg-slate-50 md:table-row md:p-0"
                   key={consumer.id}
                 >
-                  <td className="col-span-2 flex flex-col font-mono font-bold text-navy-900 before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Account'] md:table-cell md:px-4 md:py-4 md:before:hidden">
+                  <td className="col-span-2 flex flex-col font-mono font-bold text-navy-900 before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Username'] md:table-cell md:px-4 md:py-4 md:before:hidden">
                     {consumer.accountName}
                   </td>
-                  <td className="col-span-2 flex flex-col font-semibold text-navy-900 before:mb-1 before:text-xs before:font-semibold before:text-slate-500 before:content-['Resident'] md:table-cell md:px-4 md:py-4 md:before:hidden">
+                  <td className="col-span-2 flex flex-col font-semibold text-navy-900 before:mb-1 before:text-xs before:font-semibold before:text-slate-500 before:content-['Name'] md:table-cell md:px-4 md:py-4 md:before:hidden">
                     {consumer.fullName}
                   </td>
                   <td className="flex flex-col text-slate-600 before:mb-1 before:text-xs before:font-semibold before:text-slate-500 before:content-['Purok'] md:table-cell md:px-4 md:py-4 md:before:hidden">

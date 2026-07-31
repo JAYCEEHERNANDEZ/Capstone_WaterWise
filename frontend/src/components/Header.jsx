@@ -83,7 +83,7 @@ export default function Header({
                   aria-expanded={isAccountOpen}
                   aria-haspopup="menu"
                   aria-label="Open account menu"
-                  className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 text-slate-600 shadow-sm transition-colors duration-150 hover:border-water-200 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 sm:px-3"
+                  className="flex min-h-13 items-center gap-3 rounded-xl border border-slate-200 bg-white px-2 text-slate-600 shadow-sm transition-colors duration-150 hover:border-water-200 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 sm:px-3"
                   onClick={() => setIsAccountOpen((isOpen) => !isOpen)}
                   ref={accountTriggerRef}
                   type="button"

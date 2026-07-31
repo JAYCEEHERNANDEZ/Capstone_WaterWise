@@ -1,4 +1,5 @@
-import { Search, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
+import Search from "./Search";
 
 export default function ConsumerSelectionList({ consumers = [], onSelect, query, selectedId, setQuery }) {
   return (
@@ -7,17 +8,14 @@ export default function ConsumerSelectionList({ consumers = [], onSelect, query,
         <p className="ww-eyebrow !text-water-700">Step 1 of 4</p>
         <h2 className="mt-1 text-2xl font-extrabold text-slate-900">Select a resident</h2>
         <p className="mt-1 text-sm leading-6 text-slate-600">Search by name, account number, or purok to confirm the correct meter.</p>
-        <label className="relative mt-4 block">
-          <span className="sr-only">Search residents</span>
-          <Search aria-hidden="true" className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-          <input
-            className="ww-field py-3 pl-11 pr-4"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search name, account number, or purok"
-            type="search"
-            value={query}
-          />
-        </label>
+        <Search
+          ariaLabel="Search residents"
+          className="mt-4"
+          onValueChange={setQuery}
+          placeholder="Search name, account number, or purok"
+          surface="white"
+          value={query}
+        />
       </div>
       <div className="max-h-[46rem] space-y-3 overflow-y-auto p-4 sm:p-6">
         {consumers.length === 0 ? (

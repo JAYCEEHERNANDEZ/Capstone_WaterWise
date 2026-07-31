@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Droplets, Gauge, Search, Users } from "lucide-react";
+import { Droplets, Gauge, Users } from "lucide-react";
 import MeterReadingTable from "../components/MeterReadingTable";
+import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import Search from "../components/Search";
 import { fetchAdminMeterReadings } from "../services/meterReadingAPI";
 
 export default function AdminReadingsPage() {
@@ -100,8 +102,8 @@ export default function AdminReadingsPage() {
       </header>
 
       <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row">
-        <label className="relative min-w-0 flex-1"><span className="sr-only">Search consumption readings</span><Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-water-500 focus:bg-white focus:ring-4 focus:ring-water-100" onChange={(event) => setQuery(event.target.value)} placeholder="Search consumer number, name, or purok" type="search" value={query} /></label>
-        <label><span className="sr-only">Filter by purok</span><select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-water-500 focus:ring-4 focus:ring-water-100 sm:w-44" onChange={(event) => setPurok(event.target.value)} value={purok}><option value="all">All puroks</option>{[1, 2, 3, 4, 5].map((number) => <option key={number} value={`Purok ${number}`}>Purok {number}</option>)}</select></label>
+        <Search ariaLabel="Search consumption readings" className="flex-1" onValueChange={setQuery} placeholder="Search consumer number, name, or purok" value={query} />
+        <Filter ariaLabel="Filter by purok" className="sm:w-44" onValueChange={setPurok} options={[{ label: "All puroks", value: "all" }, ...[1, 2, 3, 4, 5].map((number) => ({ label: `Purok ${number}`, value: `Purok ${number}` }))]} value={purok} />
       </section>
 
       {error && <div className="flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{error}</span><button className="font-bold underline" onClick={loadReadings} type="button">Try again</button></div>}

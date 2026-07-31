@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import Filter from "./Filter";
 
 function getRecordYear(record) {
   return String(record.year ?? record.readingDate?.slice(0, 4) ?? record.month?.match(/\d{4}/)?.[0] ?? "");
@@ -108,27 +109,17 @@ export default function ConsumptionTrendGraph({ trendData = [] }) {
             <span>Volume (m³)</span>
           </div>
 
-          <label className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">
-              Year
-            </span>
-            <select
-              className="ww-field h-11 min-w-24 px-3 text-sm font-bold"
-              data-testid="year-filter"
-              onChange={(event) => setSelectedYear(event.target.value)}
-              value={activeYear}
-            >
-              {yearOptions.length === 0 ? (
-                <option value="all">All</option>
-              ) : (
-                yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
+          <Filter
+            ariaLabel="Filter consumption by year"
+            className="min-w-36"
+            dataTestId="year-filter"
+            label="Year"
+            onValueChange={setSelectedYear}
+            options={yearOptions.length === 0
+              ? [{ label: "All", value: "all" }]
+              : yearOptions.map((year) => ({ label: String(year), value: String(year) }))}
+            value={String(activeYear)}
+          />
         </div>
       </div>
 

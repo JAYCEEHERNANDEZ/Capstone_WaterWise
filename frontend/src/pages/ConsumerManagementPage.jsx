@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiCheckCircle, FiPlus, FiSearch, FiUsers, FiX } from "react-icons/fi";
+import { FiCheckCircle, FiPlus, FiUsers, FiX } from "react-icons/fi";
 import ConsumerForm from "../components/ConsumerForm";
 import ConsumerListTable from "../components/ConsumerListTable";
+import Filter from "../components/Filter";
+import Search from "../components/Search";
 import { createConsumer, fetchConsumerDirectory, updateConsumer } from "../services/consumerDirectoryAPI";
 
 function toManagementConsumer(consumer) {
@@ -25,6 +27,7 @@ function ConsumerManagementPage() {
   const [selectedConsumer, setSelectedConsumer] = useState(null);
   const [formMode, setFormMode] = useState("");
   const [query, setQuery] = useState("");
+  const [purok, setPurok] = useState("all");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -105,12 +108,21 @@ function ConsumerManagementPage() {
 
   const visibleConsumers = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return consumers;
     return consumers.filter((consumer) =>
-      [consumer.accountName, consumer.fullName, consumer.email, consumer.purok]
-        .some((value) => String(value).toLowerCase().includes(term)),
+      (!term || [consumer.accountName, consumer.fullName]
+        .some((value) => String(value).toLowerCase().includes(term))) &&
+      (purok === "all" || consumer.purok === purok),
     );
-  }, [consumers, query]);
+  }, [consumers, purok, query]);
+
+  const purokOptions = useMemo(() => {
+    const values = [...new Set(consumers.map((consumer) => consumer.purok).filter(Boolean))]
+      .sort((first, second) => first.localeCompare(second, undefined, { numeric: true }));
+    return [
+      { label: "All puroks", value: "all" },
+      ...values.map((value) => ({ label: value, value })),
+    ];
+  }, [consumers]);
 
   const selectConsumer = (consumer) => {
     setSelectedConsumer(consumer);
@@ -197,11 +209,8 @@ function ConsumerManagementPage() {
       {error && !formMode && <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">{error}</p>}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <label className="relative block max-w-xl flex-1">
-        <span className="sr-only">Search consumers</span>
-        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-water-500 focus:ring-4 focus:ring-water-100" onChange={(event) => setQuery(event.target.value)} placeholder="Search account, name, email, or purok" type="search" value={query} />
-      </label>
+      <Search ariaLabel="Search residents by username or name" className="max-w-xl flex-1" onValueChange={setQuery} placeholder="Search username or name" surface="white" value={query} />
+      <Filter ariaLabel="Filter residents by purok" className="sm:w-48" onValueChange={setPurok} options={purokOptions} value={purok} />
       <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-water-600 px-5 py-3 font-bold text-white hover:bg-water-700" onClick={() => { setSelectedConsumer(null); setFormMode("add"); }} type="button"><FiPlus />Add Consumer</button>
       </div>
 
