@@ -2,7 +2,7 @@ import { supabase } from "../config/supabase.js";
 import { randomUUID } from "node:crypto";
 
 const PAYMENT_FIELDS =
-  "id, billing_id, total_paid, remaining_balance, payment_date, payment_method, reference_number, created_at, updated_at";
+  "id, billing_id, total_paid, amount_tendered, change_given, remaining_balance, payment_date, payment_method, reference_number, created_at, updated_at";
 
 const createError = (message, statusCode = 400) => {
   const error = new TypeError(message);
@@ -60,6 +60,7 @@ export async function createPayment({
   billingId,
   totalPaid,
   amount,
+  amountTendered,
   paymentDate,
   paymentMethod,
   referenceNumber,
@@ -67,6 +68,7 @@ export async function createPayment({
 }) {
   const normalizedBillingId = parsePositiveId(billingId, "billing ID");
   const paymentAmount = parsePaymentAmount(totalPaid ?? amount);
+  const normalizedAmountTendered = parsePaymentAmount(amountTendered ?? paymentAmount);
   const normalizedDate = parsePaymentDate(paymentDate);
   const normalizedMethod = parsePaymentMethod(paymentMethod);
   const normalizedReference = parseOptionalReference(referenceNumber);
@@ -76,12 +78,21 @@ export async function createPayment({
     throw createError("An electronic payment reference number is required.");
   }
 
+  if (normalizedMethod === "Cash" && normalizedAmountTendered < paymentAmount) {
+    throw createError("Cash received cannot be lower than the amount applied.");
+  }
+
+  if (normalizedMethod !== "Cash" && normalizedAmountTendered !== paymentAmount) {
+    throw createError("Electronic payment must equal the amount applied to the bill.");
+  }
+
   if (!normalizedIdempotencyKey || normalizedIdempotencyKey.length > 200) {
     throw createError("A valid payment idempotency key is required.");
   }
 
   const { data, error } = await supabase.rpc("record_payment_transaction", {
     p_amount: paymentAmount,
+    p_amount_tendered: normalizedAmountTendered,
     p_billing_id: normalizedBillingId,
     p_idempotency_key: normalizedIdempotencyKey,
     p_payment_date: normalizedDate,

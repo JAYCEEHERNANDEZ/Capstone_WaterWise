@@ -35,6 +35,8 @@ export function normalizePaymentRecord(record) {
     paymentMethod: record.payment_method ?? "Cash",
     referenceNumber: record.reference_number ?? "",
     amountPaid: Number(record.total_paid ?? 0),
+    amountTendered: Number(record.amount_tendered ?? record.total_paid ?? 0),
+    changeGiven: Number(record.change_given ?? 0),
     remainingBalance,
     paymentStatus: remainingBalance === 0 ? "Paid" : "Partially Paid",
     raw: record,
@@ -62,6 +64,7 @@ export async function fetchConsumerPayments(consumerId, options = {}) {
 export async function recordPayment(payload, options = {}) {
   const response = await apiClient.post("/payments", {
     billingId: payload.billingId,
+    amountTendered: Number(payload.amountTendered ?? payload.amountPaid),
     idempotencyKey: payload.idempotencyKey,
     paymentDate: payload.paymentDate,
     paymentMethod: payload.paymentMethod,

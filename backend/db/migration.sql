@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS payments (
     id SERIAL PRIMARY KEY,
     billing_id INTEGER NOT NULL REFERENCES billing (id) ON DELETE CASCADE,
     total_paid NUMERIC(10,2) NOT NULL,
+    amount_tendered NUMERIC(10,2) NOT NULL,
+    change_given NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     remaining_balance NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     payment_method VARCHAR(40) NOT NULL DEFAULT 'Cash',
@@ -77,6 +79,8 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_date DATE NOT NULL DEFAULT
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_method VARCHAR(40) NOT NULL DEFAULT 'Cash';
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS reference_number VARCHAR(100);
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS idempotency_key TEXT;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS amount_tendered NUMERIC(10,2);
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS change_given NUMERIC(10,2) NOT NULL DEFAULT 0.00;
 
 -- Index for fast lookup queries when fetching payment logs by billing record
 CREATE INDEX IF NOT EXISTS idx_payments_billing_id ON payments (billing_id);
@@ -86,9 +90,12 @@ WHERE idempotency_key IS NOT NULL;
 
 -- Records a payment and updates its billing balance in one database transaction.
 -- The row lock prevents two admins from spending the same remaining balance.
+DROP FUNCTION IF EXISTS record_payment_transaction(INTEGER, NUMERIC, DATE, TEXT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION record_payment_transaction(
     p_billing_id INTEGER,
     p_amount NUMERIC,
+    p_amount_tendered NUMERIC,
     p_payment_date DATE,
     p_payment_method TEXT,
     p_reference_number TEXT,
@@ -110,6 +117,10 @@ BEGIN
         RAISE EXCEPTION 'Payment amount must be greater than zero.';
     END IF;
 
+    IF p_amount_tendered IS NULL OR p_amount_tendered <= 0 THEN
+        RAISE EXCEPTION 'Amount received must be greater than zero.';
+    END IF;
+
     IF p_payment_method NOT IN ('Cash', 'GCash', 'Bank transfer') THEN
         RAISE EXCEPTION 'Unsupported payment method.';
     END IF;
@@ -122,6 +133,14 @@ BEGIN
         RAISE EXCEPTION 'An electronic payment reference number is required.';
     END IF;
 
+    IF p_payment_method = 'Cash' AND p_amount_tendered < p_amount THEN
+        RAISE EXCEPTION 'Cash received cannot be lower than the amount applied.';
+    END IF;
+
+    IF p_payment_method <> 'Cash' AND ROUND(p_amount_tendered, 2) <> ROUND(p_amount, 2) THEN
+        RAISE EXCEPTION 'Electronic payment must equal the amount applied to the bill.';
+    END IF;
+
     IF p_idempotency_key IS NOT NULL THEN
         SELECT * INTO payment_record
         FROM payments
@@ -129,7 +148,8 @@ BEGIN
 
         IF FOUND THEN
             IF payment_record.billing_id <> p_billing_id
-               OR payment_record.total_paid <> ROUND(p_amount, 2) THEN
+               OR payment_record.total_paid <> ROUND(p_amount, 2)
+               OR payment_record.amount_tendered <> ROUND(p_amount_tendered, 2) THEN
                 RAISE EXCEPTION 'This payment request key was already used for different payment details.';
             END IF;
 
@@ -165,6 +185,8 @@ BEGIN
     INSERT INTO payments (
         billing_id,
         total_paid,
+        amount_tendered,
+        change_given,
         remaining_balance,
         payment_date,
         payment_method,
@@ -174,6 +196,12 @@ BEGIN
     VALUES (
         p_billing_id,
         ROUND(p_amount, 2),
+        ROUND(p_amount_tendered, 2),
+        CASE
+            WHEN p_payment_method = 'Cash'
+                THEN ROUND(p_amount_tendered - p_amount, 2)
+            ELSE 0.00
+        END,
         next_balance,
         p_payment_date,
         p_payment_method,
@@ -195,10 +223,10 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION record_payment_transaction(INTEGER, NUMERIC, DATE, TEXT, TEXT, TEXT) FROM PUBLIC;
-REVOKE ALL ON FUNCTION record_payment_transaction(INTEGER, NUMERIC, DATE, TEXT, TEXT, TEXT) FROM anon;
-REVOKE ALL ON FUNCTION record_payment_transaction(INTEGER, NUMERIC, DATE, TEXT, TEXT, TEXT) FROM authenticated;
-GRANT EXECUTE ON FUNCTION record_payment_transaction(INTEGER, NUMERIC, DATE, TEXT, TEXT, TEXT) TO service_role;
+REVOKE ALL ON FUNCTION record_payment_transaction(INTEGER, NUMERIC, NUMERIC, DATE, TEXT, TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_payment_transaction(INTEGER, NUMERIC, NUMERIC, DATE, TEXT, TEXT, TEXT) FROM anon;
+REVOKE ALL ON FUNCTION record_payment_transaction(INTEGER, NUMERIC, NUMERIC, DATE, TEXT, TEXT, TEXT) FROM authenticated;
+GRANT EXECUTE ON FUNCTION record_payment_transaction(INTEGER, NUMERIC, NUMERIC, DATE, TEXT, TEXT, TEXT) TO service_role;
 
 -- 6. NOTIFICATIONS TABLE 
 -- Updated to allow a targeted consumer_id (NULL tracks system-wide admin announcements)

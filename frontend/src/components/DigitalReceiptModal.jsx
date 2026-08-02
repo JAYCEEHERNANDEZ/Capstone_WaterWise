@@ -1,14 +1,22 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { CheckCircle2, Clock3 } from "lucide-react";
 import { FiDownload, FiPrinter, FiX } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
 
+const currency = (value) =>
+  `₱${Number(value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+
 function ReceiptLine({ label, testId, value }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-slate-100 py-3 text-sm">
-      <span className="font-semibold text-slate-500">{label}</span>
-      <span className="font-mono font-bold text-navy-900" data-testid={testId}>
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-3 last:border-0">
+      <dt className="text-sm font-semibold text-slate-500">{label}</dt>
+      <dd
+        className="max-w-[60%] text-right font-mono text-sm font-bold tabular-nums text-navy-900"
+        data-testid={testId}
+      >
         {value}
-      </span>
+      </dd>
     </div>
   );
 }
@@ -18,75 +26,119 @@ export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
 
   useEffect(() => {
     if (!isOpen) return undefined;
+
     const previouslyFocused = document.activeElement;
-    const closeOnEscape = (event) => { if (event.key === "Escape") onClose(); };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
     document.addEventListener("keydown", closeOnEscape);
     closeButtonRef.current?.focus();
-    return () => { document.removeEventListener("keydown", closeOnEscape); previouslyFocused?.focus?.(); };
+
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      previouslyFocused?.focus?.();
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen || !receiptData) return null;
 
-  const calculatedDifference = Number(
-    (receiptData.currentReading - receiptData.previousReading).toFixed(1),
+  const amountPaid = Number(receiptData.amountPaid ?? receiptData.amountDue ?? 0);
+  const amountTendered = Number(receiptData.amountTendered ?? amountPaid);
+  const changeGiven = Number(
+    receiptData.changeGiven ?? Math.max(amountTendered - amountPaid, 0),
   );
+  const remainingBalance = Number(receiptData.remainingBalance ?? 0);
+  const paymentMethod = receiptData.paymentMethod ?? "Cash";
+  const paymentStatus = receiptData.paymentStatus ?? (remainingBalance === 0 ? "Paid" : "Partially Paid");
+  const isCash = paymentMethod === "Cash";
+  const paid = paymentStatus === "Paid";
+  const StatusIcon = paid ? CheckCircle2 : Clock3;
+  const transactionNumber = receiptData.id ? `PAY-${receiptData.id}` : "Not available";
 
   const handleDownload = () => {
+    const lines = [
+      ["Transaction Number", transactionNumber],
+      ["Invoice Number", receiptData.invoiceNumber ?? "Not available"],
+      ["Resident", receiptData.name ?? receiptData.consumerName ?? "Not available"],
+      ["Payment Date", receiptData.paymentDate ?? "Not available"],
+      ["Payment Method", paymentMethod],
+      ...(receiptData.referenceNumber
+        ? [["Reference Number", receiptData.referenceNumber]]
+        : []),
+      ...(isCash
+        ? [
+            ["Cash Received", currency(amountTendered)],
+            ["Change Given", currency(changeGiven)],
+          ]
+        : []),
+      ["Remaining Balance", currency(remainingBalance)],
+      ["Bill Status", paymentStatus],
+      ["Amount Paid", currency(amountPaid)],
+    ];
+
     downloadReceiptImage({
-      filename: `${receiptData.invoiceNumber}-digital-receipt.png`,
-      title: "Digital Receipt",
-      lines: [
-        ["Invoice Number", receiptData.invoiceNumber],
-        ["Name", receiptData.name],
-        ["Previous Reading", `${receiptData.previousReading} m³`],
-        ["Current Reading", `${receiptData.currentReading} m³`],
-        ["Consumption Difference", `${calculatedDifference} m³`],
-        [
-          "Total Amount Payable",
-          `₱${receiptData.amountDue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        ],
-      ],
+      filename: `${transactionNumber.toLowerCase()}-payment-receipt.png`,
+      title: "Payment Receipt",
+      lines,
     });
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/45 sm:items-center sm:px-4 sm:py-6"
-      aria-label="Digital receipt"
+      aria-label="Payment receipt"
       aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/45 p-3 sm:p-6"
+      data-print-document-overlay
       data-testid="receipt-modal-overlay"
       onClick={onClose}
       role="dialog"
     >
-      <div
-        className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-slate-200 bg-white shadow-modal sm:rounded-3xl"
+      <article
+        className="max-h-[94dvh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-modal"
+        data-printable-document
         data-testid="receipt-modal-content"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white p-4  sm:p-5">
+        <header
+          className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white p-4 sm:p-5"
+          data-document-header
+        >
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-water-600">
-              Digital receipt
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-600">
+              Sucol Water System
             </p>
-            <h3 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
-              Billing statement preview
-            </h3>
+            <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
+              Payment receipt
+            </h2>
+            <p className="mt-1 font-mono text-xs font-semibold text-slate-500">
+              {transactionNumber}
+            </p>
           </div>
-          <div className="flex gap-2">
+
+          <div className="flex gap-2" data-document-actions>
             <button
-              className="flex h-11 items-center gap-2 rounded-xl bg-water-50 px-3 text-sm font-bold text-water-600 transition hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+              aria-label="Download payment receipt"
+              className="flex h-11 items-center gap-2 rounded-xl bg-water-50 px-3 text-sm font-bold text-water-700 hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
               data-testid="download-receipt-image"
               onClick={handleDownload}
               type="button"
             >
               <FiDownload aria-hidden="true" className="h-4 w-4" />
-              Download
+              <span className="hidden sm:inline">Download</span>
             </button>
-            <button aria-label="Print receipt" className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" onClick={() => window.print()} type="button"><FiPrinter aria-hidden="true" className="h-4 w-4" /></button>
+            <button
+              aria-label="Print payment receipt"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+              onClick={() => window.print()}
+              type="button"
+            >
+              <FiPrinter aria-hidden="true" className="h-4 w-4" />
+            </button>
             <button
               ref={closeButtonRef}
-              aria-label="Close receipt"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+              aria-label="Close payment receipt"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
               data-testid="close-modal-btn"
               onClick={onClose}
               type="button"
@@ -94,46 +146,122 @@ export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
               <FiX aria-hidden="true" className="h-5 w-5" />
             </button>
           </div>
-        </div>
+        </header>
 
         <div className="p-4 sm:p-6">
-          <ReceiptLine
-            label="Invoice Number"
-            testId="receipt-invoice"
-            value={receiptData.invoiceNumber}
-          />
-          <ReceiptLine label="Name" testId="receipt-name" value={receiptData.name} />
-          <ReceiptLine
-            label="Previous Meter Dial Reading"
-            testId="receipt-prev-dial"
-            value={`${receiptData.previousReading} m³`}
-          />
-          <ReceiptLine
-            label="Current Meter Dial Reading"
-            testId="receipt-curr-dial"
-            value={`${receiptData.currentReading} m³`}
-          />
-          <ReceiptLine
-            label="Total Consumption Difference"
-            testId="receipt-diff"
-            value={`${calculatedDifference} m³`}
-          />
-
-          <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-            <div className="flex items-center justify-between gap-4">
-              <strong className="text-sm font-bold text-navy-900">
-                Total Amount Payable
-              </strong>
+          <section className="rounded-2xl bg-navy-950 p-5 text-white">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-200">
+                  Amount paid
+                </p>
+                <p
+                  className="mt-2 font-mono text-3xl font-extrabold tabular-nums text-white"
+                  data-testid="receipt-total-payable"
+                >
+                  {currency(amountPaid)}
+                </p>
+              </div>
               <span
-                className="font-mono text-xl font-bold text-red-700"
-                data-testid="receipt-total-payable"
+                className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                  paid
+                    ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
+                    : "border-amber-400/40 bg-amber-400/15 text-amber-200"
+                }`}
               >
-                ₱{receiptData.amountDue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                <StatusIcon aria-hidden="true" className="h-4 w-4" />
+                Bill {paymentStatus.toLowerCase()}
               </span>
             </div>
+          </section>
+
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <section aria-labelledby="receipt-account-heading">
+              <h3
+                className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500"
+                id="receipt-account-heading"
+              >
+                Account
+              </h3>
+              <dl className="mt-2">
+                <ReceiptLine
+                  label="Resident"
+                  testId="receipt-name"
+                  value={receiptData.name ?? receiptData.consumerName ?? "Not available"}
+                />
+                <ReceiptLine
+                  label="Invoice"
+                  testId="receipt-invoice"
+                  value={receiptData.invoiceNumber ?? "Not available"}
+                />
+                <ReceiptLine label="Transaction" value={transactionNumber} />
+              </dl>
+            </section>
+
+            <section aria-labelledby="receipt-payment-heading">
+              <h3
+                className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500"
+                id="receipt-payment-heading"
+              >
+                Payment
+              </h3>
+              <dl className="mt-2">
+                <ReceiptLine label="Date" value={receiptData.paymentDate ?? "Not available"} />
+                <ReceiptLine label="Method" value={paymentMethod} />
+                {receiptData.referenceNumber && (
+                  <ReceiptLine label="Reference" value={receiptData.referenceNumber} />
+                )}
+              </dl>
+            </section>
           </div>
+
+          {isCash && (
+            <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                Cash breakdown
+              </h3>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs font-semibold text-slate-500">Cash received</p>
+                  <p className="mt-1 font-mono text-lg font-extrabold tabular-nums text-navy-900">
+                    {currency(amountTendered)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-500">Applied to bill</p>
+                  <p className="mt-1 font-mono text-lg font-extrabold tabular-nums text-navy-900">
+                    {currency(amountPaid)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-500">Change</p>
+                  <p className="mt-1 font-mono text-lg font-extrabold tabular-nums text-emerald-700">
+                    {currency(changeGiven)}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4">
+            <div>
+              <p className="text-sm font-bold text-navy-900">Remaining bill balance</p>
+              <p className="mt-1 text-xs text-slate-500">Balance after this payment</p>
+            </div>
+            <p className="font-mono text-xl font-extrabold tabular-nums text-navy-900">
+              {currency(remainingBalance)}
+            </p>
+          </div>
+
+          <p
+            className="mt-5 text-center text-xs font-medium text-slate-400"
+            data-document-footer
+          >
+            Payment recorded by WaterWise · Keep this receipt for your records
+          </p>
         </div>
-      </div>
-    </div>
+      </article>
+    </div>,
+    document.body,
   );
 }
