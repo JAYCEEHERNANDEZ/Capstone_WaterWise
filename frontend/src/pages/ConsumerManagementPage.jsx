@@ -208,17 +208,29 @@ function ConsumerManagementPage() {
 
       {error && !formMode && <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">{error}</p>}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <Search ariaLabel="Search residents by username or name" className="max-w-xl flex-1" onValueChange={setQuery} placeholder="Search username or name" surface="white" value={query} />
-      <Filter ariaLabel="Filter residents by purok" className="sm:w-48" onValueChange={setPurok} options={purokOptions} value={purok} />
-      <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-water-600 px-5 py-3 font-bold text-white hover:bg-water-700" onClick={() => { setSelectedConsumer(null); setFormMode("add"); }} type="button"><FiPlus />Add Consumer</button>
-      </div>
+      <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row">
+        <Search ariaLabel="Search residents by username or name" className="flex-1" onValueChange={setQuery} placeholder="Search username or name" value={query} />
+        <Filter ariaLabel="Filter residents by purok" className="sm:w-44" onValueChange={setPurok} options={purokOptions} value={purok} />
+      </section>
 
       <ConsumerListTable
         consumers={visibleConsumers}
         isLoading={isLoading}
         onEdit={selectConsumer}
       />
+
+      <button
+        aria-label="Add resident"
+        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-water-600 text-white shadow-raised transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 lg:bottom-6 lg:right-6"
+        onClick={() => {
+          setSelectedConsumer(null);
+          setFormMode("add");
+        }}
+        title="Add resident"
+        type="button"
+      >
+        <FiPlus aria-hidden="true" className="h-6 w-6" />
+      </button>
     </main>
   );
 }

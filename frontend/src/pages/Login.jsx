@@ -1,40 +1,19 @@
 import { useRef, useState } from "react";
 import {
-  FiCheckCircle,
-  FiClipboard,
   FiDroplet,
   FiEye,
   FiEyeOff,
   FiLock,
   FiMail,
-  FiShield,
 } from "react-icons/fi";
 import { useNavigate } from "react-router";
 import { login } from "../services/auth.service";
 
-const roles = [
-  {
-    id: "admin",
-    label: "Admin",
-    eyebrow: "Barangay officials",
-    Icon: FiShield,
-    route: "/admin/dashboard",
-  },
-  {
-    id: "meter-reader",
-    label: "Meter Reader",
-    eyebrow: "Field personnel",
-    Icon: FiClipboard,
-    route: "/meter-reader/readings-entry",
-  },
-  {
-    id: "consumer",
-    label: "Resident",
-    eyebrow: "Household account",
-    Icon: FiDroplet,
-    route: "/consumer/usage-metrics",
-  },
-];
+const accountDestinations = {
+  admin: "/admin/dashboard",
+  "meter-reader": "/meter-reader/readings-entry",
+  consumer: "/consumer/usage-metrics",
+};
 
 export default function Login() {
   const navigate = useNavigate();
@@ -85,14 +64,13 @@ export default function Login() {
       const authenticatedRole = result.user?.role === "tenant"
         ? "consumer"
         : result.user?.role;
-      const destination = roles.find(({ id }) => id === authenticatedRole);
+      const destination = accountDestinations[authenticatedRole];
 
       if (!destination) {
-        throw new Error("Your account role does not have a configured portal.");
+        throw new Error("This account does not have access to a WaterWise workspace.");
       }
 
-      setMessage(`Signed in as ${destination.label}.`);
-      navigate(destination.route);
+      navigate(destination);
     } catch (error) {
       const status = error.cause?.response?.status;
       const errorField = error.cause?.response?.data?.field;
@@ -127,7 +105,7 @@ export default function Login() {
     <main className="ww-app min-h-screen px-4 py-4 font-sans text-slate-900 sm:px-8 sm:py-8 lg:px-10">
       <section className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
         <div className="ww-glass-strong grid w-full overflow-hidden rounded-2xl lg:grid-cols-[0.94fr_1.06fr]">
-          <aside className="ww-page-header relative flex flex-col justify-between rounded-none border-0 p-6 text-white shadow-none sm:p-10 lg:min-h-[650px]">
+          <aside className="ww-page-header relative flex flex-col rounded-none border-0 p-6 text-white shadow-none sm:p-10 lg:min-h-[650px]">
             <div>
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-water-600 text-white shadow-sm"><FiDroplet aria-hidden="true" className="h-5 w-5" /></span>
@@ -142,19 +120,6 @@ export default function Login() {
               <p className="mt-4 max-w-md text-sm leading-6 text-water-100 sm:text-base">One secure place for water readings, bills, payments, and barangay updates.</p>
             </div>
 
-            <div className="mt-8 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-              {roles.map(({ Icon, eyebrow, id, label }) => (
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-700 bg-navy-900 p-3" key={id}>
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-water-900 text-water-300">
-                    <Icon aria-hidden="true" className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold text-white">{label}</p>
-                    <p className="text-xs text-water-200">{eyebrow}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </aside>
 
           <div className="bg-white p-6 sm:p-10 lg:flex lg:items-center lg:p-12">
@@ -258,11 +223,6 @@ export default function Login() {
                 >
                   {isSubmitting ? "Signing in…" : "Sign in"}
                 </button>
-
-                <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-500">
-                  <FiCheckCircle aria-hidden="true" className="h-4 w-4 text-emerald-500" />
-                  Your account opens only the tools assigned to your role.
-                </div>
 
                 {message && (
                   <p

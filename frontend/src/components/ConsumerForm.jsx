@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+
+const EMAIL_DOMAIN = "@waterwise.app";
 
 const initialState = {
   accountName: "",
@@ -7,64 +10,80 @@ const initialState = {
   email: "",
 };
 
+function createInitialState(initialData) {
+  if (!initialData) return initialState;
+
+  const emailLocalPart = String(initialData.email ?? "").split("@")[0];
+  return {
+    ...initialState,
+    ...initialData,
+    email: emailLocalPart ? `${emailLocalPart}${EMAIL_DOMAIN}` : "",
+  };
+}
+
+function isStrongPassword(password) {
+  return (
+    password.length >= 8 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+  );
+}
+
 function ConsumerForm({ onSubmit = () => {}, requirePassword = false, initialData = null, onCancel }) {
-  const [consumer, setConsumer] = useState(() => initialData ? { ...initialState, ...initialData } : initialState);
+  const formRef = useRef(null);
+  const [consumer, setConsumer] = useState(() => createInitialState(initialData));
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const handleChange = ({ target }) => {
-    const { name, value } = target;
+  const updateField = (field, value) => {
+    setConsumer((previous) => ({ ...previous, [field]: value }));
+    setErrors((previous) => ({ ...previous, [field]: "" }));
+  };
 
-    setConsumer((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    setErrors((prev) => ({
-      ...prev,
-      [name]: "",
-    }));
+  const handleEmailChange = (value) => {
+    const localPart = value.replace(/\s/g, "").replace(/@.*$/, "");
+    updateField("email", localPart ? `${localPart}${EMAIL_DOMAIN}` : "");
   };
 
   const validate = () => {
     const validationErrors = {};
 
-    if (!consumer.accountName.trim()) {
-      validationErrors.accountName = "Enter an account name.";
-    }
-
     if (!consumer.fullName.trim()) {
-      validationErrors.fullName = "Enter the resident's full name.";
+      validationErrors.fullName = "Enter the resident's name.";
     }
-
+    if (!consumer.accountName.trim()) {
+      validationErrors.accountName = "Enter a username.";
+    }
     if (!consumer.purok) {
       validationErrors.purok = "Select the resident's purok.";
     }
-
     if (!consumer.email.trim()) {
-      validationErrors.email = "Enter the resident's email address.";
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-      if (!emailRegex.test(consumer.email)) {
-        validationErrors.email = "Enter a valid email address.";
+      validationErrors.email = "Enter an email name before @waterwise.app.";
+    } else if (!/^[^\s@]+@waterwise\.app$/i.test(consumer.email)) {
+      validationErrors.email = "Use a valid @waterwise.app email address.";
+    }
+    if (requirePassword) {
+      if (!password) {
+        validationErrors.password = "Enter a password.";
+      } else if (!isStrongPassword(password)) {
+        validationErrors.password =
+          "Password is weak. Try at least 8 characters with uppercase, lowercase, a number, and a symbol.";
       }
     }
 
     setErrors(validationErrors);
-
+    requestAnimationFrame(() => {
+      formRef.current?.querySelector('[aria-invalid="true"]')?.focus();
+    });
     return Object.keys(validationErrors).length === 0;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     if (!validate()) return;
-
-    if (requirePassword && !password) {
-      setErrors({ password: "Password is required." });
-      return;
-    }
 
     const saved = await onSubmit({
       ...consumer,
@@ -75,66 +94,158 @@ function ConsumerForm({ onSubmit = () => {}, requirePassword = false, initialDat
 
     setConsumer(initialState);
     setPassword("");
+    setShowPassword(false);
     setErrors({});
   };
 
-  const inputClass = "mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-navy-900 outline-none transition-colors focus:border-water-600 focus:ring-4 focus:ring-water-100";
-  const inputErrorClass = "mt-2 min-h-12 w-full rounded-xl border border-red-600 bg-white px-4 text-navy-900 outline-none transition-colors focus:border-red-600 focus:ring-4 focus:ring-red-100";
+  const inputClass = (field, extraClasses = "") => [
+    "min-h-12 w-full rounded-xl border bg-white px-4 text-navy-900 outline-none transition-colors placeholder:text-slate-400 focus:ring-4",
+    errors[field]
+      ? "border-red-600 focus:border-red-600 focus:ring-red-100"
+      : "border-slate-300 focus:border-water-600 focus:ring-water-100",
+    extraClasses,
+  ].join(" ");
   const labelClass = "text-sm font-bold text-slate-700";
-  const errorClass = "mt-1 text-sm font-semibold text-red-600";
+  const errorClass = "mt-1.5 text-sm font-semibold leading-5 text-red-600";
+  const describedBy = (field, helperId) => [errors[field] ? `${field}-error` : "", helperId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <form onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-      <header className="bg-navy-950 p-6 text-white">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-300">Registration</p>
-        <h2 className="mt-2 text-2xl font-extrabold">{initialData ? "Edit resident" : "Add resident"}</h2>
-        <p className="mt-2 text-sm text-slate-300">{initialData ? "Update this water service account." : "Register a new water service account."}</p>
+    <form autoComplete="off" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card" onSubmit={handleSubmit} ref={formRef}>
+      <header className="bg-navy-950 p-5 text-white sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-900 text-water-300">
+            <ShieldCheck aria-hidden="true" className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-300">Resident account</p>
+            <h2 className="mt-1 text-2xl font-extrabold">{initialData ? "Edit resident" : "Add resident"}</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-300">
+              {initialData ? "Update the resident's service information." : "Enter the resident's details and create secure sign-in credentials."}
+            </p>
+          </div>
+        </div>
       </header>
 
-      <div className="space-y-5 p-6 sm:p-8">
-        <div>
-          <label className={labelClass} htmlFor="accountName">Account Name</label>
-          <input aria-describedby={errors.accountName ? "accountName-error" : undefined} aria-invalid={Boolean(errors.accountName)} className={errors.accountName ? inputErrorClass : inputClass} id="accountName" name="accountName" onChange={handleChange} placeholder="e.g. Household account" type="text" value={consumer.accountName} />
-          {errors.accountName && <p className={errorClass} id="accountName-error" role="alert">{errors.accountName}</p>}
-        </div>
-
-        <div>
-          <label className={labelClass} htmlFor="fullName">Full Name</label>
-          <input aria-describedby={errors.fullName ? "fullName-error" : undefined} aria-invalid={Boolean(errors.fullName)} className={errors.fullName ? inputErrorClass : inputClass} id="fullName" name="fullName" onChange={handleChange} placeholder="e.g. Juan Dela Cruz" type="text" value={consumer.fullName} />
+      <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+        <div className="sm:col-span-2">
+          <label className={labelClass} htmlFor="resident-name">Name</label>
+          <input
+            aria-describedby={describedBy("fullName")}
+            aria-invalid={Boolean(errors.fullName)}
+            autoComplete="off"
+            className={`mt-2 ${inputClass("fullName")}`}
+            id="resident-name"
+            onChange={(event) => updateField("fullName", event.target.value)}
+            placeholder="e.g. Juan Dela Cruz"
+            type="text"
+            value={consumer.fullName}
+          />
           {errors.fullName && <p className={errorClass} id="fullName-error" role="alert">{errors.fullName}</p>}
         </div>
 
         <div>
+          <label className={labelClass} htmlFor="resident-username">Username</label>
+          <input
+            aria-describedby={describedBy("accountName")}
+            aria-invalid={Boolean(errors.accountName)}
+            autoComplete="off"
+            className={`mt-2 ${inputClass("accountName")}`}
+            id="resident-username"
+            onChange={(event) => updateField("accountName", event.target.value)}
+            placeholder="e.g. juandelacruz"
+            spellCheck="false"
+            type="text"
+            value={consumer.accountName}
+          />
+          {errors.accountName && <p className={errorClass} id="accountName-error" role="alert">{errors.accountName}</p>}
+        </div>
+
+        <div>
           <label className={labelClass} htmlFor="purok">Purok</label>
-          <select aria-describedby={errors.purok ? "purok-error" : undefined} aria-invalid={Boolean(errors.purok)} className={errors.purok ? inputErrorClass : inputClass} id="purok" name="purok" onChange={handleChange} value={consumer.purok}>
-            <option value="">Select Purok</option>
-            <option value="Purok 1">Purok 1</option>
-            <option value="Purok 2">Purok 2</option>
-            <option value="Purok 3">Purok 3</option>
-            <option value="Purok 4">Purok 4</option>
-            <option value="Purok 5">Purok 5</option>
-            <option value="Purok 6">Purok 6</option>
+          <select
+            aria-describedby={describedBy("purok")}
+            aria-invalid={Boolean(errors.purok)}
+            className={`mt-2 ${inputClass("purok")}`}
+            id="purok"
+            onChange={(event) => updateField("purok", event.target.value)}
+            value={consumer.purok}
+          >
+            <option value="">Select purok</option>
+            {[1, 2, 3, 4, 5, 6].map((number) => (
+              <option key={number} value={`Purok ${number}`}>Purok {number}</option>
+            ))}
           </select>
           {errors.purok && <p className={errorClass} id="purok-error" role="alert">{errors.purok}</p>}
         </div>
 
-        <div>
-          <label className={labelClass} htmlFor="email">Email Address</label>
-          <input aria-describedby={errors.email ? "email-error" : undefined} aria-invalid={Boolean(errors.email)} className={errors.email ? inputErrorClass : inputClass} id="email" inputMode="email" name="email" onChange={handleChange} placeholder="e.g. juan@example.com" type="email" value={consumer.email} />
+        <div className="sm:col-span-2">
+          <label className={labelClass} htmlFor="resident-email">Email address</label>
+          <div className={`mt-2 flex min-h-12 overflow-hidden rounded-xl border bg-white transition-colors focus-within:ring-4 ${errors.email ? "border-red-600 focus-within:border-red-600 focus-within:ring-red-100" : "border-slate-300 focus-within:border-water-600 focus-within:ring-water-100"}`}>
+            <input
+              aria-describedby={describedBy("email", "email-helper")}
+              aria-invalid={Boolean(errors.email)}
+              autoComplete="off"
+              className="min-w-0 flex-1 bg-transparent px-4 text-navy-900 outline-none placeholder:text-slate-400"
+              id="resident-email"
+              inputMode="email"
+              onChange={(event) => handleEmailChange(event.target.value)}
+              placeholder="juan.delacruz"
+              spellCheck="false"
+              type="text"
+              value={consumer.email.replace(/@waterwise\.app$/i, "")}
+            />
+            <span className="flex items-center border-l border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-600">
+              {EMAIL_DOMAIN}
+            </span>
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500" id="email-helper">The WaterWise email domain is added automatically.</p>
           {errors.email && <p className={errorClass} id="email-error" role="alert">{errors.email}</p>}
         </div>
 
         {requirePassword && (
-          <div>
-            <label className={labelClass} htmlFor="password">Temporary Password</label>
-            <input aria-describedby={errors.password ? "password-error" : undefined} aria-invalid={Boolean(errors.password)} className={errors.password ? inputErrorClass : inputClass} id="password" name="password" onChange={({ target }) => { setPassword(target.value); setErrors((prev) => ({ ...prev, password: "" })); }} placeholder="Set a temporary password" type="password" value={password} />
+          <div className="sm:col-span-2">
+            <label className={labelClass} htmlFor="resident-password">Password</label>
+            <div className="relative mt-2">
+              <input
+                aria-describedby={describedBy("password", "password-helper")}
+                aria-invalid={Boolean(errors.password)}
+                autoComplete="new-password"
+                className={inputClass("password", "pr-12")}
+                id="resident-password"
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setErrors((previous) => ({ ...previous, password: "" }));
+                }}
+                placeholder="Create a strong password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+              />
+              <button
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-slate-500 transition-colors hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-water-600"
+                onClick={() => setShowPassword((visible) => !visible)}
+                type="button"
+              >
+                {showPassword ? <EyeOff aria-hidden="true" className="h-5 w-5" /> : <Eye aria-hidden="true" className="h-5 w-5" />}
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs leading-5 text-slate-500" id="password-helper">
+              Use 8 or more characters with uppercase, lowercase, a number, and a symbol.
+            </p>
             {errors.password && <p className={errorClass} id="password-error" role="alert">{errors.password}</p>}
           </div>
         )}
 
-        <div className="flex gap-3">
-          <button className="min-h-12 flex-1 rounded-xl bg-water-600 px-5 font-bold text-white transition-colors hover:bg-water-700 disabled:opacity-60" type="submit">{initialData ? "Update resident" : "Add resident"}</button>
-          {onCancel && <button className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50" onClick={onCancel} type="button">Cancel</button>}
+        <div className="flex flex-col-reverse gap-3 sm:col-span-2 sm:flex-row sm:justify-end">
+          {onCancel && (
+            <button className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 transition-colors hover:bg-slate-50" onClick={onCancel} type="button">
+              Cancel
+            </button>
+          )}
+          <button className="min-h-12 rounded-xl bg-water-600 px-6 font-bold text-white transition-colors hover:bg-water-700 disabled:opacity-60" type="submit">
+            {initialData ? "Update resident" : "Add resident"}
+          </button>
         </div>
       </div>
     </form>
