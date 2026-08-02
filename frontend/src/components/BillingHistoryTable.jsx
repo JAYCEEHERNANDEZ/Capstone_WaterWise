@@ -1,4 +1,5 @@
 import { AlertCircle, CheckCircle2, Clock3, Eye, WalletCards } from "lucide-react";
+import Table from "./Table";
 
 function getStatusConfig(status) {
   if (status === "Paid") {
@@ -14,46 +15,29 @@ function getStatusConfig(status) {
 
 export default function BillingHistoryTable({ historyData = [], onSelectReceipt, onPayBalance, showConsumerDetails = true, receiptLabel = "View Receipt", allowAllReceipts = false }) {
   return (
-    <div className="overflow-visible md:overflow-x-auto">
-      <table
-        className={`block w-full border-separate border-spacing-y-3 text-left text-sm md:table md:border-collapse md:border-spacing-0 ${showConsumerDetails ? "md:min-w-[980px]" : "md:min-w-[760px]"}`}
-        data-testid="billing-history-table"
-      >
-        <thead className="hidden md:table-header-group">
-          <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-            {showConsumerDetails && <th className="px-4 py-3">Consumer Name</th>}
-            {showConsumerDetails && <th className="px-4 py-3">Purok</th>}
-            <th className="px-4 py-3">Billing Period</th>
-            <th className="px-4 py-3">Reading Date</th>
-            <th className="px-4 py-3">Consumption</th>
-            <th className="px-4 py-3">Amount Due</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3 text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody className="block space-y-3 md:table-row-group md:space-y-0 md:divide-y md:divide-slate-100">
-          {historyData.length === 0 && (
-            <tr className="block rounded-2xl border border-dashed border-slate-200 bg-slate-50 md:table-row">
-              <td
-                className="block px-4 py-10 text-center text-sm font-medium text-slate-500 md:table-cell"
-                colSpan={showConsumerDetails ? 8 : 6}
-                data-testid="billing-history-empty-state"
-              >
-                There are no billing records yet.
-              </td>
-            </tr>
-          )}
-          {historyData.map((row) => {
+    <Table
+      ariaLabel="Billing history"
+      columns={[
+        ...(showConsumerDetails ? [{ key: "consumer", label: "Consumer Name" }, { key: "purok", label: "Purok" }] : []),
+        { key: "period", label: "Billing Period" }, { key: "date", label: "Reading Date" },
+        { key: "consumption", label: "Consumption" }, { key: "amount", label: "Amount Due" },
+        { key: "status", label: "Status" }, { key: "action", label: "Action", className: "text-right" },
+      ]}
+      data={historyData}
+      emptyDescription="There are no billing records yet."
+      emptyTestId="billing-history-empty-state"
+      emptyTitle="No billing records"
+      getRowKey={(row) => row.invoiceNumber}
+      tableClassName={`block w-full text-left text-sm md:table ${showConsumerDetails ? "md:min-w-[980px]" : "md:min-w-[760px]"}`}
+      testId="billing-history-table"
+      rowClassName="grid grid-cols-2 gap-x-4 gap-y-3 p-4 text-navy-900 transition-colors hover:bg-slate-50 md:table-row md:p-0"
+      renderRow={(row) => {
             const canViewReceipt = allowAllReceipts || row.status === "Paid";
             const canPayBalance = row.outstandingBalance > 0 && (row.status === "Unpaid" || row.status === "Partially Paid");
             const { Icon: StatusIcon, className: statusClassName } = getStatusConfig(row.status);
 
             return (
-              <tr
-                className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-slate-200 bg-white p-4 text-navy-900 shadow-card transition hover:border-water-200 md:table-row md:rounded-none md:border-0 md:p-0 md:shadow-none md:hover:bg-slate-50"
-                data-testid="history-row"
-                key={row.invoiceNumber}
-              >
+              <>
                 {showConsumerDetails && <td className="col-span-2 flex flex-col border-b border-slate-100 pb-3 font-extrabold before:text-xs before:font-semibold before:text-slate-500 before:content-['Consumer_name'] md:table-cell md:border-0 md:px-4 md:py-4 md:text-sm md:before:hidden" data-testid="row-consumer-name">{row.consumerName ?? "Unknown consumer"}</td>}
                 {showConsumerDetails && <td className="flex flex-col gap-1 text-slate-600 before:text-xs before:font-semibold before:text-slate-500 before:content-['Purok'] md:table-cell md:px-4 md:py-4 md:before:hidden" data-testid="row-purok">{row.purok ?? "Unassigned"}</td>}
                 <td className="col-span-2 flex items-center justify-between border-b border-slate-100 pb-3 text-base font-extrabold before:text-xs before:font-semibold before:text-slate-500 before:content-['Billing_period'] md:table-cell md:border-0 md:px-4 md:py-4 md:text-sm md:before:hidden" data-testid="row-month">
@@ -115,11 +99,9 @@ export default function BillingHistoryTable({ historyData = [], onSelectReceipt,
                     </button>
                   </div>
                 </td>
-              </tr>
+              </>
             );
-          })}
-        </tbody>
-      </table>
-    </div>
+      }}
+    />
   );
 }

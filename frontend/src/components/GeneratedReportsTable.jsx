@@ -5,6 +5,7 @@ import {
   fetchGeneratedReports,
 } from "../services/reportAPI";
 import LoadingSkeleton from "./LoadingSkeleton";
+import Table from "./Table";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -90,25 +91,18 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
 
       {loading && <LoadingSkeleton label="Loading generated reports" variant="table" />}
       {error && <p className="mb-3 text-red-500">{error}</p>}
-      {!loading && !error && reports.length === 0 && (
-        <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500">No reports generated yet.</p>
-      )}
-
-      {!loading && reports.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="min-w-[760px] w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="px-3 py-3">Report</th>
-                <th className="px-3 py-3">Type</th>
-                <th className="px-3 py-3">Date range</th>
-                <th className="px-3 py-3">Created</th>
-                <th className="px-3 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((report) => (
-                <tr className="border-b transition last:border-0 hover:bg-water-50" key={report.id}>
+      {!loading && !error && (
+        <Table
+          ariaLabel="Generated reports"
+          className="shadow-none"
+          columns={[{ key: "report", label: "Report" }, { key: "type", label: "Type" }, { key: "range", label: "Date range" }, { key: "created", label: "Created" }, { key: "actions", label: "Actions", className: "text-right" }]}
+          data={reports}
+          emptyDescription="Generated report files will appear in this archive."
+          emptyTitle="No reports generated yet"
+          getRowKey={(report) => report.id}
+          rowClassName="grid grid-cols-2 gap-4 p-4 transition-colors hover:bg-slate-50 md:table-row md:p-0"
+          tableClassName="block w-full text-left text-sm md:table md:min-w-[760px]"
+          renderRow={(report) => <>
                   <td className="px-3 py-4 font-semibold">
                     {report.title ?? "Generated Report"}
                   </td>
@@ -138,11 +132,8 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
                       </button>
                     </div>
                   </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          </>}
+        />
       )}
     </section>
   );

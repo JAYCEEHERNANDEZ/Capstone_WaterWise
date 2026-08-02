@@ -1,46 +1,19 @@
+import Table from "./Table";
+
 const RolesTable = ({
   roles = [],
   onEdit = () => {},
   onDelete = () => {},
 }) => {
-  if (roles.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-        <p className="font-bold text-navy-900">No roles available</p>
-        <p className="mt-1 text-sm text-slate-500">Configured staff roles will appear here.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
-      <table className="min-w-full divide-y divide-slate-200">
-        <thead className="bg-slate-50 text-slate-600">
-          <tr>
-            <th className="px-4 py-3 text-left text-sm font-semibold">
-              Role Name
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold">
-              Description
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold">
-              Permissions
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold">
-              Users Assigned
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold">
-              Date Created
-            </th>
-            <th className="px-4 py-3 text-center text-sm font-semibold">
-              Actions
-            </th>
-          </tr>
-        </thead>
-
-        <tbody className="divide-y divide-slate-200">
-          {roles.map((role) => (
-            <tr key={role.id}>
+    <Table
+      ariaLabel="Configured roles"
+      columns={[{ key: "name", label: "Role Name" }, { key: "description", label: "Description" }, { key: "permissions", label: "Permissions" }, { key: "users", label: "Users Assigned" }, { key: "created", label: "Date Created" }, { key: "actions", label: "Actions", className: "text-center" }]}
+      data={roles}
+      emptyDescription="Configured staff roles will appear here."
+      emptyTitle="No roles available"
+      getRowKey={(role) => role.id}
+      renderRow={(role) => <>
               <td className="px-4 py-3">{role.name}</td>
 
               <td className="px-4 py-3">{role.description}</td>
@@ -72,11 +45,10 @@ const RolesTable = ({
                   </button>
                 </div>
               </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      </>}
+      tableClassName="w-full min-w-[760px] text-left text-sm"
+      rowClassName="transition-colors hover:bg-slate-50"
+    />
   );
 };
 

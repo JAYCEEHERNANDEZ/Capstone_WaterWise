@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock3, Pencil, Trash2 } from "lucide-react";
+import Table from "./Table";
 
 function ReadingStatus({ status }) {
   const recorded = status === "Recorded";
@@ -19,37 +20,26 @@ function ReadingStatus({ status }) {
 }
 
 const MeterReadingTable = ({ readings = [], onEdit, onDelete, readOnly = false }) => {
-  if (!readings.length) {
-    return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center">
-        <p className="font-bold text-navy-900">No meter readings found</p>
-        <p className="mt-1 text-sm text-slate-500">
-          Recorded readings will appear here with their submission status.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-      <div className="overflow-x-auto">
-        <table className="block w-full text-left text-sm md:table" role="table">
-          <thead className="hidden bg-slate-50 text-xs font-bold uppercase tracking-[0.08em] text-slate-500 md:table-header-group">
-            <tr>
-              <th className="px-4 py-3" scope="col">Account</th>
-              <th className="px-4 py-3" scope="col">Resident</th>
-              <th className="px-4 py-3" scope="col">Purok</th>
-              <th className="px-4 py-3 text-right" scope="col">Previous</th>
-              <th className="px-4 py-3 text-right" scope="col">Current</th>
-              <th className="px-4 py-3 text-right" scope="col">Usage</th>
-              <th className="px-4 py-3" scope="col">Reading date</th>
-              <th className="px-4 py-3" scope="col">Status</th>
-              {!readOnly && <th className="px-4 py-3 text-right" scope="col">Actions</th>}
-            </tr>
-          </thead>
-          <tbody className="block divide-y divide-slate-100 md:table-row-group">
-            {readings.map((reading) => (
-              <tr className="grid grid-cols-2 gap-4 p-4 transition-colors hover:bg-slate-50 md:table-row md:p-0" key={reading.id}>
+    <Table
+      ariaLabel="Meter readings"
+      columns={[
+        { key: "account", label: "Account" },
+        { key: "resident", label: "Resident" },
+        { key: "purok", label: "Purok" },
+        { key: "previous", label: "Previous", className: "text-right" },
+        { key: "current", label: "Current", className: "text-right" },
+        { key: "usage", label: "Usage", className: "text-right" },
+        { key: "date", label: "Reading date" },
+        { key: "status", label: "Status" },
+        ...(!readOnly ? [{ key: "actions", label: "Actions", className: "text-right" }] : []),
+      ]}
+      data={readings}
+      emptyDescription="Recorded readings will appear here with their submission status."
+      emptyTitle="No meter readings found"
+      getRowKey={(reading) => reading.id}
+      renderRow={(reading) => (
+        <>
                 <td className="flex flex-col font-mono text-navy-900 before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Account'] md:table-cell md:px-4 md:py-4 md:before:hidden">{reading.consumerNo}</td>
                 <td className="col-span-2 row-start-1 flex flex-col font-bold text-navy-900 before:mb-1 before:text-xs before:font-semibold before:text-slate-500 before:content-['Resident'] md:table-cell md:px-4 md:py-4 md:before:hidden">{reading.consumerName}</td>
                 <td className="flex flex-col text-slate-600 before:mb-1 before:text-xs before:font-semibold before:text-slate-500 before:content-['Purok'] md:table-cell md:px-4 md:py-4 md:before:hidden">{reading.purok}</td>
@@ -66,12 +56,9 @@ const MeterReadingTable = ({ readings = [], onEdit, onDelete, readOnly = false }
                     </div>
                   </td>
                 )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+        </>
+      )}
+    />
   );
 };
 

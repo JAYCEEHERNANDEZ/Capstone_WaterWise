@@ -5,6 +5,7 @@ import CurrentBalanceCard from "../components/CurrentBalanceCard";
 import DigitalReceiptModal from "../components/DigitalReceiptModal";
 import PaymentForm from "../components/PaymentForm";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import Table from "../components/Table";
 import { fetchBillingHistory } from "../services/billingAPI";
 import {
   fetchPaymentHistory,
@@ -150,12 +151,8 @@ export default function PaymentProcessingPage() {
         <div className="border-b border-slate-100 p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">Transaction ledger</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Payment History</h3><p className="mt-1 text-sm text-slate-500">Payments loaded from the server and newly recorded transactions.</p></div>
         {loading ? (
           <LoadingSkeleton className="p-4 sm:p-6" label="Loading payment history" variant="table" />
-        ) : payments.length === 0 ? (
-          <div className="m-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center sm:m-6"><ReceiptText className="mx-auto h-10 w-10 text-slate-300" /><p className="mt-3 font-bold text-slate-700">No payments recorded yet.</p><p className="mt-1 text-sm text-slate-500">Completed transactions will appear in this ledger.</p></div>
         ) : (
-          <div className="overflow-x-auto p-4 sm:p-6"><table className="min-w-[760px] w-full text-left text-sm"><thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500"><tr><th className="px-4 py-3">Consumer</th><th className="px-3 py-3">Date</th><th className="px-3 py-3">Method</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Status</th><th className="px-3 py-3 text-right">Receipt</th></tr></thead><tbody className="divide-y divide-slate-100">
-            {payments.map((payment) => <tr className="transition hover:bg-water-50" key={payment.id}><td className="px-4 py-4 font-bold text-slate-900">{payment.consumerName}</td><td className="px-3 py-4 font-mono text-xs text-slate-600">{payment.paymentDate}</td><td className="px-3 py-4 text-slate-600">{payment.paymentMethod}</td><td className="px-3 py-4 font-mono font-bold">₱{payment.amountPaid.toLocaleString()}</td><td className="px-3 py-4"><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${payment.paymentStatus === "Paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{payment.paymentStatus}</span></td><td className="px-3 py-4 text-right"><button className="rounded-xl bg-water-50 px-3 py-2 font-bold text-water-700 hover:bg-water-100" onClick={() => setSelectedPayment(payment)} type="button">View Receipt</button></td></tr>)}
-          </tbody></table></div>
+          <div className="p-4 sm:p-6"><Table ariaLabel="Payment history" className="shadow-none" columns={[{ key: "consumer", label: "Consumer" }, { key: "date", label: "Date" }, { key: "method", label: "Method" }, { key: "amount", label: "Amount" }, { key: "status", label: "Status" }, { key: "receipt", label: "Receipt", className: "text-right" }]} data={payments} emptyDescription="Completed transactions will appear in this ledger." emptyTitle="No payments recorded yet" getRowKey={(payment) => payment.id} rowClassName="transition-colors hover:bg-slate-50" tableClassName="w-full min-w-[760px] text-left text-sm" renderRow={(payment) => <><td className="px-4 py-4 font-bold text-slate-900">{payment.consumerName}</td><td className="px-4 py-4 font-mono text-xs text-slate-600">{payment.paymentDate}</td><td className="px-4 py-4 text-slate-600">{payment.paymentMethod}</td><td className="px-4 py-4 font-mono font-bold">₱{payment.amountPaid.toLocaleString()}</td><td className="px-4 py-4"><span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold ${payment.paymentStatus === "Paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{payment.paymentStatus}</span></td><td className="px-4 py-4 text-right"><button className="min-h-11 rounded-xl bg-water-50 px-3 font-bold text-water-700 hover:bg-water-100" onClick={() => setSelectedPayment(payment)} type="button">View Receipt</button></td></>} /></div>
         )}
       </section>
 
