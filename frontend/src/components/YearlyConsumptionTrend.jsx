@@ -160,15 +160,15 @@ function YearlyConsumptionTrend() {
 
   return (
     <section data-testid="yearly-consumption-trend"
-    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-water-600">
-            Annual Analytics
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">
+            Annual outlook
           </p>
 
-          <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">
-            Yearly Consumption Trend
+          <h2 className="mt-1 text-xl font-extrabold tracking-tight text-navy-900">
+            Yearly consumption trend
           </h2>
 
           <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -182,7 +182,7 @@ function YearlyConsumptionTrend() {
           disabled={loading}
           aria-label="Refresh yearly trend"
           title="Refresh yearly trend"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-water-300 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
@@ -193,17 +193,17 @@ function YearlyConsumptionTrend() {
       )}
 
       {!loading && error && (
-        <div className="flex h-96 items-center justify-center rounded-2xl border border-red-200 bg-red-50">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="h-5 w-5" />
-
-            <span className="text-sm">{error}</span>
+        <div className="flex min-h-72 items-center justify-center rounded-xl border border-red-200 bg-red-50 p-5">
+          <div className="text-center text-red-700" role="alert">
+            <AlertCircle aria-hidden="true" className="mx-auto h-5 w-5" />
+            <p className="mt-2 text-sm font-semibold">{error}</p>
+            <button className="mt-4 min-h-11 rounded-xl bg-white px-4 text-sm font-bold hover:bg-red-100" onClick={loadYearlyTrend} type="button">Try again</button>
           </div>
         </div>
       )}
 
       {!loading && !error && chartData.length > 0 && (
-        <div className="h-96 w-full">
+        <div className="h-72 w-full sm:h-80" aria-label="Yearly historical consumption and forecast chart" role="img">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={chartData}
@@ -258,12 +258,7 @@ function YearlyConsumptionTrend() {
                 name="Historical"
                 stroke="#07968F"
                 strokeWidth={3}
-                dot={{
-                  r: 5,
-                  fill: "#ffffff",
-                  stroke: "#07968F",
-                  strokeWidth: 3,
-                }}
+                dot={false}
                 activeDot={{
                   r: 7,
                   fill: "#07968F",
@@ -296,14 +291,17 @@ function YearlyConsumptionTrend() {
               />
             </LineChart>
           </ResponsiveContainer>
+          <p className="sr-only">
+            The solid teal line shows recorded yearly consumption. The dashed navy line shows the projected year.
+          </p>
         </div>
       )}
 
       {!loading && !error && chartData.length === 0 && (
-        <div className="flex h-96 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50">
+        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6">
           <div className="text-center">
             <h3 className="font-semibold text-slate-700">
-              No Yearly Data Available
+              No yearly data available
             </h3>
 
             <p className="mt-2 text-sm text-slate-500">
