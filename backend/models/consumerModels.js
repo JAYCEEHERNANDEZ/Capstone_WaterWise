@@ -8,7 +8,26 @@ const createError = (message, statusCode = 400) => {
   return error;
 };
 
-const validateConsumer = (username, password, fullName, email, purokNo) => {
+const normalizeContactNumber = (contactNumber) => {
+  if (typeof contactNumber !== "string") {
+    throw createError("A valid contact number is required.");
+  }
+
+  const compactNumber = contactNumber.trim().replace(/[\s()-]/g, "");
+  const normalizedNumber = compactNumber.startsWith("09")
+    ? `+63${compactNumber.slice(1)}`
+    : compactNumber;
+
+  if (!/^\+639\d{9}$/.test(normalizedNumber)) {
+    throw createError(
+      "Enter a valid Philippine mobile number, such as 09171234567."
+    );
+  }
+
+  return normalizedNumber;
+};
+
+const validateConsumer = (username, password, fullName, email, contactNumber, purokNo) => {
   if (
     typeof username !== "string" ||
     typeof password !== "string" ||
@@ -20,13 +39,15 @@ const validateConsumer = (username, password, fullName, email, purokNo) => {
     email.trim() === ""
   ) {
     throw createError(
-      "Username, password, full name, and email are required fields."
+      "Username, password, full name, email, and contact number are required fields."
     );
   }
 
   if (!validator.isEmail(email.trim())) {
     throw createError("A valid email address is required.");
   }
+
+  normalizeContactNumber(contactNumber);
 
   if (!validator.isStrongPassword(password)) {
     throw createError(
@@ -74,9 +95,10 @@ export const createConsumer = async (
   password,
   fullName,
   email,
+  contactNumber,
   purokNo = null
 ) => {
-  validateConsumer(username, password, fullName, email, purokNo);
+  validateConsumer(username, password, fullName, email, contactNumber, purokNo);
 
   const normalizedUsername = username.trim().toLowerCase();
   const normalizedEmail = validator.normalizeEmail(email.trim()) ?? email.trim().toLowerCase();
@@ -90,10 +112,11 @@ export const createConsumer = async (
       username: normalizedUsername,
       full_name: fullName.trim(),
       email: normalizedEmail,
+      contact_number: normalizeContactNumber(contactNumber),
       purok_no: purokNo === null || purokNo === undefined ? null : Number(purokNo),
       password: hashedPassword,
     })
-    .select("id, username, full_name, email, purok_no, status, created_at")
+    .select("id, username, full_name, email, contact_number, purok_no, status, created_at")
     .single();
 
   if (error) {
@@ -107,7 +130,7 @@ export const createConsumer = async (
 };
 
 const CONSUMER_FIELDS =
-  "id, username, full_name, email, purok_no, status, created_at, updated_at";
+  "id, username, full_name, email, contact_number, purok_no, status, created_at, updated_at";
 
 const parseId = (id) => {
   const parsedId = Number(id);
@@ -155,6 +178,7 @@ export const updateConsumer = async (id, updates = {}) => {
     "password",
     "fullName",
     "email",
+    "contactNumber",
     "purokNo",
     "status",
   ];
@@ -192,6 +216,10 @@ export const updateConsumer = async (id, updates = {}) => {
     updateData.email =
       validator.normalizeEmail(updates.email.trim()) ??
       updates.email.trim().toLowerCase();
+  }
+
+  if (updates.contactNumber !== undefined) {
+    updateData.contact_number = normalizeContactNumber(updates.contactNumber);
   }
 
   if (updates.password !== undefined) {

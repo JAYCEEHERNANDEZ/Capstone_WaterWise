@@ -15,19 +15,22 @@ function normalizeConsumer(consumer) {
     consumerName: consumer.full_name ?? "",
     consumerNo: String(consumer.id ?? ""),
     fullName: consumer.full_name ?? "",
+    contactNumber: consumer.contact_number ?? "",
     purok: consumer.purok_no != null ? `Purok ${consumer.purok_no}` : "Unassigned",
-    paymentStatus: consumer.status ?? "active",
+    status: consumer.status ?? "active",
   };
 }
 
-function toConsumerPayload(consumer, includePassword = false) {
+function toConsumerPayload(consumer, includePassword = false, includeStatus = false) {
   const purokNo = Number(String(consumer.purok ?? "").replace(/\D/g, ""));
   return {
     username: consumer.accountName,
     fullName: consumer.fullName,
     email: consumer.email,
+    contactNumber: consumer.contactNumber,
     purokNo: Number.isInteger(purokNo) && purokNo > 0 ? purokNo : null,
     ...(includePassword && consumer.password ? { password: consumer.password } : {}),
+    ...(includeStatus ? { status: consumer.status } : {}),
   };
 }
 
@@ -45,6 +48,6 @@ export async function createConsumer(consumer, options = {}) {
 }
 
 export async function updateConsumer(id, consumer, options = {}) {
-  const response = await client.patch(`/${id}`, toConsumerPayload(consumer), options);
+  const response = await client.patch(`/${id}`, toConsumerPayload(consumer, false, true), options);
   return response.data?.data ? normalizeConsumer(response.data.data) : null;
 }

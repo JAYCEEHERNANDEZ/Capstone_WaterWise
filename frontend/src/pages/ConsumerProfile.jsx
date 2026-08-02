@@ -11,20 +11,21 @@ import ConsumerInfoGrid from "../components/ConsumerInfoGrid";
 import CurrentBalanceCard from "../components/CurrentBalanceCard";
 import MonthlyConsumptionWidget from "../components/MonthlyConsumptionWidget";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import { fetchConsumerProfile } from "../services/consumerPortal.service";
 import { isCanceledRequest } from "../services/apiClient";
 
 function DetailItem({ Icon, label, value }) {
   return (
-    <div className="flex gap-3 rounded-2xl bg-slate-50 p-4 transition hover:bg-sky-50">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#0284C7] shadow-sm">
+    <div className="flex gap-3 rounded-2xl bg-slate-50 p-4 transition-colors hover:bg-water-50">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-water-600 shadow-sm">
         <Icon aria-hidden="true" className="h-5 w-5" />
       </span>
       <div className="min-w-0">
         <dt className="text-xs font-semibold text-slate-500">
           {label}
         </dt>
-        <dd className="mt-1 break-words text-sm font-bold text-[#0F172A] sm:text-base">
+        <dd className="mt-1 break-words text-sm font-bold text-navy-900 sm:text-base">
           {value}
         </dd>
       </div>
@@ -51,13 +52,24 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
   }, [usesApi]);
 
   const consumer = usesApi ? loadedConsumer : consumerProp;
+  const pageHeader = <PageHeader description="Review your account holder, service address, meter information, and latest reading." eyebrow="Resident portal" title="Household profile" />;
 
   if (error) {
-    return <div className="rounded-[8px] border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>;
+    return (
+      <div className="space-y-5">
+        {pageHeader}
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>
+      </div>
+    );
   }
 
   if (!consumer) {
-    return <LoadingSkeleton label="Loading consumer profile" variant="profile" />;
+    return (
+      <div className="space-y-5">
+        {pageHeader}
+        <LoadingSkeleton label="Loading consumer profile" variant="profile" />
+      </div>
+    );
   }
 
   const consumptionDifference = Number(
@@ -66,6 +78,7 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      {pageHeader}
       
       <section className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         <ConsumerInfoGrid
@@ -81,11 +94,11 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
-            Account registry
+        <div className="ww-glass-strong rounded-2xl p-5 sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
+            Household account
           </p>
-          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A]">
+          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900">
             Contact and location
           </h3>
 
@@ -97,11 +110,11 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
           </dl>
         </div>
 
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
+        <div className="ww-glass-strong rounded-2xl p-5 sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
             Latest reading
           </p>
-          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A]">
+          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900">
             Meter snapshot
           </h3>
 
@@ -110,7 +123,7 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Previous
               </p>
-              <p className="mt-2 font-mono text-xl font-bold text-[#0F172A]">
+              <p className="mt-2 font-mono text-xl font-bold text-navy-900">
                 {consumer.previousReading.toFixed(1)} m³
               </p>
             </div>
@@ -118,15 +131,15 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Current
               </p>
-              <p className="mt-2 font-mono text-xl font-bold text-[#0F172A]">
+              <p className="mt-2 font-mono text-xl font-bold text-navy-900">
                 {consumer.currentReading.toFixed(1)} m³
               </p>
             </div>
-            <div className="col-span-2 rounded-2xl bg-sky-50 p-4 sm:col-span-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0284C7]">
+            <div className="col-span-2 rounded-2xl bg-water-50 p-4 sm:col-span-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-water-600">
                 Consumed
               </p>
-              <p className="mt-2 font-mono text-xl font-bold text-[#0284C7]">
+              <p className="mt-2 font-mono text-xl font-bold text-water-600">
                 {consumptionDifference.toFixed(1)} m³
               </p>
             </div>
@@ -134,9 +147,9 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
 
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex gap-3">
-              <FiFileText aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#0284C7]" />
+              <FiFileText aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-water-600" />
               <div>
-                <p className="text-sm font-bold text-[#0F172A]">
+                <p className="text-sm font-bold text-navy-900">
                   Last reading date
                 </p>
                 <p className="mt-1 font-mono text-sm text-slate-600">
@@ -148,17 +161,17 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-5">
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
         <div className="flex gap-3">
-          <FiShield aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#16A34A]" />
+          <FiShield aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
           <div>
-            <p className="text-sm font-bold text-[#0F172A]">
-              Consumer read-only boundary
+            <p className="text-sm font-bold text-navy-900">
+              Need to correct your details?
             </p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              This portal can inspect account data but cannot create, update, or
-              delete billing records. Mutation requests remain reserved for
-              authorized administrative workflows.
+              Your account details are read-only for your protection. Contact
+              the barangay office if your name, contact information, service
+              address, or meter details need to be corrected.
             </p>
           </div>
         </div>

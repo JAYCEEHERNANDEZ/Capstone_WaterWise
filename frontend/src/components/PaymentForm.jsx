@@ -1,124 +1,266 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Clock3,
+  Search,
+  UserRound,
+  WalletCards,
+} from "lucide-react";
+import Dropdown from "./Dropdown";
 
-function PaymentForm({ onSubmit = () => {}, initialData = null, billingRecords = [], lockBillingDetails = false, showPaymentMethod = true }) {
-  const initialState = {
-    consumerName: "",
-    currentBalance: "",
-    amountPaid: "",
-    paymentDate: "",
-    paymentMethod: "",
+const today = () => {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      timeZone: "Asia/Manila",
+      year: "numeric",
+    })
+      .formatToParts(new Date())
+      .filter(({ type }) => type !== "literal")
+      .map(({ type, value }) => [type, value]),
+  );
+
+  return `${parts.year}-${parts.month}-${parts.day}`;
+};
+const createIdempotencyKey = () =>
+  globalThis.crypto?.randomUUID?.() ??
+  `payment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const residentKey = (record) => String(record.raw?.user_id ?? record.consumerName);
+const currency = (value) =>
+  `₱${Number(value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+
+function createInitialPayment(initialData, billingRecords) {
+  const billing = billingRecords.find(
+    (record) => String(record.id) === String(initialData?.billingId ?? ""),
+  );
+
+  return {
+    amountReceived: String(initialData?.amountReceived ?? initialData?.amountPaid ?? ""),
+    billingId: initialData?.billingId ?? "",
+    consumerName: initialData?.consumerName ?? billing?.consumerName ?? "",
+    currentBalance: String(initialData?.currentBalance ?? billing?.outstandingBalance ?? ""),
+    paymentDate: initialData?.paymentDate ?? today(),
+    paymentMethod: initialData?.paymentMethod ?? "Cash",
+    referenceNumber: initialData?.referenceNumber ?? "",
+    residentKey: billing ? residentKey(billing) : "",
   };
+}
 
-  const [form, setForm] = useState(() => {
-    if (initialData) {
-      return {
-        billingId: initialData.billingId,
-        consumerName: initialData.consumerName || "",
-        currentBalance: String(initialData.currentBalance || ""),
-        amountPaid: String(initialData.amountPaid || ""),
-        paymentDate: initialData.paymentDate || new Date().toISOString().split("T")[0],
-        paymentMethod: initialData.paymentMethod || "Cash",
-      };
-    }
-    return initialState;
-  });
+function PaymentStatus({ status }) {
+  const config =
+    status === "Paid"
+      ? {
+          Icon: CheckCircle2,
+          className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        }
+      : status === "Partially Paid"
+        ? {
+            Icon: Clock3,
+            className: "border-amber-200 bg-amber-50 text-amber-800",
+          }
+        : {
+            Icon: AlertCircle,
+            className: "border-red-200 bg-red-50 text-red-700",
+          };
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${config.className}`}
+    >
+      <config.Icon aria-hidden="true" className="h-3.5 w-3.5" />
+      {status}
+    </span>
+  );
+}
+
+function ReviewRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-3 last:border-0">
+      <dt className="text-sm font-semibold text-slate-500">{label}</dt>
+      <dd className="text-right font-mono text-sm font-bold tabular-nums text-navy-900">
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+export default function PaymentForm({
+  billingRecords = [],
+  initialData = null,
+  onCancel,
+  onSubmit = () => {},
+  onSuccess,
+}) {
+  const formRef = useRef(null);
+  const reviewHeadingRef = useRef(null);
+  const idempotencyKeyRef = useRef(createIdempotencyKey());
+  const [form, setForm] = useState(() => createInitialPayment(initialData, billingRecords));
+  const [residentQuery, setResidentQuery] = useState(initialData?.consumerName ?? "");
   const [errors, setErrors] = useState({});
+  const [stage, setStage] = useState("details");
   const [submitting, setSubmitting] = useState(false);
 
+  const unpaidBillings = billingRecords.filter((record) => record.outstandingBalance > 0);
+  const residentOptions = Array.from(
+    new Map(
+      unpaidBillings.map((record) => [
+        residentKey(record),
+        {
+          key: residentKey(record),
+          name: record.consumerName,
+          purok: record.purok,
+        },
+      ]),
+    ).values(),
+  );
+  const residentSearchTerm = residentQuery.trim().toLowerCase();
+  const matchingResidents = residentOptions.filter((resident) =>
+    resident.name.toLowerCase().includes(residentSearchTerm),
+  );
+  const selectedResident = residentOptions.find((resident) => resident.key === form.residentKey);
+  const residentBills = unpaidBillings.filter(
+    (record) => residentKey(record) === form.residentKey,
+  );
+  const selectedBilling = billingRecords.find(
+    (record) => String(record.id) === String(form.billingId),
+  );
   const balance = Number(form.currentBalance) || 0;
-  const paid = Number(form.amountPaid) || 0;
-  const selectedBilling = billingRecords.find((record) => record.id === form.billingId);
-  const isPayment2 = (selectedBilling?.raw?.payments?.length ?? 0) > 0 || selectedBilling?.status === "Partially Paid";
-  const remainingBalance = Math.max(balance - paid, 0);
-  const paymentStatus = paid <= 0
-    ? "Unpaid"
-    : paid >= balance
-      ? "Paid"
-      : "Partially Paid";
+  const amountReceived = Number(form.amountReceived) || 0;
+  const amountApplied =
+    form.paymentMethod === "Cash" ? Math.min(amountReceived, balance) : amountReceived;
+  const changeGiven =
+    form.paymentMethod === "Cash" ? Math.max(amountReceived - balance, 0) : 0;
+  const remainingBalance = Math.max(balance - amountApplied, 0);
+  const paymentStatus =
+    amountApplied <= 0
+      ? "Unpaid"
+      : amountApplied >= balance
+        ? "Paid"
+        : "Partially Paid";
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const inputClass = (name, readOnly = false) =>
+    [
+      "mt-2 min-h-12 w-full rounded-xl border bg-white px-4 font-mono tabular-nums text-navy-900 outline-none transition-colors placeholder:font-sans placeholder:text-slate-400 focus:ring-4",
+      errors[name]
+        ? "border-red-600 focus:border-red-600 focus:ring-red-100"
+        : "border-slate-300 focus:border-water-600 focus:ring-water-100",
+      readOnly ? "bg-slate-100 text-slate-600" : "",
+    ].join(" ");
+  const accessibility = (name) => ({
+    "aria-describedby": errors[name] ? `${name}-error` : undefined,
+    "aria-invalid": Boolean(errors[name]),
+  });
+  const error = (name) =>
+    errors[name] && (
+      <p className="mt-1.5 text-sm font-semibold text-red-700" id={`${name}-error`} role="alert">
+        {errors[name]}
+      </p>
+    );
 
-    if (name === "consumerName") {
-      const billing = billingRecords.find(
-        (record) => record.consumerName.toLowerCase() === value.trim().toLowerCase(),
-      );
-      setForm((previous) => ({
-        ...previous,
-        consumerName: value,
-        billingId: billing?.id,
-        currentBalance: billing ? String(billing.outstandingBalance) : previous.currentBalance,
-      }));
-      setErrors((previous) => ({ ...previous, consumerName: "", currentBalance: "" }));
-      return;
-    }
+  const selectResident = (resident) => {
+    setResidentQuery(resident.name);
+    setForm((previous) => ({
+      ...previous,
+      billingId: "",
+      consumerName: resident.name,
+      currentBalance: "",
+      residentKey: resident.key,
+    }));
+    setErrors((previous) => ({ ...previous, billingId: "", resident: "" }));
+  };
+
+  const changeResident = () => {
+    setResidentQuery("");
+    setForm((previous) => ({
+      ...previous,
+      billingId: "",
+      consumerName: "",
+      currentBalance: "",
+      residentKey: "",
+    }));
+  };
+
+  const selectBilling = (billing) => {
+    setForm((previous) => ({
+      ...previous,
+      billingId: billing.id,
+      consumerName: billing.consumerName,
+      currentBalance: String(billing.outstandingBalance),
+    }));
+    setErrors((previous) => ({ ...previous, billingId: "", currentBalance: "" }));
+  };
+
+  const handleChange = ({ target }) => {
+    const { name, value } = target;
+    if (name === "amountReceived" && !/^\d*\.?\d{0,2}$/.test(value)) return;
 
     setForm((previous) => ({
       ...previous,
       [name]: value,
+      ...(name === "paymentMethod" && value === "Cash" ? { referenceNumber: "" } : {}),
     }));
-
-    setErrors((previous) => ({
-      ...previous,
-      [name]: "",
-    }));
+    setErrors((previous) => ({ ...previous, [name]: "" }));
   };
 
   const validate = () => {
-    const newErrors = {};
+    const nextErrors = {};
 
-    if (!form.consumerName.trim()) {
-      newErrors.consumerName = "Consumer Name is required.";
+    if (!form.residentKey) nextErrors.resident = "Select a resident with an unpaid bill.";
+    if (!form.billingId) nextErrors.billingId = "Select the billing record being paid.";
+    if (!form.currentBalance) nextErrors.currentBalance = "The current balance is unavailable.";
+    if (!form.amountReceived) nextErrors.amountReceived = "Enter the amount received.";
+    else if (Number(form.amountReceived) <= 0) {
+      nextErrors.amountReceived = "The amount must be greater than zero.";
+    } else if (
+      form.paymentMethod !== "Cash" &&
+      Number(form.amountReceived) > Number(form.currentBalance)
+    ) {
+      nextErrors.amountReceived = "Electronic payments cannot exceed the current balance.";
+    }
+    if (!form.paymentDate) nextErrors.paymentDate = "Select the payment date.";
+    if (!form.paymentMethod) nextErrors.paymentMethod = "Select a payment method.";
+    if (form.paymentMethod !== "Cash" && !form.referenceNumber.trim()) {
+      nextErrors.referenceNumber = "Enter the electronic payment reference number.";
     }
 
-    if (!form.currentBalance) {
-      newErrors.currentBalance = "Current Balance is required.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      requestAnimationFrame(() =>
+        formRef.current?.querySelector('[aria-invalid="true"]')?.focus(),
+      );
     }
-
-    if (!form.amountPaid) {
-      newErrors.amountPaid = "Amount Paid is required.";
-    } else if (Number(form.amountPaid) <= 0) {
-      newErrors.amountPaid = "Amount Paid must be greater than zero.";
-    } else if (Number(form.amountPaid) > Number(form.currentBalance)) {
-      newErrors.amountPaid = "Amount Paid cannot exceed balance.";
-    } else if (isPayment2 && Math.round(Number(form.amountPaid) * 100) !== Math.round(Number(form.currentBalance) * 100)) {
-      newErrors.amountPaid = "Payment 2 must be equal to the remaining balance.";
-    }
-
-    if (!form.paymentDate) {
-      newErrors.paymentDate = "Payment Date is required.";
-    }
-
-    if (!form.paymentMethod.trim()) {
-      newErrors.paymentMethod = "Payment Method is required.";
-    }
-
-    setErrors(newErrors);
-
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = async (event) => {
+  const reviewPayment = (event) => {
     event.preventDefault();
+    if (!validate()) return;
+    setStage("review");
+    requestAnimationFrame(() => reviewHeadingRef.current?.focus());
+  };
 
-    if (!validate()) {
-      return;
-    }
-
+  const confirmPayment = async () => {
     try {
       setSubmitting(true);
       const saved = await onSubmit({
         ...form,
-        currentBalance: Number(form.currentBalance),
-        amountPaid: Number(form.amountPaid),
-        remainingBalance,
+        amountPaid: amountApplied,
+        amountReceived,
+        amountTendered: amountReceived,
+        billingId: Number(form.billingId),
+        currentBalance: balance,
+        idempotencyKey: idempotencyKeyRef.current,
         paymentStatus,
-        billingId: form.billingId,
+        remainingBalance,
+        changeGiven,
       });
 
       if (saved !== false) {
-        setForm(initialState);
-        setErrors({});
+        idempotencyKeyRef.current = createIdempotencyKey();
+        onSuccess?.(saved);
       }
     } finally {
       setSubmitting(false);
@@ -126,111 +268,366 @@ function PaymentForm({ onSubmit = () => {}, initialData = null, billingRecords =
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      id="payment-form-section"
-      className="max-w-xl mx-auto bg-white rounded-lg shadow p-6 space-y-4"
-    >
-      <h2 className="text-2xl font-bold">Payment Form</h2>
+    <form className="p-5 sm:p-6" onSubmit={reviewPayment} ref={formRef}>
+      <ol className="mb-6 grid grid-cols-2 gap-2" aria-label="Payment steps">
+        {["Payment details", "Review"].map((label, index) => {
+          const active = (stage === "details" ? 0 : 1) >= index;
+          return (
+            <li
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold ${
+                active ? "bg-water-50 text-water-700" : "bg-slate-50 text-slate-400"
+              }`}
+              key={label}
+            >
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-full font-mono ${
+                  active ? "bg-water-600 text-white" : "bg-slate-200 text-slate-500"
+                }`}
+              >
+                {index + 1}
+              </span>
+              {label}
+            </li>
+          );
+        })}
+      </ol>
 
-      <p className="text-sm text-slate-500">The first entry is saved as Payment 1; the next entry for the same bill is saved as Payment 2.</p>
+      {stage === "details" ? (
+        <div className="space-y-6">
+          <section aria-labelledby="resident-selection-heading">
+            <h3 className="text-base font-extrabold text-navy-900" id="resident-selection-heading">
+              1. Select resident and bill
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Choose the account first, then select the exact unpaid billing period.
+            </p>
 
-      <div>
-        <label htmlFor="consumerName">Consumer Name</label>
-        <input
-          id="consumerName"
-          name="consumerName"
-          type="text"
-          placeholder="Consumer Name"
-          value={form.consumerName}
-          onChange={handleChange}
-          readOnly={lockBillingDetails}
-          list="billable-consumers"
-          className={`w-full border rounded p-2 ${lockBillingDetails ? "cursor-not-allowed bg-slate-100 text-slate-600" : ""}`}
-        />
-        <datalist id="billable-consumers">
-          {billingRecords.filter((record) => record.outstandingBalance > 0).map((record) => (
-            <option key={record.id} value={record.consumerName}>{`Balance: ₱${record.outstandingBalance}`}</option>
-          ))}
-        </datalist>
-        {errors.consumerName && (
-          <p role="alert" className="text-red-500">{errors.consumerName}</p>
-        )}
-      </div>
+            {!selectedResident ? (
+              <div className="mt-4">
+                <label className="text-sm font-bold text-navy-900" htmlFor="payment-resident-search">
+                  Resident name
+                </label>
+                <div className="relative mt-2">
+                  <Search
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    {...accessibility("resident")}
+                    className={`${inputClass("resident")} mt-0 pl-11 font-sans`}
+                    id="payment-resident-search"
+                    onChange={(event) => {
+                      setResidentQuery(event.target.value);
+                      setErrors((previous) => ({ ...previous, resident: "" }));
+                    }}
+                    placeholder="Search resident name"
+                    type="search"
+                    value={residentQuery}
+                  />
+                </div>
+                {error("resident")}
 
-      <div>
-        <label htmlFor="currentBalance">Current Balance</label>
-        <input
-          id="currentBalance"
-          name="currentBalance"
-          type="number"
-          placeholder="Current Balance"
-          value={form.currentBalance}
-          onChange={handleChange}
-          readOnly={lockBillingDetails || Boolean(form.billingId)}
-          className={`w-full border rounded p-2 ${lockBillingDetails || form.billingId ? "cursor-not-allowed bg-slate-100 text-slate-600" : ""}`}
-        />
-        {errors.currentBalance && (
-          <p role="alert" className="text-red-500">{errors.currentBalance}</p>
-        )}
-      </div>
+                <div className="mt-3 max-h-52 space-y-2 overflow-y-auto" role="list">
+                  {matchingResidents.slice(0, 8).map((resident) => (
+                    <button
+                      className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left hover:border-water-300 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+                      key={resident.key}
+                      onClick={() => selectResident(resident)}
+                      type="button"
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <UserRound aria-hidden="true" className="h-5 w-5 shrink-0 text-water-600" />
+                        <span className="truncate font-bold text-navy-900">{resident.name}</span>
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold text-slate-500">
+                        {resident.purok}
+                      </span>
+                    </button>
+                  ))}
+                  {residentQuery && matchingResidents.length === 0 && (
+                    <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                      No resident with an unpaid bill matches that name.
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-water-200 bg-water-50 p-4">
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-navy-900">{selectedResident.name}</p>
+                  <p className="mt-1 text-sm text-slate-600">{selectedResident.purok}</p>
+                </div>
+                <button
+                  className="min-h-11 shrink-0 rounded-xl px-3 text-sm font-bold text-water-700 hover:bg-water-100"
+                  onClick={changeResident}
+                  type="button"
+                >
+                  Change
+                </button>
+              </div>
+            )}
 
-      <div>
-        <label htmlFor="amountPaid">{isPayment2 ? "Payment 2" : "Payment 1"}</label>
-        <input
-          id="amountPaid"
-          name="amountPaid"
-          type="number"
-          placeholder="Amount Paid"
-          value={form.amountPaid}
-          onChange={handleChange}
-          className="w-full border rounded p-2"
-        />
-        {errors.amountPaid && (
-          <p role="alert" className="text-red-500">{errors.amountPaid}</p>
-        )}
-      </div>
+            {selectedResident && (
+              <fieldset className="mt-4">
+                <legend className="text-sm font-bold text-navy-900">Unpaid billing records</legend>
+                <div className="mt-2 space-y-2">
+                  {residentBills.map((billing) => {
+                    const selected = String(form.billingId) === String(billing.id);
+                    return (
+                      <label
+                        className={`block cursor-pointer rounded-2xl border p-4 transition-colors ${
+                          selected
+                            ? "border-water-500 bg-water-50 ring-2 ring-water-100"
+                            : "border-slate-200 bg-white hover:border-water-300"
+                        }`}
+                        key={billing.id}
+                      >
+                        <input
+                          checked={selected}
+                          className="sr-only"
+                          name="billingId"
+                          onChange={() => selectBilling(billing)}
+                          type="radio"
+                          value={billing.id}
+                        />
+                        <span className="flex items-start justify-between gap-4">
+                          <span>
+                            <span className="block font-mono text-sm font-bold text-water-700">
+                              {billing.invoiceNumber}
+                            </span>
+                            <span className="mt-1 block text-sm font-semibold text-navy-900">
+                              {billing.billingPeriod}
+                            </span>
+                            <span className="mt-1 block text-xs text-slate-500">
+                              Due {billing.dueDate || "Not available"}
+                            </span>
+                          </span>
+                          <span className="font-mono text-base font-extrabold tabular-nums text-navy-900">
+                            {currency(billing.outstandingBalance)}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {error("billingId")}
+              </fieldset>
+            )}
+          </section>
 
-      <div>
-        <label htmlFor="paymentDate">Payment Date</label>
-        <input
-          id="paymentDate"
-          name="paymentDate"
-          type="date"
-          value={form.paymentDate}
-          onChange={handleChange}
-          readOnly={lockBillingDetails}
-          className={`w-full border rounded p-2 ${lockBillingDetails ? "cursor-not-allowed bg-slate-100 text-slate-600" : ""}`}
-        />
-        {errors.paymentDate && (
-          <p role="alert" className="text-red-500">{errors.paymentDate}</p>
-        )}
-      </div>
+          <section aria-labelledby="payment-details-heading">
+            <h3 className="text-base font-extrabold text-navy-900" id="payment-details-heading">
+              2. Enter payment details
+            </h3>
+            <div className="mt-4 grid gap-5 sm:grid-cols-2">
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm font-bold text-navy-900" htmlFor="amountReceived">
+                    {form.paymentMethod === "Cash" ? "Cash received" : "Amount received"}
+                  </label>
+                  {selectedBilling && (
+                    <button
+                      className="text-xs font-bold text-water-700 hover:underline"
+                      onClick={() => {
+                        setForm((previous) => ({
+                          ...previous,
+                          amountReceived: String(balance),
+                        }));
+                        setErrors((previous) => ({ ...previous, amountReceived: "" }));
+                      }}
+                      type="button"
+                    >
+                      Pay full balance
+                    </button>
+                  )}
+                </div>
+                <input
+                  {...accessibility("amountReceived")}
+                  className={inputClass("amountReceived")}
+                  id="amountReceived"
+                  inputMode="decimal"
+                  name="amountReceived"
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  type="text"
+                  value={form.amountReceived}
+                />
+                {error("amountReceived")}
+              </div>
 
-      {showPaymentMethod && <div>
-        <label htmlFor="paymentMethod">Payment Method</label>
-        <input
-          id="paymentMethod"
-          name="paymentMethod"
-          type="text"
-          placeholder="Payment Method"
-          value={form.paymentMethod}
-          onChange={handleChange}
-          className="w-full border rounded p-2"
-        />
-        {errors.paymentMethod && (
-          <p role="alert" className="text-red-500">{errors.paymentMethod}</p>
-        )}
-      </div>}
+              <div>
+                <label className="text-sm font-bold text-navy-900" htmlFor="paymentDate">
+                  Payment date
+                </label>
+                <input
+                  {...accessibility("paymentDate")}
+                  className={inputClass("paymentDate")}
+                  id="paymentDate"
+                  name="paymentDate"
+                  onChange={handleChange}
+                  type="date"
+                  value={form.paymentDate}
+                />
+                {error("paymentDate")}
+              </div>
 
-      <div className="bg-gray-100 rounded p-4">
-        <p><strong>Remaining Balance:</strong> {remainingBalance}</p>
-        <p><strong>Payment Status:</strong> {paymentStatus}</p>
-      </div>
+              <div className="sm:col-span-2">
+                <label className="text-sm font-bold text-navy-900" htmlFor="paymentMethod">
+                  Payment method
+                </label>
+                <Dropdown
+                  ariaDescribedBy={accessibility("paymentMethod")["aria-describedby"]}
+                  ariaInvalid={accessibility("paymentMethod")["aria-invalid"]}
+                  ariaLabel="Select payment method"
+                  className="mt-2"
+                  id="paymentMethod"
+                  name="paymentMethod"
+                  onValueChange={(value) => handleChange({ target: { name: "paymentMethod", value } })}
+                  options={[
+                    { label: "Cash", value: "Cash" },
+                    { label: "GCash", value: "GCash" },
+                    { label: "Bank transfer", value: "Bank transfer" },
+                  ]}
+                  value={form.paymentMethod}
+                />
+                {error("paymentMethod")}
+              </div>
 
-      <button disabled={submitting} type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? "Recording payment..." : "Record Payment"}</button>
+              {form.paymentMethod !== "Cash" && (
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-bold text-navy-900" htmlFor="referenceNumber">
+                    Reference number
+                  </label>
+                  <input
+                    {...accessibility("referenceNumber")}
+                    className={inputClass("referenceNumber")}
+                    id="referenceNumber"
+                    maxLength={100}
+                    name="referenceNumber"
+                    onChange={handleChange}
+                    placeholder="Enter the electronic transaction reference"
+                    type="text"
+                    value={form.referenceNumber}
+                  />
+                  {error("referenceNumber")}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <div
+            className={`grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 ${
+              form.paymentMethod === "Cash" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+            }`}
+          >
+            <div>
+              <p className="text-xs font-semibold text-slate-500">Remaining balance</p>
+              <p className="mt-1 font-mono text-xl font-extrabold tabular-nums text-navy-900">
+                {currency(remainingBalance)}
+              </p>
+            </div>
+            {form.paymentMethod === "Cash" && (
+              <div>
+                <p className="text-xs font-semibold text-slate-500">Change</p>
+                <p className="mt-1 font-mono text-xl font-extrabold tabular-nums text-emerald-700">
+                  {currency(changeGiven)}
+                </p>
+              </div>
+            )}
+            <div className="sm:text-right">
+              <p className="mb-2 text-xs font-semibold text-slate-500">Resulting bill status</p>
+              <PaymentStatus status={paymentStatus} />
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50"
+              onClick={onCancel}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white hover:bg-water-700"
+              type="submit"
+            >
+              Review payment
+            </button>
+          </div>
+        </div>
+      ) : (
+        <section aria-labelledby="payment-review-heading">
+          <button
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl text-sm font-bold text-slate-600 hover:text-water-700"
+            onClick={() => setStage("details")}
+            type="button"
+          >
+            <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+            Edit payment details
+          </button>
+
+          <h3
+            className="mt-3 text-xl font-extrabold text-navy-900 outline-none"
+            id="payment-review-heading"
+            ref={reviewHeadingRef}
+            tabIndex={-1}
+          >
+            Confirm payment
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Verify these details before creating the financial transaction.
+          </p>
+
+          <dl className="mt-5 rounded-2xl border border-slate-200 bg-white px-4">
+            <ReviewRow label="Resident" value={selectedBilling?.consumerName} />
+            <ReviewRow label="Invoice" value={selectedBilling?.invoiceNumber} />
+            <ReviewRow label="Billing period" value={selectedBilling?.billingPeriod} />
+            <ReviewRow label="Payment date" value={form.paymentDate} />
+            <ReviewRow label="Payment method" value={form.paymentMethod} />
+            {form.referenceNumber && (
+              <ReviewRow label="Reference" value={form.referenceNumber} />
+            )}
+            {form.paymentMethod === "Cash" ? (
+              <>
+                <ReviewRow label="Cash received" value={currency(amountReceived)} />
+                <ReviewRow label="Amount applied to bill" value={currency(amountApplied)} />
+                <ReviewRow label="Change" value={currency(changeGiven)} />
+              </>
+            ) : (
+              <ReviewRow label="Amount paid" value={currency(amountApplied)} />
+            )}
+            <ReviewRow label="Remaining balance" value={currency(remainingBalance)} />
+          </dl>
+
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4">
+            <span className="text-sm font-bold text-navy-900">Resulting bill status</span>
+            <PaymentStatus status={paymentStatus} />
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)]">
+            <button
+              className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50 disabled:opacity-60"
+              disabled={submitting}
+              onClick={onCancel}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 font-bold text-white hover:bg-emerald-700 disabled:bg-emerald-300"
+              disabled={submitting}
+              onClick={confirmPayment}
+              type="button"
+            >
+              <WalletCards aria-hidden="true" className="h-4 w-4" />
+              {submitting
+                ? "Confirming payment…"
+                : `Confirm ${currency(amountApplied)} payment`}
+            </button>
+          </div>
+        </section>
+      )}
     </form>
   );
 }
-
-export default PaymentForm;

@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import Filter from "./Filter";
 
 function getRecordYear(record) {
   return String(record.year ?? record.readingDate?.slice(0, 4) ?? record.month?.match(/\d{4}/)?.[0] ?? "");
@@ -44,9 +45,9 @@ function UsageTooltip({ active, payload, label }) {
   const record = payload[0].payload;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_18px_48px_rgba(15,23,42,0.12)]">
-      <p className="text-sm font-bold text-[#0F172A]">{label}</p>
-      <p className="mt-1 font-mono text-sm text-[#0284C7]">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-card">
+      <p className="text-sm font-bold text-navy-900">{label}</p>
+      <p className="mt-1 font-mono text-sm text-water-600">
         {record.consumption} m³ consumed
       </p>
       {typeof record.previousReading === "number" &&
@@ -77,20 +78,27 @@ export default function ConsumptionTrendGraph({ trendData = [] }) {
     activeYear === "all"
       ? normalizedData
       : normalizedData.filter((record) => record.year === activeYear);
+  const filteredTotal = filteredData.reduce((sum, record) => sum + record.consumption, 0);
+  const filteredAverage = filteredData.length > 0 ? filteredTotal / filteredData.length : 0;
 
   return (
     <section
-      className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-6"
+      className="ww-glass-strong rounded-2xl p-4 sm:p-6"
       data-testid="trend-graph-container"
     >
       <div className="mb-4 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#0284C7]">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
             Usage trend
           </p>
-          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-[#0F172A] sm:text-2xl">
+          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
             Monthly consumption
           </h3>
+          <p className="mt-1.5 text-sm leading-6 text-slate-600">
+            {filteredData.length > 0
+              ? `Average use for this view is ${filteredAverage.toLocaleString("en-US", { maximumFractionDigits: 1 })} m³ per recorded month.`
+              : "No meter readings are available for this period yet."}
+          </p>
         </div>
 
         <div className="flex items-center justify-between gap-3 sm:justify-end">
@@ -101,34 +109,24 @@ export default function ConsumptionTrendGraph({ trendData = [] }) {
             <span>Volume (m³)</span>
           </div>
 
-          <label className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">
-              Year
-            </span>
-            <select
-              className="h-11 min-w-24 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-[#0F172A] outline-none transition focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20"
-              data-testid="year-filter"
-              onChange={(event) => setSelectedYear(event.target.value)}
-              value={activeYear}
-            >
-              {yearOptions.length === 0 ? (
-                <option value="all">All</option>
-              ) : (
-                yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
+          <Filter
+            ariaLabel="Filter consumption by year"
+            className="min-w-36"
+            dataTestId="year-filter"
+            label="Year"
+            onValueChange={setSelectedYear}
+            options={yearOptions.length === 0
+              ? [{ label: "All", value: "all" }]
+              : yearOptions.map((year) => ({ label: String(year), value: String(year) }))}
+            value={String(activeYear)}
+          />
         </div>
       </div>
 
       <div className="h-64 sm:h-80" data-testid="graph-plot-points">
         <ResponsiveContainer height="100%" width="100%">
           <LineChart data={filteredData} margin={{ bottom: 8, left: -20, right: 8, top: 16 }}>
-            <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid stroke="#D8E2E8" strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="month"
               tick={{ fill: "#64748B", fontSize: 12, fontWeight: 600 }}
@@ -141,11 +139,11 @@ export default function ConsumptionTrendGraph({ trendData = [] }) {
             />
             <Tooltip content={<UsageTooltip />} />
             <Line
-              activeDot={{ fill: "#0284C7", r: 6, stroke: "#FFFFFF", strokeWidth: 2 }}
+              activeDot={{ fill: "#07968F", r: 6, stroke: "#FFFFFF", strokeWidth: 2 }}
               dataKey="consumption"
-              dot={{ fill: "#0284C7", r: 4, stroke: "#FFFFFF", strokeWidth: 2 }}
+              dot={{ fill: "#07968F", r: 4, stroke: "#FFFFFF", strokeWidth: 2 }}
               name="Consumption"
-              stroke="#0284C7"
+              stroke="#07968F"
               strokeWidth={3}
               type="monotone"
             />

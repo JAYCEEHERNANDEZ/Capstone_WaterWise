@@ -1,22 +1,56 @@
 import { useCallback, useEffect, useState } from "react";
-import { Banknote, CheckCircle2, ReceiptText } from "lucide-react";
-import ConsumerInfoGrid from "../components/ConsumerInfoGrid";
-import CurrentBalanceCard from "../components/CurrentBalanceCard";
+import { Banknote, CheckCircle2, Clock3, Plus, ReceiptText } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import DigitalReceiptModal from "../components/DigitalReceiptModal";
-import PaymentForm from "../components/PaymentForm";
+import Filter from "../components/Filter";
+import LoadingSkeleton from "../components/LoadingSkeleton";
+import KPI from "../components/KPI";
+import PageHeader from "../components/PageHeader";
+import PaymentModal from "../components/PaymentModal";
+import Search from "../components/Search";
+import Table from "../components/Table";
+import { useToast } from "../components/Toast";
 import { fetchBillingHistory } from "../services/billingAPI";
 import {
   fetchPaymentHistory,
   recordPayment as recordPaymentRequest,
 } from "../services/paymentAPI";
 
+function enrichPayments(paymentHistory, billings) {
+  return paymentHistory.map((payment) => {
+    const billing = billings.find((record) => record.id === payment.billingId);
+
+    return {
+      ...payment,
+      address: billing?.address ?? "",
+      amountDue: payment.amountPaid,
+      consumerName: billing?.consumerName ?? payment.consumerName,
+      currentReading: billing?.currentReading ?? 0,
+      invoiceNumber: billing?.invoiceNumber ?? `INV-${payment.billingId}`,
+      name: billing?.consumerName ?? payment.consumerName,
+      previousReading: billing?.previousReading ?? 0,
+    };
+  });
+}
+
 export default function PaymentProcessingPage() {
+  const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedBillingId = Number(searchParams.get("billingId"));
   const [payments, setPayments] = useState([]);
   const [billingRecords, setBillingRecords] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(
+    Boolean(searchParams.get("billingId")),
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [paymentQuery, setPaymentQuery] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("all");
+
+  const preselectedBilling = billingRecords.find(
+    (record) => record.id === requestedBillingId && record.outstandingBalance > 0,
+  );
 
   const loadPaymentData = useCallback(async () => {
     try {
@@ -27,16 +61,13 @@ export default function PaymentProcessingPage() {
         fetchPaymentHistory(),
       ]);
       setBillingRecords(billings);
-      setPayments(paymentHistory.map((payment) => {
-        const billing = billings.find((record) => record.id === payment.billingId);
-        return {
-          ...payment,
-          consumerName: billing?.consumerName ?? payment.consumerName,
-          address: billing?.address ?? "",
-        };
-      }));
+      setPayments(enrichPayments(paymentHistory, billings));
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to load payment data.");
+      setError(
+        requestError?.response?.data?.message ??
+          requestError.message ??
+          "Unable to load payment data.",
+      );
     } finally {
       setLoading(false);
     }
@@ -44,27 +75,28 @@ export default function PaymentProcessingPage() {
 
   useEffect(() => {
     let active = true;
-    const refresh = () => Promise.all([fetchBillingHistory(), fetchPaymentHistory()])
-      .then(([billings, paymentHistory]) => {
-        if (active) {
-          setBillingRecords(billings);
-          setPayments(paymentHistory.map((payment) => {
-            const billing = billings.find((record) => record.id === payment.billingId);
-            return {
-              ...payment,
-              consumerName: billing?.consumerName ?? payment.consumerName,
-              address: billing?.address ?? "",
-            };
-          }));
-          setError("");
-        }
-      })
-      .catch((requestError) => {
-        if (active) setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to load payment data.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    const refresh = () =>
+      Promise.all([fetchBillingHistory(), fetchPaymentHistory()])
+        .then(([billings, paymentHistory]) => {
+          if (active) {
+            setBillingRecords(billings);
+            setPayments(enrichPayments(paymentHistory, billings));
+            setError("");
+          }
+        })
+        .catch((requestError) => {
+          if (active) {
+            setError(
+              requestError?.response?.data?.message ??
+                requestError.message ??
+                "Unable to load payment data.",
+            );
+          }
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+
     refresh();
     const intervalId = window.setInterval(refresh, 15000);
     return () => {
@@ -73,93 +105,254 @@ export default function PaymentProcessingPage() {
     };
   }, []);
 
+  const closePaymentModal = useCallback(() => {
+    setIsPaymentModalOpen(false);
+    setError("");
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
+
+  const recordAnotherPayment = useCallback(() => {
+    setError("");
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
+
+  const openPaymentModal = () => {
+    setError("");
+    setIsPaymentModalOpen(true);
+  };
+
   const recordPayment = async (payment) => {
-    const billing = billingRecords.find((record) => record.id === payment.billingId)
-      ?? billingRecords.find(
-        (record) => record.consumerName.toLowerCase() === payment.consumerName.trim().toLowerCase(),
-      );
+    const billing = billingRecords.find((record) => record.id === payment.billingId);
     if (!billing) {
-      setError("No billing record matches that consumer name.");
-      setSuccess("");
+      const message = "The selected billing record is no longer available. Select it again.";
+      setError(message);
+      toast.warning("Billing record unavailable", message);
       return false;
     }
 
     try {
       setError("");
-      setSuccess("");
       const result = await recordPaymentRequest({
-        billingId: billing.id,
         amountPaid: payment.amountPaid,
+        amountTendered: payment.amountTendered,
+        billingId: billing.id,
+        idempotencyKey: payment.idempotencyKey,
+        paymentDate: payment.paymentDate,
+        paymentMethod: payment.paymentMethod,
+        referenceNumber: payment.referenceNumber,
       });
       const savedPayment = {
         ...result.payment,
-        consumerName: payment.consumerName,
-        billingId: billing.id,
-        invoiceNumber: billing.invoiceNumber,
-        previousReading: billing.previousReading,
-        currentReading: billing.currentReading,
-        amountDue: result.payment.amountPaid,
-        remainingBalance: Number(result.billing.remaining_balance),
-        paymentStatus: result.billing.status,
-        name: payment.consumerName,
         address: billing.address,
+        amountDue: result.payment.amountPaid,
+        billingId: billing.id,
+        consumerName: billing.consumerName,
+        currentReading: billing.currentReading,
+        invoiceNumber: billing.invoiceNumber,
+        name: billing.consumerName,
+        paymentStatus: result.billing.status,
+        previousReading: billing.previousReading,
+        remainingBalance: Number(result.billing.remaining_balance),
       };
-      setPayments((current) => [savedPayment, ...current]);
-      setSelectedPayment(savedPayment);
+
+      setPayments((current) => [
+        savedPayment,
+        ...current.filter((existingPayment) => existingPayment.id !== savedPayment.id),
+      ]);
       setBillingRecords(await fetchBillingHistory());
-      setSuccess(`Payment for ${payment.consumerName} was recorded in the database successfully.`);
-      return true;
+      toast.success(
+        "Payment recorded",
+        `${billing.consumerName}'s payment of ₱${Number(result.payment.amountPaid).toLocaleString("en-PH", { minimumFractionDigits: 2 })} was saved.`,
+      );
+      return savedPayment;
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to record payment.");
-      setSuccess("");
+      const message = requestError?.response?.data?.message ?? requestError.message ?? "Unable to record payment.";
+      setError(message);
+      toast.error("Payment not recorded", message);
       return false;
     }
   };
 
-  const selectedAddress = selectedPayment?.address ?? "";
-  const [purok = "N/A", houseNumber = "N/A"] = selectedAddress.split(",");
-  const totalCollected = payments.reduce((sum, payment) => sum + Number(payment.amountPaid || 0), 0);
+  const totalCollected = payments.reduce(
+    (sum, payment) => sum + Number(payment.amountPaid || 0),
+    0,
+  );
   const fullyPaid = payments.filter((payment) => payment.paymentStatus === "Paid").length;
+  const paymentSearchTerm = paymentQuery.trim().toLowerCase();
+  const visiblePayments = payments.filter((payment) => {
+    const matchesName =
+      !paymentSearchTerm ||
+      String(payment.consumerName ?? "").toLowerCase().includes(paymentSearchTerm);
+    const matchesStatus =
+      paymentStatus === "all" || payment.paymentStatus === paymentStatus;
+
+    return matchesName && matchesStatus;
+  });
 
   return (
     <main className="space-y-6">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] sm:p-8">
-        <span className="inline-flex rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">Payment administration</span>
-        <div className="mt-4 grid gap-6 xl:grid-cols-[1fr_auto] xl:items-end">
-          <div><h2 className="text-3xl font-extrabold tracking-tight">Payment processing</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">Record consumer payments, monitor remaining balances, and issue downloadable digital receipts.</p></div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4"><Banknote className="h-5 w-5 text-emerald-300" /><p className="mt-3 text-xl font-extrabold">₱{totalCollected.toLocaleString()}</p><p className="text-xs text-slate-300">Collected</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4"><ReceiptText className="h-5 w-5 text-sky-300" /><p className="mt-3 text-xl font-extrabold">{payments.length}</p><p className="text-xs text-slate-300">Transactions</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4"><CheckCircle2 className="h-5 w-5 text-emerald-300" /><p className="mt-3 text-xl font-extrabold">{fullyPaid}</p><p className="text-xs text-slate-300">Fully paid</p></div>
-          </div>
+      <PageHeader description="Review completed transactions and securely record resident payments." eyebrow="Payment administration" title="Payment processing" />
+
+      <div className="hidden justify-end lg:flex">
+        <button
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white shadow-card transition-colors hover:bg-water-700 disabled:bg-water-300"
+          disabled={loading}
+          onClick={openPaymentModal}
+          type="button"
+        >
+          <Plus aria-hidden="true" className="h-5 w-5" />
+          Record payment
+        </button>
+      </div>
+
+      <section aria-label="Payment summary" className="grid gap-3 sm:grid-cols-3">
+        <KPI description="Across recorded transactions" icon={Banknote} title="All-time collected" value={`₱${totalCollected.toLocaleString("en-US", { minimumFractionDigits: 2 })}`} />
+        <KPI description="Completed payment records" icon={ReceiptText} title="All transactions" value={payments.length} />
+        <KPI description="Transactions with no balance" icon={CheckCircle2} title="Bills fully paid" value={fullyPaid} />
+      </section>
+
+      {error && !isPaymentModalOpen && (
+        <div
+          className="flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          role="alert"
+        >
+          <span>{error}</span>
+          <button className="min-h-11 font-bold underline" onClick={loadPaymentData} type="button">
+            Try again
+          </button>
         </div>
-      </header>
+      )}
 
-      {error && <div className="flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{error}</span><button className="font-bold underline" onClick={loadPaymentData} type="button">Try again</button></div>}
-      {success && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700" role="status">{success}</div>}
+      <div
+        aria-label="Payment history table controls"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
+        role="search"
+      >
+        <Search
+          ariaLabel="Search payment history by resident name"
+          className="flex-1"
+          onValueChange={setPaymentQuery}
+          placeholder="Search resident name"
+          value={paymentQuery}
+        />
+        <Filter
+          ariaLabel="Filter payment history by bill status"
+          className="w-full sm:w-48"
+          onValueChange={setPaymentStatus}
+          options={[
+            { label: "All statuses", value: "all" },
+            { label: "Paid", value: "Paid" },
+            { label: "Partially paid", value: "Partially Paid" },
+          ]}
+          value={paymentStatus}
+        />
+      </div>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <ConsumerInfoGrid houseNumber={houseNumber.trim()} name={selectedPayment?.consumerName} purok={purok.trim()} />
-        <CurrentBalanceCard amountDue={selectedPayment?.remainingBalance ?? 0} />
-      </section>
+      {loading ? (
+        <LoadingSkeleton label="Loading payment history" variant="table" />
+      ) : (
+        <Table
+          ariaLabel="Payment history"
+          columns={[
+            { key: "consumer", label: "Consumer" },
+            { key: "invoice", label: "Invoice" },
+            { key: "date", label: "Date" },
+            { key: "method", label: "Method" },
+            { key: "reference", label: "Reference" },
+            { key: "amount", label: "Amount", className: "text-right" },
+            { key: "balance", label: "Balance after", className: "text-right" },
+            { key: "status", label: "Bill status" },
+            { key: "receipt", label: "Receipt", className: "text-right" },
+          ]}
+          data={visiblePayments}
+          emptyDescription={
+            payments.length
+              ? "No payments match the current search and filter."
+              : "Completed transactions will appear in this ledger."
+          }
+          emptyTitle={payments.length ? "No matching payments" : "No payments recorded yet"}
+          getRowKey={(payment) => payment.id}
+          rowClassName="transition-colors hover:bg-slate-50"
+          tableClassName="w-full min-w-[1120px] text-left text-sm"
+          renderRow={(payment) => {
+            const paid = payment.paymentStatus === "Paid";
+            const StatusIcon = paid ? CheckCircle2 : Clock3;
 
-      <PaymentForm billingRecords={billingRecords} onSubmit={recordPayment} />
+            return (
+              <>
+                <td className="px-4 py-4 font-bold text-slate-900">{payment.consumerName}</td>
+                <td className="px-4 py-4 font-mono text-xs font-bold text-water-700">
+                  {payment.invoiceNumber}
+                </td>
+                <td className="px-4 py-4 font-mono text-xs text-slate-600">
+                  {payment.paymentDate}
+                </td>
+                <td className="px-4 py-4 text-slate-600">{payment.paymentMethod}</td>
+                <td className="px-4 py-4 font-mono text-xs text-slate-600">
+                  {payment.referenceNumber || "—"}
+                </td>
+                <td className="px-4 py-4 text-right font-mono font-bold tabular-nums">
+                  ₱{payment.amountPaid.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </td>
+                <td className="px-4 py-4 text-right font-mono font-bold tabular-nums text-slate-700">
+                  ₱{payment.remainingBalance.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                  })}
+                </td>
+                <td className="px-4 py-4">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                      paid
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-amber-200 bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    <StatusIcon aria-hidden="true" className="h-3.5 w-3.5" />
+                    {payment.paymentStatus}
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-right">
+                  <button
+                    className="min-h-11 rounded-xl bg-water-50 px-3 font-bold text-water-700 hover:bg-water-100"
+                    onClick={() => setSelectedPayment(payment)}
+                    type="button"
+                  >
+                    View receipt
+                  </button>
+                </td>
+              </>
+            );
+          }}
+        />
+      )}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.07)]">
-        <div className="border-b border-slate-100 p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-600">Transaction ledger</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Payment History</h3><p className="mt-1 text-sm text-slate-500">Payments loaded from the server and newly recorded transactions.</p></div>
-        {loading ? (
-          <div className="grid gap-3 p-6">{[1, 2, 3].map((item) => <div className="h-16 animate-pulse rounded-xl bg-slate-100" key={item} />)}</div>
-        ) : payments.length === 0 ? (
-          <div className="m-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center sm:m-6"><ReceiptText className="mx-auto h-10 w-10 text-slate-300" /><p className="mt-3 font-bold text-slate-700">No payments recorded yet.</p><p className="mt-1 text-sm text-slate-500">Completed transactions will appear in this ledger.</p></div>
-        ) : (
-          <div className="overflow-x-auto p-4 sm:p-6"><table className="min-w-[760px] w-full text-left text-sm"><thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500"><tr><th className="px-4 py-3">Consumer</th><th className="px-3 py-3">Date</th><th className="px-3 py-3">Method</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Status</th><th className="px-3 py-3 text-right">Receipt</th></tr></thead><tbody className="divide-y divide-slate-100">
-            {payments.map((payment) => <tr className="transition hover:bg-sky-50/40" key={payment.id}><td className="px-4 py-4 font-bold text-slate-900">{payment.consumerName}</td><td className="px-3 py-4 font-mono text-xs text-slate-600">{payment.paymentDate}</td><td className="px-3 py-4 text-slate-600">{payment.paymentMethod}</td><td className="px-3 py-4 font-mono font-bold">₱{payment.amountPaid.toLocaleString()}</td><td className="px-3 py-4"><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${payment.paymentStatus === "Paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{payment.paymentStatus}</span></td><td className="px-3 py-4 text-right"><button className="rounded-lg bg-sky-50 px-3 py-2 font-bold text-sky-700 hover:bg-sky-100" onClick={() => setSelectedPayment(payment)} type="button">View Receipt</button></td></tr>)}
-          </tbody></table></div>
-        )}
-      </section>
+      <button
+        aria-label="Record a new payment"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-water-600 px-5 font-bold text-white shadow-modal transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:bg-water-300 lg:hidden"
+        disabled={loading}
+        onClick={openPaymentModal}
+        type="button"
+      >
+        <Plus aria-hidden="true" className="h-5 w-5" />
+        Record payment
+      </button>
 
-
-      <DigitalReceiptModal isOpen={Boolean(selectedPayment)} onClose={() => setSelectedPayment(null)} receiptData={selectedPayment} />
+      <PaymentModal
+        key={`${isPaymentModalOpen ? "open" : "closed"}-${requestedBillingId || "manual"}`}
+        billingRecords={billingRecords}
+        error={error}
+        initialBilling={preselectedBilling}
+        isOpen={isPaymentModalOpen}
+        onClose={closePaymentModal}
+        onRecordAnother={recordAnotherPayment}
+        onSubmit={recordPayment}
+        onViewReceipt={setSelectedPayment}
+      />
+      <DigitalReceiptModal
+        isOpen={Boolean(selectedPayment)}
+        onClose={() => setSelectedPayment(null)}
+        receiptData={selectedPayment}
+      />
     </main>
   );
 }

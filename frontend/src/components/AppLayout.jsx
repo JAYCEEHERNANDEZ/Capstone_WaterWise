@@ -1,5 +1,17 @@
-import { useEffect, useState } from "react";
-import { FiBookOpen, FiDroplet, FiFileText, FiGrid, FiMessageSquare, FiUsers, FiX } from "react-icons/fi";
+import { useEffect, useRef, useState } from "react";
+import {
+  FiBarChart2,
+  FiBookOpen,
+  FiCalendar,
+  FiCreditCard,
+  FiDroplet,
+  FiFileText,
+  FiGrid,
+  FiMessageSquare,
+  FiUsers,
+  FiWifiOff,
+  FiX,
+} from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router";
 import { getCurrentAccount, logout } from "../services/auth.service";
 import { getStoredAccount } from "../services/authToken";
@@ -8,48 +20,59 @@ import {
   fetchNotifications,
   markNotificationRead,
 } from "../services/consumerPortal.service";
+import NotificationPage from "../pages/NotificationPage";
 import Header from "./Header";
 import NotificationBadgeTrigger from "./NotificationBadgeTrigger";
-import NotificationPage from "../pages/NotificationPage";
 import Sidebar from "./Sidebar";
+import { useToast } from "./Toast";
 
 const ROLE_CONFIG = {
   admin: {
     label: "Admin",
-    profile: "Barangay Official",
+    profile: "Barangay official",
     userName: "Barangay Admin",
     basePath: "/admin",
     homePath: "/admin/dashboard",
     links: [
       { label: "Dashboard", path: "/admin/dashboard", Icon: FiGrid },
-      { label: "Consumers", path: "/admin/consumers", Icon: FiUsers },
+      { label: "Residents", path: "/admin/consumers", Icon: FiUsers },
       { label: "Readings", path: "/admin/readings", Icon: FiBookOpen },
-      { label: "Billings", path: "/admin/billings", Icon: FiFileText },
-      { label: "Announcements", path: "/admin/announcements", Icon: FiMessageSquare },
-      { label: "Analytics", path: "/admin/analytics", Icon: FiGrid },
-      
+      { label: "Billing", path: "/admin/billings", Icon: FiFileText },
+      { label: "Payments", path: "/admin/payments", Icon: FiCreditCard },
+      { label: "Events", path: "/admin/events", Icon: FiCalendar },
+      {
+        label: "Announcements",
+        path: "/admin/announcements",
+        Icon: FiMessageSquare,
+      },
+      { label: "Analytics", path: "/admin/analytics", Icon: FiBarChart2 },
+      { label: "Reports", path: "/admin/reports", Icon: FiFileText },
     ],
   },
   "meter-reader": {
     label: "Meter Reader",
-    profile: "Field Personnel",
+    profile: "Field personnel",
     userName: "Meter Reader",
     basePath: "/meter-reader",
     homePath: "/meter-reader/readings-entry",
     links: [
-      { label: "Readings Entry", path: "/meter-reader/readings-entry", Icon: FiBookOpen },
+      {
+        label: "Readings Entry",
+        path: "/meter-reader/readings-entry",
+        Icon: FiBookOpen,
+      },
     ],
   },
   consumer: {
-    label: "Consumer",
-    profile: "Community Portal",
+    label: "Resident",
+    profile: "Community resident",
     userName: "Iverene Grace M. Causapin",
     basePath: "/consumer",
     homePath: "/consumer/usage-metrics",
     links: [
-      { label: "Usage Metrics", path: "/consumer/usage-metrics", Icon: FiDroplet },
-      { label: "Billing Ledger", path: "/consumer/billing-ledger", Icon: FiFileText },
-      { label: "Profile Details", path: "/consumer/profile-details", Icon: FiUsers },
+      { label: "Home", path: "/consumer/usage-metrics", Icon: FiDroplet },
+      { label: "Bills", path: "/consumer/billing-ledger", Icon: FiFileText },
+      { label: "Profile", path: "/consumer/profile-details", Icon: FiUsers },
     ],
   },
 };
@@ -60,26 +83,34 @@ function getRoleFromPath(pathname) {
   )?.[0];
 }
 
-function formatPageTitle(pathname, activeRole) {
-  const currentLink = ROLE_CONFIG[activeRole].links.find(
-    (link) => link.path === pathname,
-  );
-
-  return currentLink?.label ?? "Dashboard";
-}
-
 export default function AppLayout({ children }) {
+  const toast = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const notificationCloseRef = useRef(null);
   const pathRole = getRoleFromPath(location.pathname);
   const [account, setAccount] = useState(getStoredAccount);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isNotificationLoading, setIsNotificationLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [accountName, setAccountName] = useState("");
-  const activeRole = account?.role ?? pathRole;
-  const activeRoleConfig = ROLE_CONFIG[activeRole];
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const activeRole = account?.role ?? pathRole ?? "consumer";
+  const activeRoleConfig = ROLE_CONFIG[activeRole] ?? ROLE_CONFIG.consumer;
 
   const unreadCount = notifications.filter((item) => !item.isRead).length;
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -96,7 +127,9 @@ export default function AppLayout({ children }) {
       });
 
     if (activeRole === "consumer") {
-      const refreshNotifications = () =>
+      queueMicrotask(() => setIsNotificationLoading(true));
+
+      const refreshNotifications = (isInitialLoad = false) =>
         fetchNotifications({ signal: controller.signal })
           .then((incomingNotifications) =>
             setNotifications((currentNotifications) =>
@@ -107,17 +140,25 @@ export default function AppLayout({ children }) {
                   currentNotifications.some(
                     (current) => current.id === incoming.id && current.isRead,
                   ),
-              }))
-            )
+              })),
+            ),
           )
           .catch((error) => {
             if (!isCanceledRequest(error)) setNotifications([]);
+          })
+          .finally(() => {
+            if (isInitialLoad && !controller.signal.aborted) {
+              setIsNotificationLoading(false);
+            }
           });
 
-      refreshNotifications();
+      refreshNotifications(true);
       notificationIntervalId = window.setInterval(refreshNotifications, 15000);
     } else {
-      queueMicrotask(() => setNotifications([]));
+      queueMicrotask(() => {
+        setNotifications([]);
+        setIsNotificationLoading(false);
+      });
     }
 
     return () => {
@@ -128,13 +169,38 @@ export default function AppLayout({ children }) {
     };
   }, [activeRole, navigate]);
 
+  // The drawer behaves as a focused modal on smaller screens and restores focus
+  // to the originating control when it closes.
+  useEffect(() => {
+    if (!isNotificationOpen) return undefined;
+
+    const previouslyFocusedElement = document.activeElement;
+    const originalOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setIsNotificationOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+    notificationCloseRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocusedElement?.focus?.();
+    };
+  }, [isNotificationOpen]);
+
   const handleLogout = async () => {
     try {
       await logout();
+      toast.success("Signed out", "You have securely signed out of WaterWise.");
+    } catch {
+      toast.warning("Signed out locally", "The server could not confirm sign-out, but this device session was cleared.");
     } finally {
-    setAccount(null);
-    setIsNotificationOpen(false);
-    navigate("/login");
+      setAccount(null);
+      setIsNotificationOpen(false);
+      navigate("/login");
     }
   };
 
@@ -148,6 +214,7 @@ export default function AppLayout({ children }) {
       );
     } catch {
       // Keep the unread state when the backend update fails.
+      toast.error("Notification not updated", "WaterWise could not mark this notification as read.");
     }
   };
 
@@ -159,72 +226,86 @@ export default function AppLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-transparent font-[Inter,system-ui,sans-serif] text-[#0F172A]">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <Header
         accountName={accountName || activeRoleConfig.userName}
         activeRole={activeRole}
         activeRoleLabel={activeRoleConfig.label}
-        notificationSlot={activeRole === "consumer" ? (
-          <NotificationBadgeTrigger
-            onToggleHub={() => setIsNotificationOpen((isOpen) => !isOpen)}
-            unreadCount={unreadCount}
-          />
-        ) : null}
+        notificationSlot={
+          activeRole === "consumer" ? (
+            <NotificationBadgeTrigger
+              onToggleHub={() => setIsNotificationOpen((isOpen) => !isOpen)}
+              unreadCount={unreadCount}
+            />
+          ) : null
+        }
         onLogout={handleLogout}
         title="WaterWise"
-        compact={activeRole === "admin"}
       />
 
-      <div className="mx-auto max-w-[1600px] lg:flex">
+      {!isOnline && (
+        <div
+          className="sticky top-16 z-30 flex min-h-11 items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-800"
+          role="status"
+        >
+          <FiWifiOff aria-hidden="true" className="h-4 w-4 shrink-0" />
+          You are offline. New changes will be submitted after you reconnect.
+        </div>
+      )}
+
+      {/* Desktop content is anchored beside the fixed-width sidebar; mobile
+          content reserves space for the persistent bottom navigation. */}
+      <div className="w-full lg:flex">
         <Sidebar
           activeRoleLabel={activeRoleConfig.label}
           items={activeRoleConfig.links}
-          userName={accountName || activeRoleConfig.userName}
-          compact={activeRole === "admin"}
         />
 
-        <main className={`min-w-0 flex-1 pb-24 lg:pb-0 ${activeRole === "admin" ? "admin-auto-refresh" : ""}`}>
-          <div className={activeRole === "admin" ? "h-full px-4 py-4 sm:px-5 lg:px-6" : "h-full px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8"}>
-            <div className="mx-auto max-w-7xl">
-              {activeRole !== "admin" && <div className="mb-5 sm:mb-7">
-                <h1 className="mt-1.5 text-2xl font-extrabold leading-tight tracking-[-0.04em] text-[#0F172A] sm:text-3xl">
-                  {formatPageTitle(location.pathname, activeRole)}
-                </h1>
-              </div>}
-              {children}
-            </div>
+        <main
+          className="ww-workspace min-w-0 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+          id="main-content"
+        >
+          <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
+            {children}
           </div>
         </main>
       </div>
 
-      <div
-        aria-hidden={!isNotificationOpen}
+      <button
+        aria-label="Close notification center"
         className={[
-          "fixed inset-0 z-40 bg-[#0F172A]/25 transition-opacity",
+          "fixed inset-0 z-40 bg-slate-950/45 transition-opacity duration-200",
           isNotificationOpen ? "opacity-100" : "pointer-events-none opacity-0",
         ].join(" ")}
         onClick={() => setIsNotificationOpen(false)}
+        tabIndex={isNotificationOpen ? 0 : -1}
+        type="button"
       />
 
       <aside
+        aria-hidden={!isNotificationOpen}
         aria-label="Notification center"
+        aria-modal={isNotificationOpen ? "true" : undefined}
         className={[
-          "fixed inset-y-0 right-0 z-50 h-full w-[min(92vw,26rem)] border-l border-slate-200 bg-[#F8FAFC] shadow-[0_24px_80px_rgba(15,23,42,0.2)] transition-transform duration-300 ease-out",
+          "fixed inset-y-0 right-0 z-50 h-full w-[min(94vw,27rem)] border-l border-slate-200 bg-white shadow-2xl transition-transform duration-200 ease-out",
           isNotificationOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
+        inert={!isNotificationOpen}
+        role="dialog"
       >
-        <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-5">
+        <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
           <div>
-            <p className="text-sm font-bold text-[#0F172A]">
-              Notification Center
-            </p>
+            <h2 className="text-sm font-bold text-slate-900">
+              Notification center
+            </h2>
             <p className="text-xs font-medium text-slate-500">
               {unreadCount} unread alert{unreadCount === 1 ? "" : "s"}
             </p>
           </div>
           <button
+            ref={notificationCloseRef}
             aria-label="Close notification center"
-            className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-slate-200 bg-white text-[#0284C7] transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0284C7] focus-visible:ring-offset-2"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:border-water-200 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2"
             onClick={() => setIsNotificationOpen(false)}
             type="button"
           >
@@ -232,11 +313,14 @@ export default function AppLayout({ children }) {
           </button>
         </div>
 
-        <NotificationPage
-          notifications={notifications}
-          onNotificationClick={handleNotificationClick}
-          onMarkAsRead={handleMarkNotificationAsRead}
-        />
+        <div className="h-[calc(100%-4rem)] overflow-y-auto">
+          <NotificationPage
+            isLoading={isNotificationLoading}
+            notifications={notifications}
+            onNotificationClick={handleNotificationClick}
+            onMarkAsRead={handleMarkNotificationAsRead}
+          />
+        </div>
       </aside>
     </div>
   );

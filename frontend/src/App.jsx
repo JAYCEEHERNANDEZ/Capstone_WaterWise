@@ -23,16 +23,16 @@ import RecordConsumptionPage from "./pages/RecordConsumptionPage";
 
 const portalRoutes = [
   { label: "Dashboard", path: "/admin/dashboard" },
-  { label: "Consumers", path: "/admin/consumers" },
+  { label: "Residents", path: "/admin/consumers" },
   { label: "Readings", path: "/admin/readings" },
-  { label: "Billings", path: "/admin/billings" },
+  { label: "Billing", path: "/admin/billings" },
   { label: "Payments", path: "/admin/payments" },
   { label: "Events", path: "/admin/events" },
   { label: "Announcements", path: "/admin/announcements" },
   { label: "Record Consumption Entry", path: "/meter-reader/readings-entry" },
-  { label: "Profile Details", path: "/consumer/profile-details" },
-  { label: "Billing Ledger", path: "/consumer/billing-ledger" },
-  { label: "Usage Metrics", path: "/consumer/usage-metrics" },
+  { label: "Profile", path: "/consumer/profile-details" },
+  { label: "Bills", path: "/consumer/billing-ledger" },
+  { label: "Home", path: "/consumer/usage-metrics" },
   { label: "Analytics", path: "/admin/analytics" },
   { label: "Reports", path: "/admin/reports" },
 ];
@@ -84,11 +84,11 @@ function MockPortalPage() {
 
   return (
     <AppLayout>
-      <section className="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#0284C7]">
+      <section className="ww-glass-strong rounded-2xl p-6 sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-water-600">
           Mock workspace
         </p>
-        <h2 className="mt-3 text-2xl font-bold leading-tight tracking-[-0.02em] text-[#0F172A]">
+        <h2 className="mt-3 text-2xl font-bold leading-tight tracking-[-0.02em] text-navy-900">
           {pageTitle}
         </h2>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">

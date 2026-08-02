@@ -14,7 +14,7 @@ function ConsumerDetailsPage() {
           Consumer Details
         </h1>
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-slate-500">
           View consumer information, billing records, and payments.
         </p>
       </header>

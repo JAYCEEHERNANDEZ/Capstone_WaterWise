@@ -69,18 +69,33 @@ const verifyAndUpgradePassword = async (table, account, password) => {
 
 export async function authenticateAccount(identifier, password) {
   const normalizedIdentifier = String(identifier ?? "").trim().toLowerCase();
-  if (!normalizedIdentifier || typeof password !== "string" || !password) {
-    return null;
+  if (!normalizedIdentifier) {
+    const error = new Error("Email address or username is required.");
+    error.statusCode = 400;
+    error.field = "identifier";
+    throw error;
   }
+  if (typeof password !== "string" || !password) {
+    const error = new Error("Password is required.");
+    error.statusCode = 400;
+    error.field = "password";
+    throw error;
+  }
+
+  let identifierMatched = false;
 
   for (const source of ACCOUNT_SOURCES) {
     const account = await findAccount(source.table, normalizedIdentifier);
-    if (
-      !account ||
-      !(await verifyAndUpgradePassword(source.table, account, password))
-    ) {
+    if (!account) {
       continue;
     }
+
+    identifierMatched = true;
+
+    if (!(await verifyAndUpgradePassword(source.table, account, password))) {
+      continue;
+    }
+
     if (account.status && account.status !== "active") {
       const error = new Error("This account is inactive.");
       error.statusCode = 403;
@@ -96,5 +111,12 @@ export async function authenticateAccount(identifier, password) {
     };
   }
 
-  return null;
+  const error = new Error(
+    identifierMatched
+      ? "Incorrect password."
+      : "Email address or username was not found.",
+  );
+  error.statusCode = 401;
+  error.field = identifierMatched ? "password" : "identifier";
+  throw error;
 }

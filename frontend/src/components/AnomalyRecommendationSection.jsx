@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Lightbulb,
-  LoaderCircle,
   RefreshCw,
 } from "lucide-react";
 
@@ -10,6 +9,7 @@ import { generateAllAnomalies } from "../services/anomalyAPI";
 import { isCanceledRequest } from "../services/apiClient";
 import { fetchAllRecommendations } from "../services/recommendationAPI";
 import AnomalyAlertCard from "./AnomalyAlertCard";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const EMPTY_ANALYSIS = {
   overallMonthly: null,
@@ -28,7 +28,7 @@ const EMPTY_RECOMMENDATIONS = {
 function AnomalyGroup({ items, title }) {
   return (
     <div>
-      <h3 className="mb-3 font-bold text-slate-900">{title}</h3>
+      <h3 className="mb-3 font-bold text-navy-900">{title}</h3>
       {items.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {items.map((item) => (
@@ -56,11 +56,11 @@ function RecommendationCard({ area, result }) {
   const recommendation = items[0];
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h4 className="font-bold text-slate-900">{area}</h4>
+    <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <h4 className="font-bold text-navy-900">{area}</h4>
       <div className="mt-4">
         {recommendation ? (
-          <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <h5 className="text-sm font-bold text-emerald-900">
               {recommendation.title || "Recommended action"}
             </h5>
@@ -81,7 +81,7 @@ function RecommendationCard({ area, result }) {
 function RecommendationGroup({ items, title }) {
   return (
     <div>
-      <h3 className="mb-3 font-bold text-slate-900">{title}</h3>
+      <h3 className="mb-3 font-bold text-navy-900">{title}</h3>
       {items.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {items.map((item) => (
@@ -108,6 +108,7 @@ export default function AnomalyRecommendationSection() {
   );
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("anomalies");
 
   const loadAnalysis = useCallback(async (signal) => {
     setLoading(true);
@@ -149,24 +150,24 @@ export default function AnomalyRecommendationSection() {
 
   return (
     <section
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6"
       data-testid="anomaly-recommendation-section"
     >
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
-            Gemini AI Decision Support
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">
+            AI-assisted decision support
           </p>
-          <h2 className="mt-2 flex items-center gap-2 text-2xl font-extrabold text-slate-900">
+          <h2 className="mt-1 flex items-center gap-2 text-xl font-extrabold text-navy-900">
             <AlertTriangle className="h-6 w-6 text-amber-500" />
-            Consumption Intelligence
+            Consumption review
           </h2>
           <p className="mt-2 text-sm text-slate-500">
             Detects unusual usage and provides data-based administrative actions.
           </p>
         </div>
         <button
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 hover:border-water-300 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 disabled:opacity-60"
           disabled={loading}
           onClick={() => loadAnalysis()}
           type="button"
@@ -176,76 +177,84 @@ export default function AnomalyRecommendationSection() {
         </button>
       </div>
 
+      <div aria-label="Decision support view" className="mb-6 inline-flex rounded-xl bg-slate-100 p-1" role="group">
+        {[
+          { id: "anomalies", label: "Anomalies" },
+          { id: "recommendations", label: "Recommended actions" },
+        ].map((option) => (
+          <button
+            aria-pressed={view === option.id}
+            className={`min-h-11 rounded-lg px-4 text-sm font-bold transition-colors ${
+              view === option.id
+                ? "bg-white text-water-700 shadow-sm"
+                : "text-slate-600 hover:text-navy-900"
+            }`}
+            key={option.id}
+            onClick={() => setView(option.id)}
+            type="button"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       {loading && (
-        <div className="flex items-center justify-center gap-3 rounded-2xl bg-slate-50 py-12 text-slate-600">
-          <LoaderCircle className="h-5 w-5 animate-spin text-sky-600" />
-          Analyzing consumption history...
-        </div>
+        <LoadingSkeleton count={3} label="Analyzing consumption history" variant="list" />
       )}
 
       {!loading && errorMessage && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {errorMessage}
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
+          <p className="font-semibold">{errorMessage}</p>
+          <button className="mt-3 min-h-11 rounded-xl bg-white px-4 font-bold hover:bg-red-100" onClick={() => loadAnalysis()} type="button">
+            Try again
+          </button>
         </div>
       )}
 
       {!loading && !errorMessage && (
         <div className="space-y-7">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <AnomalyAlertCard
-              anomalies={analysis.overallMonthly?.anomalies}
-              area="Overall Monthly"
-              message={analysis.overallMonthly?.summary}
-              riskScore={analysis.overallMonthly?.riskScore}
-              severity={analysis.overallMonthly?.status}
-            />
-            <AnomalyAlertCard
-              anomalies={analysis.overallYearly?.anomalies}
-              area="Overall Yearly"
-              message={analysis.overallYearly?.summary}
-              riskScore={analysis.overallYearly?.riskScore}
-              severity={analysis.overallYearly?.status}
-            />
-          </div>
+          {view === "anomalies" && (
+            <>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <AnomalyAlertCard
+                  anomalies={analysis.overallMonthly?.anomalies}
+                  area="Overall monthly"
+                  message={analysis.overallMonthly?.summary}
+                  riskScore={analysis.overallMonthly?.riskScore}
+                  severity={analysis.overallMonthly?.status}
+                />
+                <AnomalyAlertCard
+                  anomalies={analysis.overallYearly?.anomalies}
+                  area="Overall yearly"
+                  message={analysis.overallYearly?.summary}
+                  riskScore={analysis.overallYearly?.riskScore}
+                  severity={analysis.overallYearly?.status}
+                />
+              </div>
+              <AnomalyGroup items={analysis.allPuroksMonthly} title="Monthly anomaly status per purok" />
+              <AnomalyGroup items={analysis.allPuroksYearly} title="Yearly anomaly status per purok" />
+            </>
+          )}
 
-          <AnomalyGroup
-            items={analysis.allPuroksMonthly}
-            title="Monthly anomaly status per purok"
-          />
-          <AnomalyGroup
-            items={analysis.allPuroksYearly}
-            title="Yearly anomaly status per purok"
-          />
-
-          <div className="border-t border-slate-200 pt-7">
-            <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-900">
-              <Lightbulb className="h-5 w-5 text-emerald-600" />
-              AI Recommendations
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Practical actions generated from the recorded consumption trends.
-            </p>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <RecommendationCard
-              area="Overall Monthly"
-              result={recommendations.overallMonthly}
-            />
-            <RecommendationCard
-              area="Overall Yearly"
-              result={recommendations.overallYearly}
-            />
-          </div>
-
-          <RecommendationGroup
-            items={recommendations.allPuroksMonthly}
-            title="Monthly recommendations per purok"
-          />
-          <RecommendationGroup
-            items={recommendations.allPuroksYearly}
-            title="Yearly recommendations per purok"
-          />
+          {view === "recommendations" && (
+            <>
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-extrabold text-navy-900">
+                  <Lightbulb aria-hidden="true" className="h-5 w-5 text-emerald-600" />
+                  Recommended actions
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Practical actions generated from recorded consumption trends.
+                </p>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <RecommendationCard area="Overall monthly" result={recommendations.overallMonthly} />
+                <RecommendationCard area="Overall yearly" result={recommendations.overallYearly} />
+              </div>
+              <RecommendationGroup items={recommendations.allPuroksMonthly} title="Monthly recommendations per purok" />
+              <RecommendationGroup items={recommendations.allPuroksYearly} title="Yearly recommendations per purok" />
+            </>
+          )}
         </div>
       )}
     </section>

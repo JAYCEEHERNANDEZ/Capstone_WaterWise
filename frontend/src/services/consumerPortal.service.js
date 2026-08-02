@@ -78,7 +78,7 @@ export async function fetchConsumerProfile(options) {
     purok: consumer.purok_no != null ? `Purok ${consumer.purok_no}` : "Not provided",
     houseNumber: "Not provided",
     email: consumer.email,
-    contactNumber: "Not provided",
+    contactNumber: consumer.contact_number || "Not provided",
     meterNumber: "Not provided",
     status: consumer.status,
     activeAmountDue: currentBillings.reduce(
