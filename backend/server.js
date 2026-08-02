@@ -11,6 +11,7 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import anomaly from "./routes/anomalyRoutes.js";
 import recomendationRoutes from "./routes/recommendationRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/anomaly", anomaly);
 app.use("/api/recommendation", recomendationRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.use((error, req, res, next) => {
   if (error instanceof SyntaxError && "body" in error) {

@@ -1,81 +1,140 @@
-import { useEffect, useState } from "react";
-import { FileText, RefreshCw } from "lucide-react";
-import ReportGenerator from "../components/ReportGenerator";
+import { useCallback, useEffect, useState } from "react";
+import {
+  CheckCircle2,
+  Download,
+  Eye,
+  FileText,
+  LoaderCircle,
+  Printer,
+  RefreshCw,
+} from "lucide-react";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageHeader from "../components/PageHeader";
-import { fetchGeneratedReports } from "../services/reportAPI";
+import ReportDetailsModal from "../components/ReportDetailsModal";
+import ReportGenerator from "../components/ReportGenerator";
+import Table from "../components/Table";
+import {
+  downloadReportPDF,
+  fetchGeneratedReports,
+  openPrintableReport,
+  savePdfBlob,
+} from "../services/reportAPI";
+
+const typeLabels = {
+  analytics: "Analytics",
+  billing: "Billing",
+  consumption: "Consumption",
+  residents: "Residents",
+};
+
+const dateTime = (value) => {
+  if (!value) return "Unavailable";
+  return new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+};
+
+const safeFilename = (report) =>
+  `${report.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "waterwise-report"}.pdf`;
 
 export default function Reports() {
   const [reports, setReports] = useState([]);
+  const [selectedReportId, setSelectedReportId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [busyReport, setBusyReport] = useState("");
   const [error, setError] = useState("");
 
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
-      const response = await fetchGeneratedReports();
-      setReports(response?.data ?? response ?? []);
-    } catch {
-      setError("We couldn't load the report archive. Check your connection and try again.");
+      setReports(await fetchGeneratedReports());
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to load the report archive.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     queueMicrotask(loadReports);
-  }, []);
+  }, [loadReports]);
+
+  const download = async (report) => {
+    try {
+      setBusyReport(`download-${report.id}`);
+      setError("");
+      savePdfBlob(await downloadReportPDF(report.id), safeFilename(report));
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to download the report PDF.");
+    } finally {
+      setBusyReport("");
+    }
+  };
+
+  const print = async (report) => {
+    try {
+      setError("");
+      await openPrintableReport(report.id);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to open the printable report.");
+    }
+  };
 
   return (
     <main className="space-y-6">
-      <PageHeader
-        description="Choose a report and period, preview the filters, then generate a reliable record for barangay operations."
-        eyebrow="Decision support"
-        title="Reports"
-      />
-
-      <div className="flex justify-end">
-        <button className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-water-600 px-4 py-2 font-bold text-white transition-colors hover:bg-water-700 sm:w-auto" onClick={loadReports} type="button">
-          <RefreshCw aria-hidden="true" className="h-4 w-4" />
-          Refresh archive
-        </button>
-      </div>
+      <PageHeader description="Preview operational data, generate a fixed report snapshot, and retrieve official PDFs from the archive." eyebrow="Decision support" title="Reports" />
 
       <ReportGenerator onGenerated={loadReports} />
 
-      <section className="ww-glass-strong rounded-2xl p-5 sm:p-6">
-        <p className="ww-eyebrow !text-water-700">Report archive</p>
-        <h2 className="mt-1 text-2xl font-extrabold text-slate-900">Generated reports</h2>
-        <p className="mt-1 text-sm text-slate-500">Previously generated reports and their creation dates.</p>
-
-        {loading && (
-          <LoadingSkeleton className="mt-5" label="Loading generated reports" variant="list" />
-        )}
-
-        {error && <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{error}</div>}
-
-        {!loading && !error && reports.length === 0 && (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-            <p className="font-bold text-slate-700">No reports generated yet</p>
-            <p className="mt-1 text-sm text-slate-500">Generated reports will appear here with their date and filters.</p>
+      <section aria-labelledby="report-archive-title" className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Persistent archive</p>
+            <h2 className="mt-1 text-2xl font-extrabold text-navy-900" id="report-archive-title">Generated reports</h2>
+            <p className="mt-1 text-sm text-slate-500">Saved report snapshots remain available after signing out or refreshing.</p>
           </div>
-        )}
+          <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 font-bold text-slate-700 hover:bg-slate-50 disabled:text-slate-400" disabled={loading} onClick={loadReports} type="button">
+            <RefreshCw aria-hidden="true" className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
 
-        {!loading && !error && reports.length > 0 && (
-          <div className="mt-5 grid gap-3">
-            {reports.map((report) => (
-              <article className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4" key={report.id}>
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-700"><FileText aria-hidden="true" className="h-5 w-5" /></span>
-                <div className="min-w-0">
-                  <p className="truncate font-bold text-slate-900">{report.title ?? "Generated report"}</p>
-                  <p className="mt-0.5 text-sm text-slate-500">{report.created_at || "Date unavailable"}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+        {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">{error}</div>}
+        {loading ? (
+          <LoadingSkeleton label="Loading generated reports" variant="table" />
+        ) : (
+          <Table
+            ariaLabel="Generated report archive"
+            columns={[
+              { key: "report", label: "Report" },
+              { key: "period", label: "Period" },
+              { key: "records", label: "Records" },
+              { key: "created", label: "Generated" },
+              { key: "status", label: "Status" },
+              { key: "actions", label: "Actions", className: "text-right" },
+            ]}
+            data={reports}
+            emptyDescription="Generate a report after previewing a reporting period."
+            emptyTitle="No generated reports"
+            getRowKey={(report) => report.id}
+            tableClassName="block w-full min-w-[920px] text-left text-sm md:table"
+            renderRow={(report) => (
+              <>
+                <td className="px-4 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-700"><FileText aria-hidden="true" className="h-4 w-4" /></span><div className="min-w-0"><p className="max-w-72 truncate font-bold text-navy-900">{report.title}</p><p className="mt-0.5 text-xs text-slate-500">{typeLabels[report.report_type] ?? report.report_type}</p></div></div></td>
+                <td className="px-4 py-4 font-mono text-xs tabular-nums text-slate-600">{report.start_date}<br />{report.end_date}</td>
+                <td className="px-4 py-4 font-mono font-bold tabular-nums text-navy-900">{report.record_count.toLocaleString()}</td>
+                <td className="px-4 py-4 text-xs text-slate-600">{dateTime(report.created_at)}</td>
+                <td className="px-4 py-4"><span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700"><CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" />{report.status}</span></td>
+                <td className="px-4 py-4"><div className="flex justify-end gap-1"><button aria-label={`View ${report.title}`} className="flex h-11 w-11 items-center justify-center rounded-xl text-water-700 hover:bg-water-50" onClick={() => setSelectedReportId(report.id)} type="button"><Eye aria-hidden="true" className="h-4 w-4" /></button><button aria-label={`Download ${report.title}`} className="flex h-11 w-11 items-center justify-center rounded-xl text-water-700 hover:bg-water-50 disabled:text-slate-300" disabled={Boolean(busyReport)} onClick={() => download(report)} type="button">{busyReport === `download-${report.id}` ? <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Download aria-hidden="true" className="h-4 w-4" />}</button><button aria-label={`Open ${report.title} for printing`} className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100" onClick={() => print(report)} type="button"><Printer aria-hidden="true" className="h-4 w-4" /></button></div></td>
+              </>
+            )}
+          />
         )}
       </section>
+
+      {selectedReportId && <ReportDetailsModal onClose={() => setSelectedReportId(null)} reportId={selectedReportId} />}
     </main>
   );
 }

@@ -88,6 +88,29 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_idempotency_key
 ON payments (idempotency_key)
 WHERE idempotency_key IS NOT NULL;
 
+-- Persistent report metadata and immutable source-data snapshots.
+CREATE TABLE IF NOT EXISTS generated_reports (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(180) NOT NULL,
+    report_type VARCHAR(30) NOT NULL CHECK (
+        report_type IN ('consumption', 'billing', 'residents', 'analytics')
+    ),
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    sections TEXT[] NOT NULL DEFAULT ARRAY['summary']::TEXT[],
+    generated_by INTEGER NOT NULL REFERENCES admins (id) ON DELETE RESTRICT,
+    record_count INTEGER NOT NULL DEFAULT 0 CHECK (record_count >= 0),
+    status VARCHAR(20) NOT NULL DEFAULT 'Ready' CHECK (status IN ('Ready', 'Failed')),
+    report_data JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_generated_reports_created_at
+ON generated_reports (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_generated_reports_generated_by
+ON generated_reports (generated_by);
+
 -- Records a payment and updates its billing balance in one database transaction.
 -- The row lock prevents two admins from spending the same remaining balance.
 DROP FUNCTION IF EXISTS record_payment_transaction(INTEGER, NUMERIC, DATE, TEXT, TEXT, TEXT);

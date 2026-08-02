@@ -94,6 +94,7 @@ The main tables are:
 - `ai_consumption_predictions`
 - `ai_consumption_anomalies`
 - `ai_consumption_recommendations`
+- `generated_reports`
 
 The migration also contains the database functions, indexes, and notification trigger used by the application. Keep the migration definitions aligned with the backend models.
 
@@ -204,6 +205,7 @@ All protected routes require a valid Bearer token.
 | `/api/consumption/prediction` | AI consumption predictions |
 | `/api/anomaly` | AI anomaly detection |
 | `/api/recommendation` | AI recommendations |
+| `/api/reports` | Persistent report previews, snapshots, and PDF downloads |
 
 ## Reading, Billing, and Notification Workflow
 
