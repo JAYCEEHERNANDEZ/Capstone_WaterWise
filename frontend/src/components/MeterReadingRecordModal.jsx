@@ -3,30 +3,41 @@ import { createPortal } from "react-dom";
 import { FiDownload, FiPrinter, FiX } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
 
-function ReceiptRow({ label, testId, value }) {
+function RecordRow({ label, testId, value }) {
   return (
     <tr className="border-b border-slate-100">
       <td className="py-3 pr-4 text-sm font-semibold text-slate-500">{label}</td>
-      <td className="py-3 text-right font-mono text-sm font-bold text-navy-900" data-testid={testId}>
+      <td
+        className="py-3 text-right font-mono text-sm font-bold text-navy-900"
+        data-testid={testId}
+      >
         {value}
       </td>
     </tr>
   );
 }
 
-export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
+export default function MeterReadingRecordModal({ isOpen, onClose, recordData }) {
   const closeButtonRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return undefined;
+
     const previouslyFocused = document.activeElement;
-    const closeOnEscape = (event) => { if (event.key === "Escape") onClose(); };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
     document.addEventListener("keydown", closeOnEscape);
     closeButtonRef.current?.focus();
-    return () => { document.removeEventListener("keydown", closeOnEscape); previouslyFocused?.focus?.(); };
+
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      previouslyFocused?.focus?.();
+    };
   }, [isOpen, onClose]);
 
-  if (!isOpen || !receiptData) return null;
+  if (!isOpen || !recordData) return null;
 
   const {
     meterName,
@@ -37,16 +48,18 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
     arrears30Days = 0,
     arrears60Days = 0,
     arrears90Days = 0,
-  } = receiptData;
+  } = recordData;
 
   const cubicMetersUsed = Number((presentReading - previousReading).toFixed(2));
   const totalArrears = arrears30Days + arrears60Days + arrears90Days;
   const finalTotalBill = baselineBill + totalArrears;
 
   const handleDownload = () => {
+    const safeName = String(meterName || "meter-reading").replace(/[^a-z0-9-_]/gi, "-");
+
     downloadReceiptImage({
-      filename: `${meterName}-official-receipt.png`,
-      title: "Official Receipt",
+      filename: `${safeName}-meter-reading-record.png`,
+      title: "Meter Reading Record",
       lines: [
         ["Meter Name", meterName],
         ["Run Date", runDate],
@@ -64,11 +77,11 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/45 sm:items-center sm:px-4 sm:py-6"
-      aria-label="Official receipt"
+      aria-label="Meter reading record"
       aria-modal="true"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/45 sm:items-center sm:px-4 sm:py-6"
       data-print-document-overlay
-      data-testid="receipt-modal"
+      data-testid="meter-reading-record-modal"
       onClick={onClose}
       role="dialog"
     >
@@ -85,26 +98,33 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-water-600">
               Sucol Water System
             </p>
-            <h1 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
-              Sucol Water System Official Receipt
-            </h1>
+            <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
+              Sucol Water System Meter Reading Record
+            </h2>
           </div>
+
           <div className="flex gap-2" data-document-actions>
             <button
+              aria-label="Download meter reading record"
               className="flex h-11 items-center gap-2 rounded-xl bg-water-50 px-3 text-sm font-bold text-water-600 transition hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-              data-testid="download-official-receipt-image"
               onClick={handleDownload}
               type="button"
             >
               <FiDownload aria-hidden="true" className="h-4 w-4" />
-              Download
+              <span className="hidden sm:inline">Download</span>
             </button>
-            <button aria-label="Print official receipt" className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" onClick={() => window.print()} type="button"><FiPrinter aria-hidden="true" className="h-4 w-4" /></button>
+            <button
+              aria-label="Print meter reading record"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+              onClick={() => window.print()}
+              type="button"
+            >
+              <FiPrinter aria-hidden="true" className="h-4 w-4" />
+            </button>
             <button
               ref={closeButtonRef}
-              aria-label="Close official receipt"
+              aria-label="Close meter reading record"
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-              data-testid="close-modal"
               onClick={onClose}
               type="button"
             >
@@ -118,13 +138,16 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
               Name
             </p>
-            <div className="mt-1 font-bold text-navy-900" data-testid="receipt-meter-name">
+            <div className="mt-1 font-bold text-navy-900" data-testid="record-meter-name">
               {meterName}
             </div>
             <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
               Run date
             </p>
-            <div className="mt-1 font-mono text-sm font-bold text-navy-900" data-testid="receipt-run-date">
+            <div
+              className="mt-1 font-mono text-sm font-bold text-navy-900"
+              data-testid="record-run-date"
+            >
               {runDate}
             </div>
           </div>
@@ -132,10 +155,10 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
           <div>
             <table className="w-full border-collapse">
               <tbody>
-                <ReceiptRow label="Previous Reading:" testId="telemetry-prev" value={`${previousReading} m³`} />
-                <ReceiptRow label="Present Reading:" testId="telemetry-pres" value={`${presentReading} m³`} />
-                <ReceiptRow label="Cubic Meters Used:" testId="telemetry-used" value={`${cubicMetersUsed} m³`} />
-                <ReceiptRow label="Baseline Water Bill:" testId="telemetry-baseline" value={`₱${baselineBill.toFixed(2)}`} />
+                <RecordRow label="Previous Reading:" testId="telemetry-prev" value={`${previousReading} m³`} />
+                <RecordRow label="Present Reading:" testId="telemetry-pres" value={`${presentReading} m³`} />
+                <RecordRow label="Cubic Meters Used:" testId="telemetry-used" value={`${cubicMetersUsed} m³`} />
+                <RecordRow label="Baseline Water Bill:" testId="telemetry-baseline" value={`₱${baselineBill.toFixed(2)}`} />
               </tbody>
             </table>
           </div>
@@ -156,12 +179,13 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
 
           <div className="mt-4 flex items-center justify-between rounded-2xl bg-navy-950 p-4 text-white">
             <strong className="text-sm font-bold text-white">Total Bill Sum:</strong>
-            <span className="font-mono text-xl font-bold text-water-200" data-testid="receipt-final-total">
+            <span className="font-mono text-xl font-bold text-water-200" data-testid="record-final-total">
               ₱{finalTotalBill.toFixed(2)}
             </span>
           </div>
+
           <p className="mt-4 text-center text-xs font-medium text-slate-400" data-document-footer>
-            System-generated receipt · Keep this copy for your records
+            System-generated meter reading record · Keep this copy for your records
           </p>
         </div>
       </div>
