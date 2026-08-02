@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronDown,
   FileText,
   Megaphone,
   Send,
   ShieldCheck,
   X,
 } from "lucide-react";
+import Dropdown from "./Dropdown";
 
 const ANNOUNCEMENT_CATEGORIES = [
   "General Announcement",
@@ -231,22 +231,18 @@ export default function AnnouncementForm({ onSubmit, initialData = null, onCance
 
                 <div>
                     <label className="text-sm font-bold text-slate-700" htmlFor="announcement-type">Category</label>
-                    <div className="relative">
-                      <select
-                        {...accessibility("relatedEvent")}
-                        className={fieldClass("relatedEvent", "appearance-none pr-11")}
-                        id="announcement-type"
-                        name="relatedEvent"
-                        onChange={handleChange}
-                        value={announcement.relatedEvent}
-                      >
-                        <option value="">Select category</option>
-                        {ANNOUNCEMENT_CATEGORIES.map((category) => (
-                          <option key={category} value={category}>{category}</option>
-                        ))}
-                      </select>
-                      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                    </div>
+                    <Dropdown
+                      ariaDescribedBy={accessibility("relatedEvent")["aria-describedby"]}
+                      ariaInvalid={accessibility("relatedEvent")["aria-invalid"]}
+                      ariaLabel="Select announcement category"
+                      className="mt-2"
+                      id="announcement-type"
+                      name="relatedEvent"
+                      onValueChange={(value) => handleChange({ target: { name: "relatedEvent", value } })}
+                      options={ANNOUNCEMENT_CATEGORIES.map((category) => ({ label: category, value: category }))}
+                      placeholder="Select category"
+                      value={announcement.relatedEvent}
+                    />
                     {fieldError("relatedEvent")}
                 </div>
 

@@ -8,6 +8,7 @@ import {
   UserRound,
   WalletCards,
 } from "lucide-react";
+import Dropdown from "./Dropdown";
 
 const today = () => {
   const parts = Object.fromEntries(
@@ -473,18 +474,21 @@ export default function PaymentForm({
                 <label className="text-sm font-bold text-navy-900" htmlFor="paymentMethod">
                   Payment method
                 </label>
-                <select
-                  {...accessibility("paymentMethod")}
-                  className={inputClass("paymentMethod")}
+                <Dropdown
+                  ariaDescribedBy={accessibility("paymentMethod")["aria-describedby"]}
+                  ariaInvalid={accessibility("paymentMethod")["aria-invalid"]}
+                  ariaLabel="Select payment method"
+                  className="mt-2"
                   id="paymentMethod"
                   name="paymentMethod"
-                  onChange={handleChange}
+                  onValueChange={(value) => handleChange({ target: { name: "paymentMethod", value } })}
+                  options={[
+                    { label: "Cash", value: "Cash" },
+                    { label: "GCash", value: "GCash" },
+                    { label: "Bank transfer", value: "Bank transfer" },
+                  ]}
                   value={form.paymentMethod}
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="GCash">GCash</option>
-                  <option value="Bank transfer">Bank transfer</option>
-                </select>
+                />
                 {error("paymentMethod")}
               </div>
 

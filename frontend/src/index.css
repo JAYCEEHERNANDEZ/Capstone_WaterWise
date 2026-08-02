@@ -56,6 +56,18 @@
     font-family: var(--font-sans);
   }
 
+  /* Keep nested regions scrollable without showing competing scrollbars. */
+  body * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  body *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   button,
   input,
   textarea,

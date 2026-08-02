@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Gauge } from "lucide-react";
+import Dropdown from "./Dropdown";
 
 const emptyReading = { consumerNo: "", consumerName: "", purok: "", previousReading: "", currentReading: "", readingDate: "", status: "Recorded" };
 
@@ -60,7 +61,7 @@ function MeterReadingFormFields({ onSave, selectedReading, onCancel }) {
       <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
         <div><label className={labelClass} htmlFor="consumerNo">Account number</label><input {...fieldA11y("consumerNo")} className={fieldClass("consumerNo")} id="consumerNo" name="consumerNo" onChange={handleChange} value={formData.consumerNo} />{error("consumerNo")}</div>
         <div><label className={labelClass} htmlFor="consumerName">Resident name</label><input {...fieldA11y("consumerName")} className={fieldClass("consumerName")} id="consumerName" name="consumerName" onChange={handleChange} value={formData.consumerName} />{error("consumerName")}</div>
-        <div><label className={labelClass} htmlFor="purok">Purok</label><select {...fieldA11y("purok")} className={fieldClass("purok")} id="purok" name="purok" onChange={handleChange} value={formData.purok}><option value="">Select purok</option>{[1, 2, 3, 4, 5, 6].map((number) => <option key={number} value={`Purok ${number}`}>Purok {number}</option>)}</select>{error("purok")}</div>
+        <div><label className={labelClass} htmlFor="purok">Purok</label><Dropdown ariaDescribedBy={fieldA11y("purok")["aria-describedby"]} ariaInvalid={fieldA11y("purok")["aria-invalid"]} ariaLabel="Select purok" className="mt-2" id="purok" name="purok" onValueChange={(value) => handleChange({ target: { name: "purok", value } })} options={[1, 2, 3, 4, 5, 6].map((number) => ({ label: `Purok ${number}`, value: `Purok ${number}` }))} placeholder="Select purok" value={formData.purok} />{error("purok")}</div>
         <div><label className={labelClass} htmlFor="readingDate">Reading date</label><input {...fieldA11y("readingDate")} className={fieldClass("readingDate")} id="readingDate" name="readingDate" onChange={handleChange} type="date" value={formData.readingDate} />{error("readingDate")}</div>
         <div><label className={labelClass} htmlFor="previousReading">Previous reading (m³)</label><input {...fieldA11y("previousReading")} className={`${fieldClass("previousReading")} font-mono tabular-nums`} id="previousReading" inputMode="decimal" min="0" name="previousReading" onChange={handleChange} step="0.01" type="number" value={formData.previousReading} />{error("previousReading")}</div>
         <div><label className={labelClass} htmlFor="currentReading">Current reading (m³)</label><input {...fieldA11y("currentReading")} className={`${fieldClass("currentReading")} font-mono tabular-nums`} id="currentReading" inputMode="decimal" min="0" name="currentReading" onChange={handleChange} step="0.01" type="number" value={formData.currentReading} />{error("currentReading")}</div>

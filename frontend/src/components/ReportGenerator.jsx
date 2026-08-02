@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, FileDown, LoaderCircle, Printer } from "lucide-react";
 import { downloadReportPDF, generateReport } from "../services/reportAPI";
+import Dropdown from "./Dropdown";
 
 const reportSections = ["summary", "analytics", "consumption", "billing", "residents"];
 
@@ -46,7 +47,7 @@ export default function ReportGenerator({ onGenerated }) {
       {error && <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800" role="alert">{error}</div>}
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div><label className="text-sm font-bold text-navy-900" htmlFor="report-type">Report type</label><select className={fieldClass} id="report-type" name="type" onChange={updateForm} value={form.type}><option value="consumption">Consumption</option><option value="billing">Billing</option><option value="consumer">Residents</option><option value="analytics">Analytics</option></select></div>
+        <div><label className="text-sm font-bold text-navy-900" htmlFor="report-type">Report type</label><Dropdown ariaLabel="Select report type" className="mt-2" id="report-type" name="type" onValueChange={(value) => updateForm({ target: { name: "type", value } })} options={[{ label: "Consumption", value: "consumption" }, { label: "Billing", value: "billing" }, { label: "Residents", value: "consumer" }, { label: "Analytics", value: "analytics" }]} value={form.type} /></div>
         <div><label className="text-sm font-bold text-navy-900" htmlFor="report-start">Start date</label><input aria-invalid={Boolean(error && !form.startDate)} className={fieldClass} id="report-start" name="startDate" onChange={updateForm} type="date" value={form.startDate} /></div>
         <div><label className="text-sm font-bold text-navy-900" htmlFor="report-end">End date</label><input aria-invalid={Boolean(error && !form.endDate)} className={fieldClass} id="report-end" name="endDate" onChange={updateForm} type="date" value={form.endDate} /></div>
       </div>

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+import Dropdown from "./Dropdown";
 
 const EMAIL_DOMAIN = "@waterwise.app";
 
@@ -162,19 +163,21 @@ function ConsumerForm({ onSubmit = () => {}, requirePassword = false, initialDat
 
         <div>
           <label className={labelClass} htmlFor="purok">Purok</label>
-          <select
-            aria-describedby={describedBy("purok")}
-            aria-invalid={Boolean(errors.purok)}
-            className={`mt-2 ${inputClass("purok")}`}
+          <Dropdown
+            ariaDescribedBy={describedBy("purok")}
+            ariaInvalid={Boolean(errors.purok)}
+            ariaLabel="Select resident purok"
+            className="mt-2"
             id="purok"
-            onChange={(event) => updateField("purok", event.target.value)}
+            name="purok"
+            onValueChange={(value) => updateField("purok", value)}
+            options={[1, 2, 3, 4, 5, 6].map((number) => ({
+              label: `Purok ${number}`,
+              value: `Purok ${number}`,
+            }))}
+            placeholder="Select purok"
             value={consumer.purok}
-          >
-            <option value="">Select purok</option>
-            {[1, 2, 3, 4, 5, 6].map((number) => (
-              <option key={number} value={`Purok ${number}`}>Purok {number}</option>
-            ))}
-          </select>
+          />
           {errors.purok && <p className={errorClass} id="purok-error" role="alert">{errors.purok}</p>}
         </div>
 

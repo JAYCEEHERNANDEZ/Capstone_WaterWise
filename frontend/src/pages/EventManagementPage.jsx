@@ -2,9 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   CalendarDays,
-  Check,
   CheckCircle2,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
@@ -18,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import EventForm from "../components/EventForm";
+import Dropdown from "../components/Dropdown";
 import KPI from "../components/KPI";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageHeader from "../components/PageHeader";
@@ -70,108 +69,6 @@ const formatTime = (value) => {
     minute: "2-digit",
   }).format(new Date(2000, 0, 1, hours, minutes));
 };
-
-function CalendarPeriodSelect({ ariaLabel, onValueChange, options, value, widthClass = "w-36" }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-  const triggerRef = useRef(null);
-  const selectedOption = options.find((option) => String(option.value) === String(value));
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const closeOnOutsideClick = (event) => {
-      if (!containerRef.current?.contains(event.target)) setIsOpen(false);
-    };
-    const closeOnEscape = (event) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    document.addEventListener("keydown", closeOnEscape);
-    requestAnimationFrame(() =>
-      containerRef.current?.querySelector('[role="option"][aria-selected="true"]')?.focus(),
-    );
-
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [isOpen]);
-
-  const moveOptionFocus = (event) => {
-    if (!isOpen || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    const optionElements = [...containerRef.current.querySelectorAll('[role="option"]')];
-    const currentIndex = optionElements.indexOf(document.activeElement);
-    let nextIndex = currentIndex;
-    if (event.key === "Home") nextIndex = 0;
-    if (event.key === "End") nextIndex = optionElements.length - 1;
-    if (event.key === "ArrowDown") nextIndex = Math.min(currentIndex + 1, optionElements.length - 1);
-    if (event.key === "ArrowUp") nextIndex = Math.max(currentIndex - 1, 0);
-    optionElements[nextIndex]?.focus();
-  };
-
-  return (
-    <div className={`relative ${widthClass}`} onKeyDown={moveOptionFocus} ref={containerRef}>
-      <button
-        ref={triggerRef}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-        aria-label={ariaLabel}
-        className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-slate-300 bg-white px-3 font-bold text-navy-900 outline-none hover:border-water-300 focus-visible:border-water-600 focus-visible:ring-4 focus-visible:ring-water-100"
-        onClick={() => setIsOpen((open) => !open)}
-        type="button"
-      >
-        <span className={typeof value === "number" && value > 100 ? "font-mono tabular-nums" : ""}>
-          {selectedOption?.label ?? value}
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div
-          aria-label={`${ariaLabel} options`}
-          className="absolute left-0 top-[calc(100%+0.5rem)] z-50 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-raised"
-          role="listbox"
-        >
-          {options.map((option) => {
-            const selected = String(option.value) === String(value);
-            return (
-              <button
-                aria-selected={selected}
-                className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 text-left text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-water-600 ${
-                  selected
-                    ? "bg-water-100 text-water-800"
-                    : "text-navy-900 hover:bg-slate-50"
-                }`}
-                key={option.value}
-                onClick={() => {
-                  onValueChange(option.value);
-                  setIsOpen(false);
-                  triggerRef.current?.focus();
-                }}
-                role="option"
-                type="button"
-              >
-                <span className={typeof option.value === "number" && option.value > 100 ? "font-mono tabular-nums" : ""}>
-                  {option.label}
-                </span>
-                {selected && <Check aria-hidden="true" className="h-4 w-4 text-water-700" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function getDisplayStatus(event) {
   const todayKey = toDateKey(new Date());
@@ -538,17 +435,6 @@ export default function EventManagementPage() {
     <main className="space-y-5 sm:space-y-6">
       <PageHeader description="Plan fiestas, assemblies, celebrations, and community activities in one calendar." eyebrow="Community schedule" title="Events calendar" />
 
-      <div className="flex justify-end">
-        <button
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white shadow-card hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 sm:w-auto"
-          onClick={() => openCreateDialog()}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-5 w-5" />
-          Add event
-        </button>
-      </div>
-
       <section aria-label="Event summary" className="grid gap-3 sm:grid-cols-2">
         <KPI description="Scheduled in the selected month" icon={CalendarDays} title="Events this month" value={monthEventCount} />
         <KPI
@@ -593,23 +479,24 @@ export default function EventManagementPage() {
                   {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </h2>
                 <div className="relative z-40 mt-2 flex gap-2">
-                  <CalendarPeriodSelect
+                  <Dropdown
                     ariaLabel="Select calendar month"
+                    className="w-40"
                     onValueChange={(month) =>
                       selectCalendarPeriod(currentMonth.getFullYear(), Number(month))
                     }
                     options={MONTH_NAMES.map((month, index) => ({ label: month, value: index }))}
                     value={currentMonth.getMonth()}
-                    widthClass="w-40"
                   />
-                  <CalendarPeriodSelect
+                  <Dropdown
                     ariaLabel="Select calendar year"
+                    className="w-28"
                     onValueChange={(year) =>
                       selectCalendarPeriod(Number(year), currentMonth.getMonth())
                     }
                     options={yearOptions.map((year) => ({ label: String(year), value: year }))}
+                    triggerClassName="font-mono tabular-nums"
                     value={currentMonth.getFullYear()}
-                    widthClass="w-28"
                   />
                 </div>
               </div>

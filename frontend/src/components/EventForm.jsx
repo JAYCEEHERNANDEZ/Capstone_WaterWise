@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { CalendarDays, ChevronDown, Clock3, MapPin, Save, Tag } from "lucide-react";
+import { CalendarDays, Clock3, MapPin, Save, Tag } from "lucide-react";
+import Dropdown from "./Dropdown";
 
 const EVENT_CATEGORIES = [
   "Barangay fiesta",
@@ -202,24 +203,22 @@ export default function EventForm({
 
         <div>
           <label className={labelClass} htmlFor="event-category">Category</label>
-          <div className="relative">
-            <Tag aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <select
-              {...accessibility("category")}
-              className={fieldClass("category", "appearance-none pl-11 pr-11")}
-              id="event-category"
-              name="category"
-              onChange={handleChange}
-              value={event.category}
-            >
-              <option value="">Select category</option>
-              {EVENT_CATEGORIES.map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-              <option value="Others">Others</option>
-            </select>
-            <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-500" />
-          </div>
+          <Dropdown
+            ariaDescribedBy={accessibility("category")["aria-describedby"]}
+            ariaInvalid={accessibility("category")["aria-invalid"]}
+            ariaLabel="Select event category"
+            className="mt-2"
+            icon={Tag}
+            id="event-category"
+            name="category"
+            onValueChange={(value) => handleChange({ target: { name: "category", value } })}
+            options={[
+              ...EVENT_CATEGORIES.map((category) => ({ label: category, value: category })),
+              { label: "Others", value: "Others" },
+            ]}
+            placeholder="Select category"
+            value={event.category}
+          />
           {fieldError("category")}
 
           {event.category === "Others" && (
