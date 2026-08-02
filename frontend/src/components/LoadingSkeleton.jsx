@@ -88,6 +88,33 @@ function ChartSkeleton() {
   );
 }
 
+function CalendarSkeleton() {
+  return (
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_23rem]">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+        <div className="flex items-center justify-between gap-4 border-b border-slate-200 p-5">
+          <div><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="mt-3 h-7 w-44" /></div>
+          <div className="flex gap-2"><SkeletonBlock className="h-11 w-11" /><SkeletonBlock className="h-11 w-20" /><SkeletonBlock className="h-11 w-11" /></div>
+        </div>
+        <div className="grid grid-cols-7 gap-px bg-slate-100 p-px">
+          {Array.from({ length: 49 }, (_, index) => (
+            <div className={`${index < 7 ? "min-h-10 bg-slate-50" : "min-h-20 bg-white sm:min-h-28"} p-2`} key={index}>
+              {index >= 7 && <SkeletonBlock className="h-7 w-7 rounded-full" />}
+              {index >= 14 && index % 4 === 0 && <SkeletonBlock className="mt-2 hidden h-6 w-full sm:block" />}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <SkeletonBlock className="h-3 w-24" />
+        <SkeletonBlock className="mt-3 h-6 w-56 max-w-full" />
+        <SkeletonBlock className="mt-2 h-3 w-32" />
+        <div className="mt-5"><CardSkeleton /></div>
+      </div>
+    </div>
+  );
+}
+
 function MetricsSkeleton() {
   return (
     <>
@@ -147,6 +174,7 @@ export default function LoadingSkeleton({ className = "", count = 3, label = "Lo
     <div aria-busy="true" aria-live="polite" className={`space-y-5 sm:space-y-6 ${className}`} data-testid={`loading-skeleton-${variant}`} role="status">
       <span className="sr-only">{label}</span>
       {variant === "billing" && <BillingSkeleton />}
+      {variant === "calendar" && <CalendarSkeleton />}
       {variant === "card" && <CardSkeleton />}
       {variant === "chart" && <ChartBodySkeleton />}
       {variant === "chart-panel" && <ChartSkeleton />}

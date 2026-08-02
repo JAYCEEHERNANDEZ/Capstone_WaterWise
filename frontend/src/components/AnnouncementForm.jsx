@@ -132,10 +132,13 @@ export default function AnnouncementForm({
               value={announcement.relatedEvent}
             >
               <option value="">Select category</option>
-              <option value="Barangay Assembly">Barangay Assembly</option>
-              <option value="Water System Maintenance">Water Maintenance</option>
-              <option value="Community Clean-up">Community Clean-up</option>
               <option value="General Announcement">General Announcement</option>
+              <option value="Water Interruption">Water Interruption</option>
+              <option value="System Maintenance">System Maintenance</option>
+              <option value="Service Restoration">Service Restoration</option>
+              <option value="Billing Notice">Billing Notice</option>
+              <option value="Meter Reading Advisory">Meter Reading Advisory</option>
+              <option value="Emergency Notice">Emergency Notice</option>
             </select>
           </div>
         </div>

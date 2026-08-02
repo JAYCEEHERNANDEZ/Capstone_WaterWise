@@ -1,5 +1,18 @@
-import { useState } from "react";
-import { CalendarDays, Save } from "lucide-react";
+import { useRef, useState } from "react";
+import { CalendarDays, ChevronDown, Clock3, MapPin, Save, Tag } from "lucide-react";
+
+const EVENT_CATEGORIES = [
+  "Barangay fiesta",
+  "Community celebration",
+  "Special occasion",
+  "Barangay assembly",
+  "Sports activity",
+  "Health program",
+  "Clean-up drive",
+  "Religious occasion",
+  "Youth activity",
+  "Holiday observance",
+];
 
 function toTimeInputValue(value = "") {
   const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(value);
@@ -12,51 +25,242 @@ function toTimeInputValue(value = "") {
   return `${String(hours).padStart(2, "0")}:${minutes}`;
 }
 
-function initialValues(initialEvent) {
+function initialValues(initialEvent, defaultDate) {
+  const tags = Array.isArray(initialEvent?.tags)
+    ? initialEvent.tags.join(", ")
+    : initialEvent?.tags ?? "";
+  const category = EVENT_CATEGORIES.includes(tags) ? tags : tags ? "Others" : "";
+
   return {
     title: initialEvent?.title ?? "",
     description: initialEvent?.description ?? "",
-    date: initialEvent?.date ?? "",
+    date: initialEvent?.date ?? defaultDate ?? "",
     time: toTimeInputValue(initialEvent?.time),
     location: initialEvent?.location ?? "",
-    tags: Array.isArray(initialEvent?.tags) ? initialEvent.tags.join(", ") : initialEvent?.tags ?? "",
+    category,
+    customCategory: category === "Others" ? tags : "",
+    tags,
   };
 }
 
-export default function EventForm({ initialEvent, onCancel, onSubmit, submitting = false }) {
-  const [event, setEvent] = useState(() => initialValues(initialEvent));
-  const fieldClass = "mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-navy-900 outline-none transition-colors placeholder:text-slate-400 focus:border-water-600 focus:ring-4 focus:ring-water-100";
+export default function EventForm({
+  defaultDate = "",
+  initialEvent,
+  onCancel,
+  onSubmit,
+  submitting = false,
+}) {
+  const [event, setEvent] = useState(() => initialValues(initialEvent, defaultDate));
+  const [errors, setErrors] = useState({});
+  const formRef = useRef(null);
+
+  const fieldClass = (name, extra = "") =>
+    `mt-2 min-h-12 w-full rounded-xl border bg-white px-4 text-navy-900 outline-none transition-colors placeholder:text-slate-400 focus:ring-4 ${
+      errors[name]
+        ? "border-red-600 focus:border-red-600 focus:ring-red-100"
+        : "border-slate-300 focus:border-water-600 focus:ring-water-100"
+    } ${extra}`;
   const labelClass = "text-sm font-bold text-navy-900";
 
   const handleChange = ({ target }) => {
-    setEvent((current) => ({ ...current, [target.name]: target.value }));
+    setEvent((current) => {
+      if (target.name === "category") {
+        return {
+          ...current,
+          category: target.value,
+          tags: target.value === "Others" ? current.customCategory : target.value,
+        };
+      }
+      if (target.name === "customCategory") {
+        return { ...current, customCategory: target.value, tags: target.value };
+      }
+      return { ...current, [target.name]: target.value };
+    });
+    setErrors((current) => ({ ...current, [target.name]: "" }));
   };
+
+  const fieldError = (name) =>
+    errors[name] ? (
+      <p className="mt-1.5 text-sm font-semibold text-red-700" id={`event-${name}-error`} role="alert">
+        {errors[name]}
+      </p>
+    ) : null;
+
+  const accessibility = (name) => ({
+    "aria-describedby": errors[name] ? `event-${name}-error` : undefined,
+    "aria-invalid": Boolean(errors[name]),
+  });
 
   const handleSubmit = async (submitEvent) => {
     submitEvent.preventDefault();
+    const nextErrors = {};
+    if (!event.title.trim()) nextErrors.title = "Enter an event title.";
+    if (!event.description.trim()) nextErrors.description = "Add a short description for residents.";
+    if (!event.date) nextErrors.date = "Select the event date.";
+    if (!event.time) nextErrors.time = "Select the event time.";
+    if (!event.location.trim()) nextErrors.location = "Enter the event location.";
+    if (!event.category) nextErrors.category = "Select an event category.";
+    if (event.category === "Others" && !event.customCategory.trim()) {
+      nextErrors.customCategory = "Enter a specific category name.";
+    }
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length) {
+      requestAnimationFrame(() =>
+        formRef.current?.querySelector('[aria-invalid="true"]')?.focus(),
+      );
+      return;
+    }
+
     if (onSubmit) await onSubmit(event);
   };
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-      <header className="border-b border-slate-200 bg-slate-50 p-5 sm:p-6">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-water-100 text-water-700"><CalendarDays aria-hidden="true" className="h-5 w-5" /></span>
-        <h2 className="mt-4 text-xl font-bold text-navy-900">{initialEvent ? "Edit event" : "Create event"}</h2>
-        <p className="mt-1 text-sm text-slate-600">Add the schedule and details residents need to plan ahead.</p>
-      </header>
-
-      <form className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6" onSubmit={handleSubmit}>
-        <div className="sm:col-span-2"><label className={labelClass} htmlFor="event-title">Event title</label><input className={fieldClass} id="event-title" name="title" onChange={handleChange} placeholder="e.g. Water system maintenance" required value={event.title} /></div>
-        <div className="sm:col-span-2"><label className={labelClass} htmlFor="event-description">Description</label><textarea className={`${fieldClass} min-h-32 py-3`} id="event-description" name="description" onChange={handleChange} placeholder="Describe what residents need to know" required rows={4} value={event.description} /></div>
-        <div><label className={labelClass} htmlFor="event-date">Date</label><input className={fieldClass} id="event-date" name="date" onChange={handleChange} required type="date" value={event.date} /></div>
-        <div><label className={labelClass} htmlFor="event-time">Time</label><input className={fieldClass} id="event-time" name="time" onChange={handleChange} required type="time" value={event.time} /></div>
-        <div><label className={labelClass} htmlFor="event-location">Location</label><input className={fieldClass} id="event-location" name="location" onChange={handleChange} placeholder="Barangay Hall or Purok" required value={event.location} /></div>
-        <div><label className={labelClass} htmlFor="event-tags">Category tags</label><input className={fieldClass} id="event-tags" name="tags" onChange={handleChange} placeholder="Maintenance, community" value={event.tags} /></div>
-        <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:col-span-2 sm:flex-row sm:justify-end">
-          {initialEvent && <button className="min-h-11 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50" disabled={submitting} onClick={onCancel} type="button">Cancel</button>}
-          <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white hover:bg-water-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={submitting} type="submit"><Save aria-hidden="true" className="h-4 w-4" />{submitting ? "Saving event…" : initialEvent ? "Update event" : "Create event"}</button>
+    <form className="space-y-6" onSubmit={handleSubmit} ref={formRef}>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className={labelClass} htmlFor="event-title">Event title</label>
+          <input
+            {...accessibility("title")}
+            autoComplete="off"
+            className={fieldClass("title")}
+            id="event-title"
+            name="title"
+            onChange={handleChange}
+            placeholder="e.g. Barangay fiesta celebration"
+            value={event.title}
+          />
+          {fieldError("title")}
         </div>
-      </form>
-    </section>
+
+        <div className="sm:col-span-2">
+          <label className={labelClass} htmlFor="event-description">Resident information</label>
+          <textarea
+            {...accessibility("description")}
+            className={fieldClass("description", "min-h-28 py-3")}
+            id="event-description"
+            name="description"
+            onChange={handleChange}
+            placeholder="Explain what will happen and what residents need to prepare."
+            rows={4}
+            value={event.description}
+          />
+          {fieldError("description")}
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="event-date">Date</label>
+          <div className="relative">
+            <CalendarDays aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              {...accessibility("date")}
+              className={fieldClass("date", "pl-11 font-mono tabular-nums")}
+              id="event-date"
+              name="date"
+              onChange={handleChange}
+              type="date"
+              value={event.date}
+            />
+          </div>
+          {fieldError("date")}
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="event-time">Time</label>
+          <div className="relative">
+            <Clock3 aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              {...accessibility("time")}
+              className={fieldClass("time", "pl-11 font-mono tabular-nums")}
+              id="event-time"
+              name="time"
+              onChange={handleChange}
+              type="time"
+              value={event.time}
+            />
+          </div>
+          {fieldError("time")}
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="event-location">Location</label>
+          <div className="relative">
+            <MapPin aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              {...accessibility("location")}
+              autoComplete="off"
+              className={fieldClass("location", "pl-11")}
+              id="event-location"
+              name="location"
+              onChange={handleChange}
+              placeholder="Barangay Hall or purok"
+              value={event.location}
+            />
+          </div>
+          {fieldError("location")}
+        </div>
+
+        <div>
+          <label className={labelClass} htmlFor="event-category">Category</label>
+          <div className="relative">
+            <Tag aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <select
+              {...accessibility("category")}
+              className={fieldClass("category", "appearance-none pl-11 pr-11")}
+              id="event-category"
+              name="category"
+              onChange={handleChange}
+              value={event.category}
+            >
+              <option value="">Select category</option>
+              {EVENT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+              <option value="Others">Others</option>
+            </select>
+            <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          </div>
+          {fieldError("category")}
+
+          {event.category === "Others" && (
+            <div className="mt-4">
+              <label className={labelClass} htmlFor="event-custom-category">
+                Specific category
+              </label>
+              <input
+                {...accessibility("customCategory")}
+                autoComplete="off"
+                className={fieldClass("customCategory")}
+                id="event-custom-category"
+                name="customCategory"
+                onChange={handleChange}
+                placeholder="Enter a category"
+                value={event.customCategory}
+              />
+              {fieldError("customCategory")}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+        <button
+          className="min-h-11 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50 disabled:opacity-60"
+          disabled={submitting}
+          onClick={onCancel}
+          type="button"
+        >
+          Cancel
+        </button>
+        <button
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white hover:bg-water-700 disabled:bg-water-300"
+          disabled={submitting}
+          type="submit"
+        >
+          <Save aria-hidden="true" className="h-4 w-4" />
+          {submitting ? "Saving event…" : initialEvent ? "Save changes" : "Create event"}
+        </button>
+      </div>
+    </form>
   );
 }
