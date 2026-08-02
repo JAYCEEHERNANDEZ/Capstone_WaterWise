@@ -8,6 +8,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router";
 import { login } from "../services/auth.service";
+import { useToast } from "../components/Toast";
 
 const accountDestinations = {
   admin: "/admin/dashboard",
@@ -17,6 +18,7 @@ const accountDestinations = {
 
 export default function Login() {
   const navigate = useNavigate();
+  const toast = useToast();
   const identifierRef = useRef(null);
   const passwordRef = useRef(null);
   const [identifier, setIdentifier] = useState("");
@@ -70,6 +72,7 @@ export default function Login() {
         throw new Error("This account does not have access to a WaterWise workspace.");
       }
 
+      toast.success("Signed in", `Welcome back, ${result.user?.username ?? "WaterWise user"}.`);
       navigate(destination);
     } catch (error) {
       const status = error.cause?.response?.status;
@@ -94,7 +97,9 @@ export default function Login() {
         setMessage("");
         requestAnimationFrame(() => passwordRef.current?.focus());
       } else {
-        setMessage(error.message || "We couldn't sign you in. Try again.");
+        const nextMessage = error.message || "We couldn't sign you in. Try again.";
+        setMessage(nextMessage);
+        toast.error("Sign-in failed", nextMessage);
       }
     } finally {
       setIsSubmitting(false);

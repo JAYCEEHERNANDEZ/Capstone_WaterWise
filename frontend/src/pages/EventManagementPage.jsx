@@ -19,6 +19,7 @@ import KPI from "../components/KPI";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
+import { useToast } from "../components/Toast";
 import {
   createEvent as createEventRequest,
   deleteEvent as deleteEventRequest,
@@ -206,6 +207,7 @@ function EventCard({ event, isConfirmingDelete, onCancelDelete, onDelete, onEdit
 }
 
 export default function EventManagementPage() {
+  const toast = useToast();
   const today = useMemo(() => new Date(), []);
   const todayKey = toDateKey(today);
   const [events, setEvents] = useState([]);
@@ -310,6 +312,7 @@ export default function EventManagementPage() {
   }, [saving]);
 
   const saveEvent = async (event) => {
+    const isEditing = Boolean(dialog.event);
     try {
       setSaving(true);
       setError("");
@@ -323,11 +326,15 @@ export default function EventManagementPage() {
       if (savedDate) setCurrentMonth(new Date(savedDate.getFullYear(), savedDate.getMonth(), 1));
       setDialog((current) => ({ ...current, isOpen: false }));
       await loadEvents();
+      toast.success(
+        isEditing ? "Event updated" : "Event created",
+        `${event.title} is scheduled for ${event.date}.`,
+      );
       return true;
     } catch (requestError) {
-      setError(
-        requestError?.response?.data?.message ?? requestError.message ?? "Unable to save the event.",
-      );
+      const message = requestError?.response?.data?.message ?? requestError.message ?? "Unable to save the event.";
+      setError(message);
+      toast.error(isEditing ? "Event not updated" : "Event not created", message);
       return false;
     } finally {
       setSaving(false);
@@ -335,15 +342,17 @@ export default function EventManagementPage() {
   };
 
   const deleteEvent = async (eventId) => {
+    const eventTitle = events.find((event) => event.id === eventId)?.title ?? "The event";
     try {
       setError("");
       await deleteEventRequest(eventId);
       setDeleteConfirmation(null);
       await loadEvents();
+      toast.success("Event deleted", `${eventTitle} was removed from the calendar.`);
     } catch (requestError) {
-      setError(
-        requestError?.response?.data?.message ?? requestError.message ?? "Unable to delete the event.",
-      );
+      const message = requestError?.response?.data?.message ?? requestError.message ?? "Unable to delete the event.";
+      setError(message);
+      toast.error("Event not deleted", message);
     }
   };
 

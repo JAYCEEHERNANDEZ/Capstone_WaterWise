@@ -2,8 +2,10 @@ import { useState } from "react";
 import MeterReadingForm from "./MeterReadingForm";
 import MeterReadingTable from "./MeterReadingTable";
 import meterReadingData from "../data/meterReadingData";
+import { useToast } from "./Toast";
 
 const MeterReading = () => {
+  const toast = useToast();
   const [readings, setReadings] =
     useState(meterReadingData);
 
@@ -24,6 +26,7 @@ const MeterReading = () => {
       );
 
       setSelectedReading(null);
+      toast.success("Reading updated", "The meter reading changes were saved.");
       return;
     }
 
@@ -36,6 +39,7 @@ const MeterReading = () => {
       ...prev,
       newReading,
     ]);
+    toast.success("Reading added", "The meter reading was added to the records.");
   };
 
   const handleEdit = (reading) => {
@@ -66,6 +70,7 @@ const MeterReading = () => {
     ) {
       setSelectedReading(null);
     }
+    toast.success("Reading deleted", "The meter reading was removed from the records.");
   };
 
   const handleCancel = () => {

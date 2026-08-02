@@ -2,6 +2,7 @@ import { CheckCircle2, Clock3 } from "lucide-react";
 import { FiDownload, FiPrinter } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
 import Modal from "./Modal";
+import { useToast } from "./Toast";
 
 const currency = (value) =>
   `₱${Number(value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
@@ -21,6 +22,7 @@ function ReceiptLine({ label, testId, value }) {
 }
 
 export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
+  const toast = useToast();
   if (!isOpen || !receiptData) return null;
 
   const amountPaid = Number(receiptData.amountPaid ?? receiptData.amountDue ?? 0);
@@ -62,6 +64,12 @@ export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
       title: "Payment Receipt",
       lines,
     });
+    toast.success("Receipt downloaded", `${transactionNumber.toLowerCase()}-payment-receipt.png was saved.`);
+  };
+
+  const handlePrint = () => {
+    window.print();
+    toast.info("Print dialog opened", "Choose a printer or save the payment receipt as a PDF.");
   };
 
   return (
@@ -86,7 +94,7 @@ export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
             <button
               aria-label="Print payment receipt"
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-              onClick={() => window.print()}
+              onClick={handlePrint}
               type="button"
             >
               <FiPrinter aria-hidden="true" className="h-4 w-4" />

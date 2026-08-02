@@ -6,6 +6,7 @@ import {
 } from "../services/reportAPI";
 import LoadingSkeleton from "./LoadingSkeleton";
 import Table from "./Table";
+import { useToast } from "./Toast";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -15,6 +16,7 @@ function formatDate(value) {
 }
 
 export default function GeneratedReportsTable({ refreshKey = 0 }) {
+  const toast = useToast();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,8 +70,10 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      toast.success("Download started", `${link.download} is being saved to your device.`);
     } catch {
       setError("Failed to download report.");
+      toast.error("Download failed", "The report PDF could not be downloaded.");
     } finally {
       setDownloadingId(null);
     }
@@ -125,7 +129,10 @@ export default function GeneratedReportsTable({ refreshKey = 0 }) {
                       <button
                         aria-label={`Print ${report.title ?? "report"}`}
                         className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                        onClick={() => window.print()}
+                        onClick={() => {
+                          window.print();
+                          toast.info("Print dialog opened", "Choose a printer or save the report as a PDF.");
+                        }}
                         type="button"
                       >
                         <Printer size={17} />

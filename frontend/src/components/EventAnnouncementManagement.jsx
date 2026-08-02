@@ -16,6 +16,7 @@ import AnnouncementForm from "./AnnouncementForm";
 import AnnouncementPage from "./AnnouncementPage";
 import LoadingSkeleton from "./LoadingSkeleton";
 import PageHeader from "./PageHeader";
+import { useToast } from "./Toast";
 import { createAnnouncement, fetchAnnouncements } from "../services/announcementAPI";
 import { fetchEvents } from "../services/eventAPI";
 
@@ -98,11 +99,11 @@ function UpcomingEventCard({ event }) {
 }
 
 export default function EventAnnouncementManagement() {
+  const toast = useToast();
   const [announcements, setAnnouncements] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const loadCommunityData = useCallback(async () => {
     try {
@@ -171,20 +172,17 @@ export default function EventAnnouncementManagement() {
   const publishAnnouncement = async (announcement) => {
     try {
       setError("");
-      setSuccess("");
       const saved = await createAnnouncement(announcement);
       setAnnouncements((current) => [saved, ...current]);
-      setSuccess("Announcement published to all resident portals.");
+      toast.success("Announcement published", "The announcement is now visible in all resident portals.");
       return saved;
     } catch (requestError) {
       const validationErrors = requestError?.response?.data?.errors;
-      setError(
-        validationErrors
-          ? Object.values(validationErrors).join(" ")
-          : requestError?.response?.data?.message ??
-              requestError.message ??
-              "Unable to publish the announcement.",
-      );
+      const message = validationErrors
+        ? Object.values(validationErrors).join(" ")
+        : requestError?.response?.data?.message ?? requestError.message ?? "Unable to publish the announcement.";
+      setError(message);
+      toast.error("Announcement not published", message);
       return false;
     }
   };
@@ -209,12 +207,6 @@ export default function EventAnnouncementManagement() {
         <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">
           <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
           {error}
-        </div>
-      )}
-      {success && (
-        <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700" role="status">
-          <ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-          {success}
         </div>
       )}
 

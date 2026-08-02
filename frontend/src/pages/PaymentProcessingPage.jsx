@@ -9,6 +9,7 @@ import PageHeader from "../components/PageHeader";
 import PaymentModal from "../components/PaymentModal";
 import Search from "../components/Search";
 import Table from "../components/Table";
+import { useToast } from "../components/Toast";
 import { fetchBillingHistory } from "../services/billingAPI";
 import {
   fetchPaymentHistory,
@@ -33,6 +34,7 @@ function enrichPayments(paymentHistory, billings) {
 }
 
 export default function PaymentProcessingPage() {
+  const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedBillingId = Number(searchParams.get("billingId"));
   const [payments, setPayments] = useState([]);
@@ -122,7 +124,9 @@ export default function PaymentProcessingPage() {
   const recordPayment = async (payment) => {
     const billing = billingRecords.find((record) => record.id === payment.billingId);
     if (!billing) {
-      setError("The selected billing record is no longer available. Select it again.");
+      const message = "The selected billing record is no longer available. Select it again.";
+      setError(message);
+      toast.warning("Billing record unavailable", message);
       return false;
     }
 
@@ -156,13 +160,15 @@ export default function PaymentProcessingPage() {
         ...current.filter((existingPayment) => existingPayment.id !== savedPayment.id),
       ]);
       setBillingRecords(await fetchBillingHistory());
+      toast.success(
+        "Payment recorded",
+        `${billing.consumerName}'s payment of ₱${Number(result.payment.amountPaid).toLocaleString("en-PH", { minimumFractionDigits: 2 })} was saved.`,
+      );
       return savedPayment;
     } catch (requestError) {
-      setError(
-        requestError?.response?.data?.message ??
-          requestError.message ??
-          "Unable to record payment.",
-      );
+      const message = requestError?.response?.data?.message ?? requestError.message ?? "Unable to record payment.";
+      setError(message);
+      toast.error("Payment not recorded", message);
       return false;
     }
   };

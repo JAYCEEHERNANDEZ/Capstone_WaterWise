@@ -8,6 +8,7 @@ import {
   Printer,
 } from "lucide-react";
 import Dropdown from "./Dropdown";
+import { useToast } from "./Toast";
 import {
   downloadReportPDF,
   generateReport,
@@ -72,6 +73,7 @@ const formatMetricValue = (key, value) => {
 };
 
 export default function ReportGenerator({ onGenerated }) {
+  const toast = useToast();
   const [form, setForm] = useState(initialForm);
   const [preview, setPreview] = useState(null);
   const [generatedReport, setGeneratedReport] = useState(null);
@@ -129,7 +131,9 @@ export default function ReportGenerator({ onGenerated }) {
       setError("");
       setPreview(await previewReportRequest(form));
     } catch (requestError) {
-      setError(requestMessage(requestError, "The report preview could not be prepared."));
+      const message = requestMessage(requestError, "The report preview could not be prepared.");
+      setError(message);
+      toast.error("Preview unavailable", message);
     } finally {
       setBusyAction("");
     }
@@ -143,8 +147,11 @@ export default function ReportGenerator({ onGenerated }) {
       const report = await generateReport(form);
       setGeneratedReport(report);
       await Promise.resolve(onGenerated?.()).catch(() => undefined);
+      toast.success("Report generated", `${report.title} was saved to the report archive.`);
     } catch (requestError) {
-      setError(requestMessage(requestError, "The report could not be generated."));
+      const message = requestMessage(requestError, "The report could not be generated.");
+      setError(message);
+      toast.error("Report not generated", message);
     } finally {
       setBusyAction("");
     }
@@ -157,8 +164,11 @@ export default function ReportGenerator({ onGenerated }) {
       setError("");
       const pdf = await downloadReportPDF(generatedReport.id);
       savePdfBlob(pdf, `${generatedReport.title}.pdf`);
+      toast.success("Download started", `${generatedReport.title}.pdf is being saved to your device.`);
     } catch (requestError) {
-      setError(requestMessage(requestError, "The PDF could not be downloaded."));
+      const message = requestMessage(requestError, "The PDF could not be downloaded.");
+      setError(message);
+      toast.error("Download failed", message);
     } finally {
       setBusyAction("");
     }
@@ -169,8 +179,11 @@ export default function ReportGenerator({ onGenerated }) {
     try {
       setError("");
       await openPrintableReport(generatedReport.id);
+      toast.info("Print view opened", "Use the browser print dialog to print or save the report.");
     } catch (requestError) {
-      setError(requestMessage(requestError, "The printable PDF could not be opened."));
+      const message = requestMessage(requestError, "The printable PDF could not be opened.");
+      setError(message);
+      toast.error("Print view unavailable", message);
     }
   };
 

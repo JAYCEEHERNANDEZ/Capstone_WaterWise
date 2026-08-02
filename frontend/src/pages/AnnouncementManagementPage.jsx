@@ -5,18 +5,19 @@ import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageHeader from "../components/PageHeader";
 import Search from "../components/Search";
+import { useToast } from "../components/Toast";
 import {
   createAnnouncement,
   fetchAnnouncements,
 } from "../services/announcementAPI";
 
 export default function AnnouncementManagementPage() {
+  const toast = useToast();
   const [announcements, setAnnouncements] = useState([]);
   const [category, setCategory] = useState("all");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const loadAnnouncements = useCallback(async () => {
     try {
@@ -68,20 +69,17 @@ export default function AnnouncementManagementPage() {
   const saveAnnouncement = async (announcement) => {
     try {
       setError("");
-      setSuccess("");
       const saved = await createAnnouncement(announcement);
-      setSuccess("Announcement published to every consumer portal.");
+      toast.success("Announcement published", "The announcement is now visible in every resident portal.");
       await loadAnnouncements();
       return saved;
     } catch (requestError) {
       const validationErrors = requestError?.response?.data?.errors;
-      setError(
-        validationErrors
-          ? Object.values(validationErrors).join(" ")
-          : requestError?.response?.data?.message ??
-              requestError.message ??
-              "Unable to save announcement.",
-      );
+      const message = validationErrors
+        ? Object.values(validationErrors).join(" ")
+        : requestError?.response?.data?.message ?? requestError.message ?? "Unable to save announcement.";
+      setError(message);
+      toast.error("Announcement not published", message);
       return false;
     }
   };
@@ -115,11 +113,6 @@ export default function AnnouncementManagementPage() {
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">
           {error}
-        </div>
-      )}
-      {success && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700" role="status">
-          {success}
         </div>
       )}
 

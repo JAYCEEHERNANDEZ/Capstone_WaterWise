@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
+import { useToast } from "./Toast";
 
 const DISMISSED_KEY = "waterwise-pwa-install-dismissed";
 
 export default function PWAInstallPrompt() {
+  const toast = useToast();
   const [installEvent, setInstallEvent] = useState(null);
 
   useEffect(() => {
@@ -39,9 +41,16 @@ export default function PWAInstallPrompt() {
   };
 
   const handleInstall = async () => {
-    await installEvent.prompt();
-    await installEvent.userChoice;
-    setInstallEvent(null);
+    try {
+      await installEvent.prompt();
+      const choice = await installEvent.userChoice;
+      if (choice.outcome === "accepted") {
+        toast.success("WaterWise installed", "You can now open WaterWise from your device home screen.");
+      }
+      setInstallEvent(null);
+    } catch {
+      toast.error("Installation unavailable", "WaterWise could not start the installation. Try again from your browser menu.");
+    }
   };
 
   return (

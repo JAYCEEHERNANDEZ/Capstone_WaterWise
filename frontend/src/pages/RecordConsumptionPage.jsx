@@ -4,10 +4,12 @@ import ConsumptionEntryPanel from "../components/ConsumptionEntryPanel";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
+import { useToast } from "../components/Toast";
 import { fetchConsumerDirectory } from "../services/consumerDirectoryAPI";
 import { createMeterReading, fetchMeterReadings } from "../services/meterReadingAPI";
 
 export default function RecordConsumptionPage() {
+  const toast = useToast();
   const [consumers, setConsumers] = useState([]);
   const [readings, setReadings] = useState([]);
   const [selectedConsumer, setSelectedConsumer] = useState(null);
@@ -15,7 +17,6 @@ export default function RecordConsumptionPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const loadData = useCallback(async () => {
     try {
@@ -55,14 +56,16 @@ export default function RecordConsumptionPage() {
 
   const saveReading = async (payload) => {
     try {
-      setSaving(true); setError(""); setSuccess("");
+      setSaving(true); setError("");
       await createMeterReading(payload);
-      setSuccess(`Consumption for ${payload.consumerName} was recorded successfully.`);
+      toast.success("Meter reading recorded", `${payload.consumerName}'s consumption was saved successfully.`);
       setReadings(await fetchMeterReadings());
       setSelectedConsumer(null);
       return true;
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to save the reading.");
+      const message = requestError?.response?.data?.message ?? requestError.message ?? "Unable to save the reading.";
+      setError(message);
+      toast.error("Reading not recorded", message);
       return false;
     } finally { setSaving(false); }
   };
@@ -71,8 +74,7 @@ export default function RecordConsumptionPage() {
     <main className="space-y-6">
       <PageHeader description="Select the resident, enter the meter value, review the details, and confirm the record." eyebrow="Field workspace" title="Record a meter reading" />
       {error && <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{error}</span><button className="font-bold underline" onClick={loadData} type="button">Try again</button></div>}
-      {success && <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700" role="status"><span aria-hidden="true">✓</span><span>Step 4 of 4 · {success}</span></div>}
-      {loading ? <LoadingSkeleton label="Loading assigned residents" variant="list" /> : <div className="w-full"><ConsumerSelectionList consumers={visibleConsumers} onSelect={(consumer) => { setSelectedConsumer(consumer); setError(""); setSuccess(""); }} query={query} selectedId={selectedConsumer?.id} setQuery={setQuery} /></div>}
+      {loading ? <LoadingSkeleton label="Loading assigned residents" variant="list" /> : <div className="w-full"><ConsumerSelectionList consumers={visibleConsumers} onSelect={(consumer) => { setSelectedConsumer(consumer); setError(""); }} query={query} selectedId={selectedConsumer?.id} setQuery={setQuery} /></div>}
 
       <Modal
         closeLabel="Close meter reading form"

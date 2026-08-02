@@ -24,6 +24,7 @@ import NotificationPage from "../pages/NotificationPage";
 import Header from "./Header";
 import NotificationBadgeTrigger from "./NotificationBadgeTrigger";
 import Sidebar from "./Sidebar";
+import { useToast } from "./Toast";
 
 const ROLE_CONFIG = {
   admin: {
@@ -83,6 +84,7 @@ function getRoleFromPath(pathname) {
 }
 
 export default function AppLayout({ children }) {
+  const toast = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   const notificationCloseRef = useRef(null);
@@ -192,6 +194,9 @@ export default function AppLayout({ children }) {
   const handleLogout = async () => {
     try {
       await logout();
+      toast.success("Signed out", "You have securely signed out of WaterWise.");
+    } catch {
+      toast.warning("Signed out locally", "The server could not confirm sign-out, but this device session was cleared.");
     } finally {
       setAccount(null);
       setIsNotificationOpen(false);
@@ -209,6 +214,7 @@ export default function AppLayout({ children }) {
       );
     } catch {
       // Keep the unread state when the backend update fails.
+      toast.error("Notification not updated", "WaterWise could not mark this notification as read.");
     }
   };
 

@@ -208,6 +208,21 @@
   animation: waterwise-skeleton-shimmer 1.8s ease-in-out infinite;
 }
 
+@keyframes waterwise-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ww-toast-enter {
+  animation: waterwise-toast-enter 180ms ease-out;
+}
+
 @media (display-mode: standalone) {
   body {
     overscroll-behavior-y: none;

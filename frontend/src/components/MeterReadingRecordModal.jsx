@@ -1,6 +1,7 @@
 import { FiDownload, FiPrinter } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
 import Modal from "./Modal";
+import { useToast } from "./Toast";
 
 function RecordRow({ label, testId, value }) {
   return (
@@ -17,6 +18,7 @@ function RecordRow({ label, testId, value }) {
 }
 
 export default function MeterReadingRecordModal({ isOpen, onClose, recordData }) {
+  const toast = useToast();
   if (!isOpen || !recordData) return null;
 
   const {
@@ -53,6 +55,12 @@ export default function MeterReadingRecordModal({ isOpen, onClose, recordData })
         ["Total Bill Sum", `₱${finalTotalBill.toFixed(2)}`],
       ],
     });
+    toast.success("Record downloaded", `${safeName}-meter-reading-record.png was saved.`);
+  };
+
+  const handlePrint = () => {
+    window.print();
+    toast.info("Print dialog opened", "Choose a printer or save the meter reading record as a PDF.");
   };
 
   return (
@@ -73,7 +81,7 @@ export default function MeterReadingRecordModal({ isOpen, onClose, recordData })
             <button
               aria-label="Print meter reading record"
               className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-              onClick={() => window.print()}
+              onClick={handlePrint}
               type="button"
             >
               <FiPrinter aria-hidden="true" className="h-4 w-4" />

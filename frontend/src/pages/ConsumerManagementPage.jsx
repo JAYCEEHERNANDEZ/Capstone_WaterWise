@@ -7,6 +7,7 @@ import KPI from "../components/KPI";
 import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
 import Search from "../components/Search";
+import { useToast } from "../components/Toast";
 import { createConsumer, fetchConsumerDirectory, updateConsumer } from "../services/consumerDirectoryAPI";
 
 function toManagementConsumer(consumer) {
@@ -27,6 +28,7 @@ function getConsumerRequestError(requestError, fallback) {
 }
 
 function ConsumerManagementPage() {
+  const toast = useToast();
   const [consumers, setConsumers] = useState([]);
   const [selectedConsumer, setSelectedConsumer] = useState(null);
   const [formMode, setFormMode] = useState("");
@@ -81,9 +83,12 @@ function ConsumerManagementPage() {
       setConsumers((current) => [savedConsumer, ...current]);
       setSelectedConsumer(null);
       setFormMode("");
+      toast.success("Resident added", `${savedConsumer.fullName}'s account is ready to use.`);
       return true;
     } catch (requestError) {
-      setError(getConsumerRequestError(requestError, "Unable to create consumer."));
+      const message = getConsumerRequestError(requestError, "Unable to create resident.");
+      setError(message);
+      toast.error("Resident not added", message);
       return false;
     }
   };
@@ -96,9 +101,12 @@ function ConsumerManagementPage() {
       setConsumers((current) => current.map((item) => item.id === savedConsumer.id ? savedConsumer : item));
       setSelectedConsumer(null);
       setFormMode("");
+      toast.success("Resident updated", `${savedConsumer.fullName}'s profile changes were saved.`);
       return true;
     } catch (requestError) {
-      setError(getConsumerRequestError(requestError, "Unable to update consumer."));
+      const message = getConsumerRequestError(requestError, "Unable to update resident.");
+      setError(message);
+      toast.error("Resident not updated", message);
       return false;
     }
   };

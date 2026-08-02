@@ -1,6 +1,7 @@
 import { FiDownload, FiPrinter } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
 import Modal from "./Modal";
+import { useToast } from "./Toast";
 
 function ReceiptRow({ label, testId, value }) {
   return (
@@ -14,6 +15,7 @@ function ReceiptRow({ label, testId, value }) {
 }
 
 export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
+  const toast = useToast();
   if (!isOpen || !receiptData) return null;
 
   const {
@@ -48,6 +50,12 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
         ["Total Bill Sum", `₱${finalTotalBill.toFixed(2)}`],
       ],
     });
+    toast.success("Receipt downloaded", `${meterName}-official-receipt.png was saved.`);
+  };
+
+  const handlePrint = () => {
+    window.print();
+    toast.info("Print dialog opened", "Choose a printer or save the receipt as a PDF.");
   };
 
   return (
@@ -66,7 +74,7 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
               <FiDownload aria-hidden="true" className="h-4 w-4" />
               Download
             </button>
-            <button aria-label="Print official receipt" className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" onClick={() => window.print()} type="button"><FiPrinter aria-hidden="true" className="h-4 w-4" /></button>
+            <button aria-label="Print official receipt" className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" onClick={handlePrint} type="button"><FiPrinter aria-hidden="true" className="h-4 w-4" /></button>
         </>
       }
       headerActionsProps={{ "data-document-actions": true }}

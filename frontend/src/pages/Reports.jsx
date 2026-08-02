@@ -13,6 +13,7 @@ import PageHeader from "../components/PageHeader";
 import ReportDetailsModal from "../components/ReportDetailsModal";
 import ReportGenerator from "../components/ReportGenerator";
 import Table from "../components/Table";
+import { useToast } from "../components/Toast";
 import {
   downloadReportPDF,
   fetchGeneratedReports,
@@ -39,6 +40,7 @@ const safeFilename = (report) =>
   `${report.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "waterwise-report"}.pdf`;
 
 export default function Reports() {
+  const toast = useToast();
   const [reports, setReports] = useState([]);
   const [selectedReportId, setSelectedReportId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -66,8 +68,11 @@ export default function Reports() {
       setBusyReport(`download-${report.id}`);
       setError("");
       savePdfBlob(await downloadReportPDF(report.id), safeFilename(report));
+      toast.success("Download started", `${safeFilename(report)} is being saved to your device.`);
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to download the report PDF.");
+      const message = requestError?.response?.data?.message ?? requestError.message ?? "Unable to download the report PDF.";
+      setError(message);
+      toast.error("Download failed", message);
     } finally {
       setBusyReport("");
     }
@@ -77,8 +82,11 @@ export default function Reports() {
     try {
       setError("");
       await openPrintableReport(report.id);
+      toast.info("Print view opened", "Use the browser print dialog to print or save the report.");
     } catch (requestError) {
-      setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to open the printable report.");
+      const message = requestError?.response?.data?.message ?? requestError.message ?? "Unable to open the printable report.";
+      setError(message);
+      toast.error("Print view unavailable", message);
     }
   };
 
