@@ -3,6 +3,7 @@ import BillingHistoryTable from "../components/BillingHistoryTable";
 import BillingSummaryCard from "../components/BillingSummaryCard";
 import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import Search from "../components/Search";
 import { fetchBillingHistory } from "../services/billingAPI";
 
@@ -79,15 +80,11 @@ export default function BillingManagementPage() {
 
   return (
     <main className="space-y-5 sm:space-y-6">
-      <header className="ww-page-header p-5 text-white sm:p-6">
-        <span className="ww-eyebrow">Billing administration</span>
-        <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">
-          Billing management
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-          Review billing periods, water usage, account balances, and collection status.
-        </p>
-      </header>
+      <PageHeader
+        description="Review billing periods, water usage, account balances, and collection status."
+        eyebrow="Billing administration"
+        title="Billing management"
+      />
 
       <BillingSummaryCard billingData={billingHistory} />
 

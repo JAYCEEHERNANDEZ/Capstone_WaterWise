@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 import AnalyticsSummaryGrid from "../components/AnalyticsSummaryGrid";
 import ConsumptionTrendGraph from "../components/ConsumptionTrendGraph";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import { fetchCurrentBalance } from "../services/consumerPortal.service";
 import { fetchConsumptionHistory } from "../services/consumptionHistory.service";
 import { isCanceledRequest } from "../services/apiClient";
@@ -59,15 +60,7 @@ export default function UsageMetrics({
   const latestUsage = displayedHistory.at(-1)?.volume ?? 0;
   const previousUsage = displayedHistory.at(-2)?.volume;
   const usageDifference = previousUsage === undefined ? null : latestUsage - previousUsage;
-  const pageHeader = (
-    <header className="ww-page-header p-5 text-white sm:p-6">
-      <p className="ww-eyebrow">Resident portal</p>
-      <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Water usage overview</h1>
-      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-water-100">
-        Review your current balance, latest water use, and monthly consumption history.
-      </p>
-    </header>
-  );
+  const pageHeader = <PageHeader description="Review your current balance, latest water use, and monthly consumption history." eyebrow="Resident portal" title="Water usage overview" />;
 
   if (isLoading) {
     return (

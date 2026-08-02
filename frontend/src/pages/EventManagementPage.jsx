@@ -18,7 +18,9 @@ import {
   X,
 } from "lucide-react";
 import EventForm from "../components/EventForm";
+import KPI from "../components/KPI";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import {
   createEvent as createEventRequest,
   deleteEvent as deleteEventRequest,
@@ -534,43 +536,28 @@ export default function EventManagementPage() {
 
   return (
     <main className="space-y-5 sm:space-y-6">
-      <header className="ww-page-header p-5 text-white sm:p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="ww-eyebrow">Community schedule</p>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Events calendar
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Plan fiestas, assemblies, celebrations, and community activities in one calendar.
-            </p>
-          </div>
-          <button
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white shadow-card hover:bg-water-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            onClick={() => openCreateDialog()}
-            type="button"
-          >
-            <Plus aria-hidden="true" className="h-5 w-5" />
-            Add event
-          </button>
-        </div>
+      <PageHeader description="Plan fiestas, assemblies, celebrations, and community activities in one calendar." eyebrow="Community schedule" title="Events calendar" />
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-            <p className="text-xs font-semibold text-slate-300">Events this month</p>
-            <p className="mt-2 font-mono text-2xl font-extrabold tabular-nums">{monthEventCount}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-            <p className="text-xs font-semibold text-slate-300">Next scheduled event</p>
-            <p className="mt-2 truncate font-bold text-white">{nextEvent?.title ?? "No upcoming event"}</p>
-            {nextEvent && (
-              <p className="mt-1 font-mono text-xs tabular-nums text-slate-300">
-                {formatFullDate(nextEvent.date)} · {formatTime(nextEvent.time)}
-              </p>
-            )}
-          </div>
-        </div>
-      </header>
+      <div className="flex justify-end">
+        <button
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white shadow-card hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 sm:w-auto"
+          onClick={() => openCreateDialog()}
+          type="button"
+        >
+          <Plus aria-hidden="true" className="h-5 w-5" />
+          Add event
+        </button>
+      </div>
+
+      <section aria-label="Event summary" className="grid gap-3 sm:grid-cols-2">
+        <KPI description="Scheduled in the selected month" icon={CalendarDays} title="Events this month" value={monthEventCount} />
+        <KPI
+          description={nextEvent ? `${nextEvent.title} · ${formatTime(nextEvent.time)}` : "Add an event to the community calendar"}
+          icon={Clock3}
+          title="Next scheduled event"
+          value={nextEvent ? formatFullDate(nextEvent.date) : "None"}
+        />
+      </section>
 
       {error && (
         <div

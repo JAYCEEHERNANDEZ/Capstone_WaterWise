@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import DigitalReceiptModal from "../components/DigitalReceiptModal";
 import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import KPI from "../components/KPI";
+import PageHeader from "../components/PageHeader";
 import PaymentModal from "../components/PaymentModal";
 import Search from "../components/Search";
 import Table from "../components/Table";
@@ -183,50 +185,25 @@ export default function PaymentProcessingPage() {
 
   return (
     <main className="space-y-6">
-      <header className="ww-page-header p-5 text-white sm:p-6">
-        <span className="ww-eyebrow">Payment administration</span>
-        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Payment processing
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Review completed transactions and securely record resident payments.
-            </p>
-          </div>
-          <button
-            className="hidden min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white shadow-card transition-colors hover:bg-water-500 disabled:bg-slate-600 disabled:text-slate-300 lg:inline-flex"
-            disabled={loading}
-            onClick={openPaymentModal}
-            type="button"
-          >
-            <Plus aria-hidden="true" className="h-5 w-5" />
-            Record payment
-          </button>
-        </div>
+      <PageHeader description="Review completed transactions and securely record resident payments." eyebrow="Payment administration" title="Payment processing" />
 
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-            <Banknote aria-hidden="true" className="h-5 w-5 text-emerald-300" />
-            <p className="mt-3 font-mono text-xl font-extrabold tabular-nums">
-              ₱{totalCollected.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </p>
-            <p className="text-xs text-slate-300">All-time collected</p>
-          </div>
-          <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-            <ReceiptText aria-hidden="true" className="h-5 w-5 text-water-300" />
-            <p className="mt-3 font-mono text-xl font-extrabold tabular-nums">
-              {payments.length}
-            </p>
-            <p className="text-xs text-slate-300">All transactions</p>
-          </div>
-          <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-            <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-emerald-300" />
-            <p className="mt-3 font-mono text-xl font-extrabold tabular-nums">{fullyPaid}</p>
-            <p className="text-xs text-slate-300">Bills fully paid</p>
-          </div>
-        </div>
-      </header>
+      <div className="hidden justify-end lg:flex">
+        <button
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white shadow-card transition-colors hover:bg-water-700 disabled:bg-water-300"
+          disabled={loading}
+          onClick={openPaymentModal}
+          type="button"
+        >
+          <Plus aria-hidden="true" className="h-5 w-5" />
+          Record payment
+        </button>
+      </div>
+
+      <section aria-label="Payment summary" className="grid gap-3 sm:grid-cols-3">
+        <KPI description="Across recorded transactions" icon={Banknote} title="All-time collected" value={`₱${totalCollected.toLocaleString("en-US", { minimumFractionDigits: 2 })}`} />
+        <KPI description="Completed payment records" icon={ReceiptText} title="All transactions" value={payments.length} />
+        <KPI description="Transactions with no balance" icon={CheckCircle2} title="Bills fully paid" value={fullyPaid} />
+      </section>
 
       {error && !isPaymentModalOpen && (
         <div

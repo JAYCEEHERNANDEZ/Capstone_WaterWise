@@ -11,6 +11,7 @@ import ConsumerInfoGrid from "../components/ConsumerInfoGrid";
 import CurrentBalanceCard from "../components/CurrentBalanceCard";
 import MonthlyConsumptionWidget from "../components/MonthlyConsumptionWidget";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import { fetchConsumerProfile } from "../services/consumerPortal.service";
 import { isCanceledRequest } from "../services/apiClient";
 
@@ -51,15 +52,7 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
   }, [usesApi]);
 
   const consumer = usesApi ? loadedConsumer : consumerProp;
-  const pageHeader = (
-    <header className="ww-page-header text-white">
-      <p className="ww-eyebrow">Resident portal</p>
-      <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Household profile</h1>
-      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-water-100">
-        Review your account holder, service address, meter information, and latest reading.
-      </p>
-    </header>
-  );
+  const pageHeader = <PageHeader description="Review your account holder, service address, meter information, and latest reading." eyebrow="Resident portal" title="Household profile" />;
 
   if (error) {
     return (

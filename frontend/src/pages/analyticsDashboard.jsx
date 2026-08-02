@@ -1,4 +1,4 @@
-import { BrainCircuit, Info, Sparkles, TrendingUp } from "lucide-react";
+import { BrainCircuit, Info, TrendingUp } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import AdminOverallConsumptionCard from "../components/AdminOverallConsumptionCard";
 import AdminMonthlyConsumptionCard from "../components/AdminMonthlyConsumptionCard";
@@ -10,6 +10,7 @@ import YearlyConsumptionTrend from "../components/YearlyConsumptionTrend";
 import PerPurokConsumptionTrend from "../components/PerPurokConsumptionTrend";
 import PurokComparisonChart from "../components/PurokComparisonChart";
 import AnomalyRecommendationSection from "../components/AnomalyRecommendationSection";
+import PageHeader from "../components/PageHeader";
 
 const TABS = [
   {
@@ -54,34 +55,11 @@ export default function AnalyticsDashboard() {
 
   return (
     <main className="space-y-5 sm:space-y-6" data-testid="analytics-dashboard">
-      <header className="ww-page-header overflow-hidden p-5 text-white sm:p-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div>
-            <p className="ww-eyebrow inline-flex items-center gap-2">
-              <Sparkles aria-hidden="true" className="h-4 w-4" />
-              Operational intelligence
-            </p>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Water analytics
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              Understand expected demand, identify unusual consumption, and turn system data into practical barangay actions.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:min-w-80">
-            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-              <TrendingUp aria-hidden="true" className="h-5 w-5 text-water-300" />
-              <p className="mt-3 text-sm font-bold text-white">Demand forecasts</p>
-              <p className="mt-1 text-xs text-slate-300">Monthly and yearly</p>
-            </div>
-            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-              <BrainCircuit aria-hidden="true" className="h-5 w-5 text-emerald-300" />
-              <p className="mt-3 text-sm font-bold text-white">Decision support</p>
-              <p className="mt-1 text-xs text-slate-300">Risks and actions</p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        description="Understand expected demand, identify unusual consumption, and turn system data into practical barangay actions."
+        eyebrow="Operational intelligence"
+        title="Water analytics"
+      />
 
       <div
         aria-label="Analytics workspaces"

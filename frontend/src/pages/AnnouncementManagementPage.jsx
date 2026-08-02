@@ -3,6 +3,7 @@ import AnnouncementForm from "../components/AnnouncementForm";
 import AnnouncementPage from "../components/AnnouncementPage";
 import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import Search from "../components/Search";
 import {
   createAnnouncement,
@@ -105,6 +106,11 @@ export default function AnnouncementManagementPage() {
 
   return (
     <main className="space-y-6">
+      <PageHeader
+        description="Publish clear service notices and keep residents informed about water-system updates."
+        eyebrow="Community communication"
+        title="Announcement management"
+      />
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">

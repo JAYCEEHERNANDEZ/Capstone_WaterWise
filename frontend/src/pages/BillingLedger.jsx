@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import BillingHistoryTable from "../components/BillingHistoryTable";
 import CurrentBillingCard from "../components/CurrentBillingCard";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import { fetchBillingLedger } from "../services/consumerPortal.service";
 import { isCanceledRequest } from "../services/apiClient";
 
@@ -28,15 +29,7 @@ export default function BillingLedger({
 
   const historyData = usesApi ? ledger?.historyData ?? [] : historyDataProp;
   const ledgerAccount = usesApi ? ledger?.ledgerAccount : ledgerAccountProp;
-  const pageHeader = (
-    <header className="ww-page-header text-white">
-      <p className="ww-eyebrow">Resident portal</p>
-      <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Bills and payment history</h1>
-      <p className="mt-1.5 max-w-3xl text-sm leading-6 text-water-100">
-        Check the amount due, payment status, billing periods, and remaining balances.
-      </p>
-    </header>
-  );
+  const pageHeader = <PageHeader description="Check the amount due, payment status, billing periods, and remaining balances." eyebrow="Resident portal" title="Bills and payment history" />;
 
   if (error) {
     return (

@@ -2,21 +2,16 @@ import AdminOverallConsumptionCard from "../components/AdminOverallConsumptionCa
 import HistoricalConsumptionSummary from "../components/HistoricalConsumptionSummary";
 import HistoricalConsumptionGraphs from "../components/HistoricalConsumptionGraphs";
 import PurokHistoricalConsumptionGraphs from "../components/PurokHistoricalConsumptionGraphs";
+import PageHeader from "../components/PageHeader";
 
 export default function AdminDashboardPage() {
   return (
     <main className="space-y-5" data-testid="admin-dashboard">
-      <header className="ww-page-header p-5 text-white">
-        <div className="max-w-3xl">
-          <p className="ww-eyebrow">Operations overview</p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-            Water operations overview
-          </h1>
-          <p className="mt-1.5 text-sm leading-6 text-water-100">
-            Review recorded consumption using historical water data.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        description="Review recorded consumption using historical water data."
+        eyebrow="Operations overview"
+        title="Water operations overview"
+      />
 
       <section aria-labelledby="dashboard-summary" className="space-y-3">
         <div>

@@ -11,11 +11,11 @@ import {
   Megaphone,
   RefreshCw,
   ShieldCheck,
-  UsersRound,
 } from "lucide-react";
 import AnnouncementForm from "./AnnouncementForm";
 import AnnouncementPage from "./AnnouncementPage";
 import LoadingSkeleton from "./LoadingSkeleton";
+import PageHeader from "./PageHeader";
 import { createAnnouncement, fetchAnnouncements } from "../services/announcementAPI";
 import { fetchEvents } from "../services/eventAPI";
 
@@ -191,31 +191,19 @@ export default function EventAnnouncementManagement() {
 
   return (
     <main className="space-y-5 sm:space-y-6">
-      <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-water-700">
-              <UsersRound aria-hidden="true" className="h-4 w-4" />
-              Community workspace
-            </p>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-navy-900 sm:text-3xl">
-              WaterWise community home
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Publish service updates and keep upcoming barangay activities visible in one familiar feed.
-            </p>
-          </div>
-          <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-            disabled={loading}
-            onClick={() => loadCommunityData()}
-            type="button"
-          >
-            <RefreshCw aria-hidden="true" className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh feed
-          </button>
-        </div>
-      </header>
+      <PageHeader description="Publish service updates and keep upcoming barangay activities visible in one familiar feed." eyebrow="Community workspace" title="WaterWise community home" />
+
+      <div className="flex justify-end">
+        <button
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60 sm:w-auto"
+          disabled={loading}
+          onClick={() => loadCommunityData()}
+          type="button"
+        >
+          <RefreshCw aria-hidden="true" className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh feed
+        </button>
+      </div>
 
       {error && (
         <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">

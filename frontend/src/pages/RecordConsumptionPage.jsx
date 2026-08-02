@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import ConsumerSelectionList from "../components/ConsumerSelectionList";
 import ConsumptionEntryPanel from "../components/ConsumptionEntryPanel";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import { fetchConsumerDirectory } from "../services/consumerDirectoryAPI";
 import { createMeterReading, fetchMeterReadings } from "../services/meterReadingAPI";
 
@@ -68,7 +69,7 @@ export default function RecordConsumptionPage() {
 
   return (
     <main className="space-y-6">
-      <header className="ww-page-header p-5 text-white sm:p-6"><p className="ww-eyebrow">Field workspace</p><h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">Record a meter reading</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-water-100">Select the resident, enter the meter value, review the details, and confirm the record.</p></header>
+      <PageHeader description="Select the resident, enter the meter value, review the details, and confirm the record." eyebrow="Field workspace" title="Record a meter reading" />
       {error && <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{error}</span><button className="font-bold underline" onClick={loadData} type="button">Try again</button></div>}
       {success && <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700" role="status"><span aria-hidden="true">✓</span><span>Step 4 of 4 · {success}</span></div>}
       {loading ? <LoadingSkeleton label="Loading assigned residents" variant="list" /> : <div className="w-full"><ConsumerSelectionList consumers={visibleConsumers} onSelect={(consumer) => { setSelectedConsumer(consumer); setError(""); setSuccess(""); }} query={query} selectedId={selectedConsumer?.id} setQuery={setQuery} /></div>}

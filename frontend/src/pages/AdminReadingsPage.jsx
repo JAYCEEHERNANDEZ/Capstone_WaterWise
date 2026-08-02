@@ -3,6 +3,8 @@ import { Droplets, Gauge, Users } from "lucide-react";
 import MeterReadingTable from "../components/MeterReadingTable";
 import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import KPI from "../components/KPI";
+import PageHeader from "../components/PageHeader";
 import Search from "../components/Search";
 import { fetchAdminMeterReadings } from "../services/meterReadingAPI";
 
@@ -57,49 +59,16 @@ export default function AdminReadingsPage() {
   const average = readings.length ? total / readings.length : 0;
   const highest = readings.reduce((maximum, reading) => Math.max(maximum, Number(reading.consumption || 0)), 0);
 
-  const metrics = [
-    { Icon: Users, label: "Visible readings", value: readings.length, tone: "bg-water-100 text-water-700" },
-    { Icon: Droplets, label: "Total consumption", value: `${total.toLocaleString()} m³`, tone: "bg-water-100 text-water-700" },
-    { Icon: Gauge, label: "Average usage", value: `${average.toFixed(1)} m³`, tone: "bg-emerald-100 text-emerald-700" },
-    { Icon: Gauge, label: "Highest usage", value: `${highest.toLocaleString()} m³`, tone: "bg-amber-100 text-amber-700" },
-  ];
-
   return (
     <main className="space-y-6">
-      <header className="ww-page-header p-5 text-white sm:p-6">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-          <div>
-            <span className="inline-flex rounded-full border border-water-700 bg-water-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-water-300">
-              Read-only records
-            </span>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Consumer consumption readings
-            </h1>
-            <p className="mt-1.5 max-w-xl text-sm leading-6 text-slate-300">
-              Review meter movements and recorded water use across every purok.
-            </p>
-          </div>
+      <PageHeader description="Review meter movements and recorded water use across every purok." eyebrow="Read-only records" title="Consumer consumption readings" />
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {metrics.map(({ Icon, label, value, tone }) => (
-              <article
-                className="min-w-28 rounded-xl border border-slate-700 bg-navy-900 px-3 py-2.5"
-                key={label}
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-xl ${tone}`}>
-                    <Icon className="h-3.5 w-3.5" />
-                  </span>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-300">
-                    {label}
-                  </p>
-                </div>
-                <p className="mt-1 text-lg font-extrabold text-white">{value}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </header>
+      <section aria-label="Reading summary" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KPI description="Matches the current filters" icon={Users} title="Visible readings" value={readings.length} />
+        <KPI description="Across visible records" icon={Droplets} title="Total consumption" unit="m³" value={total.toLocaleString()} />
+        <KPI description="Per visible reading" icon={Gauge} title="Average usage" unit="m³" value={average.toFixed(1)} />
+        <KPI description="Highest visible record" icon={Gauge} title="Highest usage" unit="m³" value={highest.toLocaleString()} />
+      </section>
 
       <div
         aria-label="Meter reading table controls"

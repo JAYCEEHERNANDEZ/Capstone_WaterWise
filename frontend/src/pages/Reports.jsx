@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FileText, RefreshCw } from "lucide-react";
 import ReportGenerator from "../components/ReportGenerator";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageHeader from "../components/PageHeader";
 import { fetchGeneratedReports } from "../services/reportAPI";
 
 export default function Reports() {
@@ -28,22 +29,18 @@ export default function Reports() {
 
   return (
     <main className="space-y-6">
-      <header className="ww-page-header p-5 text-white sm:p-6">
-        <p className="ww-eyebrow">Decision support</p>
-        <div className="mt-3 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="flex items-center gap-3 text-2xl font-extrabold tracking-tight sm:text-3xl">
-              <FileText aria-hidden="true" className="h-7 w-7 text-water-300" />
-              Reports
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-water-100">Choose a report and period, preview the filters, then generate a reliable record for barangay operations.</p>
-          </div>
-          <button className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-water-600 px-4 py-2 font-bold text-white transition-colors hover:bg-water-700" onClick={loadReports} type="button">
-            <RefreshCw aria-hidden="true" className="h-4 w-4" />
-            Refresh archive
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        description="Choose a report and period, preview the filters, then generate a reliable record for barangay operations."
+        eyebrow="Decision support"
+        title="Reports"
+      />
+
+      <div className="flex justify-end">
+        <button className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-water-600 px-4 py-2 font-bold text-white transition-colors hover:bg-water-700 sm:w-auto" onClick={loadReports} type="button">
+          <RefreshCw aria-hidden="true" className="h-4 w-4" />
+          Refresh archive
+        </button>
+      </div>
 
       <ReportGenerator onGenerated={loadReports} />
 
