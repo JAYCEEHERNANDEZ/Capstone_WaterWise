@@ -1,172 +1,278 @@
-import { useState } from "react";
-import { CalendarDays, FileText, Megaphone, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  ChevronDown,
+  FileText,
+  Megaphone,
+  Send,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 
-const emptyAnnouncement = {
+const ANNOUNCEMENT_CATEGORIES = [
+  "General Announcement",
+  "Water Interruption",
+  "System Maintenance",
+  "Service Restoration",
+  "Billing Notice",
+  "Meter Reading Advisory",
+  "Emergency Notice",
+];
+
+const emptyAnnouncement = () => ({
   title: "",
   content: "",
-  publicationDate: "",
   relatedEvent: "",
-};
+});
 
-export default function AnnouncementForm({
-  onSubmit,
-  initialData = null,
-  onCancel,
-}) {
-  const [announcement, setAnnouncement] = useState(
-    () => initialData ?? emptyAnnouncement,
-  );
+export default function AnnouncementForm({ onSubmit, initialData = null, onCancel }) {
+  const [announcement, setAnnouncement] = useState(() => initialData ?? emptyAnnouncement());
+  const [errors, setErrors] = useState({});
+  const [isOpen, setIsOpen] = useState(Boolean(initialData));
   const [submitting, setSubmitting] = useState(false);
+  const closeButtonRef = useRef(null);
+  const formRef = useRef(null);
 
-  const handleChange = (event) => {
-    setAnnouncement((current) => ({
-      ...current,
-      [event.target.name]: event.target.value,
-    }));
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previouslyFocused = document.activeElement;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !submitting) {
+        setIsOpen(false);
+        onCancel?.();
+      }
+      if (event.key !== "Tab") return;
+      const modal = closeButtonRef.current?.closest('[role="dialog"]');
+      const focusable = modal?.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])',
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    requestAnimationFrame(() => closeButtonRef.current?.focus());
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, [isOpen, onCancel, submitting]);
+
+  const closeComposer = () => {
+    if (submitting) return;
+    setIsOpen(false);
+    setErrors({});
+    onCancel?.();
   };
+
+  const handleChange = ({ target }) => {
+    setAnnouncement((current) => ({ ...current, [target.name]: target.value }));
+    setErrors((current) => ({ ...current, [target.name]: "" }));
+  };
+
+  const fieldClass = (name, extra = "") =>
+    `mt-2 min-h-12 w-full rounded-xl border bg-white px-4 py-3 text-sm text-navy-900 outline-none transition-colors placeholder:text-slate-400 focus:ring-4 ${
+      errors[name]
+        ? "border-red-600 focus:border-red-600 focus:ring-red-100"
+        : "border-slate-300 focus:border-water-600 focus:ring-water-100"
+    } ${extra}`;
+  const accessibility = (name) => ({
+    "aria-describedby": errors[name] ? `announcement-${name}-error` : undefined,
+    "aria-invalid": Boolean(errors[name]),
+  });
+  const fieldError = (name) =>
+    errors[name] ? (
+      <p className="mt-1.5 text-sm font-semibold text-red-700" id={`announcement-${name}-error`} role="alert">
+        {errors[name]}
+      </p>
+    ) : null;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const nextErrors = {};
+    if (!announcement.title.trim()) nextErrors.title = "Enter an announcement title.";
+    if (!announcement.content.trim()) nextErrors.content = "Write the message residents need to know.";
+    if (!announcement.relatedEvent) nextErrors.relatedEvent = "Select an announcement category.";
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length) {
+      requestAnimationFrame(() =>
+        formRef.current?.querySelector('[aria-invalid="true"]')?.focus(),
+      );
+      return;
+    }
     if (!onSubmit) return;
 
     try {
       setSubmitting(true);
       const saved = await onSubmit(announcement);
-      if (saved !== false && !initialData) setAnnouncement(emptyAnnouncement);
+      if (saved !== false) {
+        if (!initialData) setAnnouncement(emptyAnnouncement());
+        setIsOpen(false);
+        setErrors({});
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const inputClass =
-    "mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-navy-900 outline-none transition-colors placeholder:text-slate-400 focus:border-water-600 focus:ring-4 focus:ring-water-100";
-
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-      <header className="bg-navy-950 p-6 text-white">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-water-900 text-water-300">
-          <Megaphone className="h-5 w-5" />
-        </span>
-        <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-water-300">
-          Publishing desk
-        </p>
-        <h2 className="mt-2 text-2xl font-extrabold">
-          {initialData ? "Update announcement" : "Create announcement"}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-300">
-          Published messages are delivered to every consumer portal.
-        </p>
-      </header>
-
-      <form className="space-y-5 p-6" onSubmit={handleSubmit}>
-        <div>
-          <label className="text-sm font-bold text-slate-700" htmlFor="announcement-title">
-            Announcement title
-          </label>
-          <div className="relative">
-            <FileText className="absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              className={`${inputClass} pl-11`}
-              id="announcement-title"
-              maxLength={255}
-              name="title"
-              onChange={handleChange}
-              placeholder="Enter a clear announcement title"
-              required
-              type="text"
-              value={announcement.title}
-            />
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <label className="text-sm font-bold text-slate-700" htmlFor="announcement-content">
-              Message
-            </label>
-            <span className="text-xs font-medium text-slate-400">
-              {announcement.content.length} characters
-            </span>
-          </div>
-          <textarea
-            className={`${inputClass} min-h-36 resize-y leading-6`}
-            id="announcement-content"
-            name="content"
-            onChange={handleChange}
-            placeholder="Write the information consumers need to know..."
-            required
-            rows={6}
-            value={announcement.content}
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-          <div>
-            <label className="text-sm font-bold text-slate-700" htmlFor="announcement-date">
-              Publication date
-            </label>
-            <div className="relative">
-              <CalendarDays className="pointer-events-none absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                className={`${inputClass} pl-11`}
-                id="announcement-date"
-                name="publicationDate"
-                onChange={handleChange}
-                required
-                type="date"
-                value={announcement.publicationDate}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-bold text-slate-700" htmlFor="announcement-type">
-              Category
-            </label>
-            <select
-              className={inputClass}
-              id="announcement-type"
-              name="relatedEvent"
-              onChange={handleChange}
-              required
-              value={announcement.relatedEvent}
-            >
-              <option value="">Select category</option>
-              <option value="General Announcement">General Announcement</option>
-              <option value="Water Interruption">Water Interruption</option>
-              <option value="System Maintenance">System Maintenance</option>
-              <option value="Service Restoration">Service Restoration</option>
-              <option value="Billing Notice">Billing Notice</option>
-              <option value="Meter Reading Advisory">Meter Reading Advisory</option>
-              <option value="Emergency Notice">Emergency Notice</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="flex gap-3 pt-1">
+    <>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5" aria-label="Create announcement">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-water-100 text-water-700">
+            <Megaphone aria-hidden="true" className="h-5 w-5" />
+          </span>
           <button
-            className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white transition-colors hover:bg-water-700 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={submitting}
-            type="submit"
+            className="min-h-12 flex-1 rounded-full bg-slate-100 px-5 text-left text-sm font-semibold text-slate-500 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+            onClick={() => setIsOpen(true)}
+            type="button"
           >
-            <Send className="h-4 w-4" />
-            {submitting
-              ? "Publishing..."
-              : initialData
-                ? "Update announcement"
-                : "Publish announcement"}
+            Share an update with residents…
           </button>
-          {initialData && (
-            <button
-              className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50"
-              onClick={onCancel}
-              type="button"
-            >
-              Cancel
-            </button>
-          )}
         </div>
-      </form>
-    </section>
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500">
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-emerald-600" />
+            Published by WaterWise administrators
+          </span>
+          <button
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-water-700 hover:bg-water-50"
+            onClick={() => setIsOpen(true)}
+            type="button"
+          >
+            <Send aria-hidden="true" className="h-4 w-4" />
+            Create post
+          </button>
+        </div>
+      </section>
+
+      {isOpen &&
+        createPortal(
+          <div
+            aria-label={initialData ? "Update announcement" : "Create announcement"}
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/50 sm:items-center sm:p-6"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeComposer();
+            }}
+            role="dialog"
+          >
+            <section className="max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white shadow-modal sm:max-w-2xl sm:rounded-3xl">
+              <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white p-5 sm:px-6">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Community post</p>
+                  <h2 className="mt-1 text-xl font-extrabold text-navy-900 sm:text-2xl">
+                    {initialData ? "Update announcement" : "Create announcement"}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">This message will appear in every resident portal.</p>
+                </div>
+                <button
+                  ref={closeButtonRef}
+                  aria-label="Close announcement form"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+                  disabled={submitting}
+                  onClick={closeComposer}
+                  type="button"
+                >
+                  <X aria-hidden="true" className="h-5 w-5" />
+                </button>
+              </header>
+
+              <form className="space-y-5 p-5 sm:p-6" onSubmit={handleSubmit} ref={formRef}>
+                <div>
+                  <label className="text-sm font-bold text-slate-700" htmlFor="announcement-title">Announcement title</label>
+                  <div className="relative">
+                    <FileText aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      {...accessibility("title")}
+                      autoComplete="off"
+                      className={fieldClass("title", "pl-11")}
+                      id="announcement-title"
+                      maxLength={255}
+                      name="title"
+                      onChange={handleChange}
+                      placeholder="Enter a clear announcement title"
+                      value={announcement.title}
+                    />
+                  </div>
+                  {fieldError("title")}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-sm font-bold text-slate-700" htmlFor="announcement-content">Message</label>
+                    <span className="text-xs font-medium text-slate-400">{announcement.content.length} characters</span>
+                  </div>
+                  <textarea
+                    {...accessibility("content")}
+                    className={fieldClass("content", "min-h-40 resize-y leading-6")}
+                    id="announcement-content"
+                    name="content"
+                    onChange={handleChange}
+                    placeholder="Write the information residents need to know…"
+                    rows={6}
+                    value={announcement.content}
+                  />
+                  {fieldError("content")}
+                </div>
+
+                <div>
+                    <label className="text-sm font-bold text-slate-700" htmlFor="announcement-type">Category</label>
+                    <div className="relative">
+                      <select
+                        {...accessibility("relatedEvent")}
+                        className={fieldClass("relatedEvent", "appearance-none pr-11")}
+                        id="announcement-type"
+                        name="relatedEvent"
+                        onChange={handleChange}
+                        value={announcement.relatedEvent}
+                      >
+                        <option value="">Select category</option>
+                        {ANNOUNCEMENT_CATEGORIES.map((category) => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
+                      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                    </div>
+                    {fieldError("relatedEvent")}
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+                  <button
+                    className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50 disabled:opacity-60"
+                    disabled={submitting}
+                    onClick={closeComposer}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white hover:bg-water-700 disabled:bg-water-300"
+                    disabled={submitting}
+                    type="submit"
+                  >
+                    <Send aria-hidden="true" className="h-4 w-4" />
+                    {submitting ? "Publishing…" : initialData ? "Save changes" : "Publish announcement"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }

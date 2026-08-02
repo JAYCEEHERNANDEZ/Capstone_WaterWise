@@ -1,10 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  CalendarClock,
-  Megaphone,
-  RefreshCw,
-  Send,
-} from "lucide-react";
 import AnnouncementForm from "../components/AnnouncementForm";
 import AnnouncementPage from "../components/AnnouncementPage";
 import Filter from "../components/Filter";
@@ -109,41 +103,8 @@ export default function AnnouncementManagementPage() {
     });
   }, [announcements, category, query]);
 
-  const datedToday = announcements.filter(
-    (announcement) =>
-      announcement.publicationDate === new Date().toISOString().slice(0, 10),
-  ).length;
-
   return (
     <main className="space-y-6">
-      <header className="ww-page-header relative p-5 text-white sm:p-6">
-        <div className="relative grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-700 bg-emerald-950 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">
-              <Megaphone className="h-3.5 w-3.5" />
-              Community communication
-            </span>
-            <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Announcement Management
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-              Publish clear community updates and review every system-wide message delivered to consumers.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:min-w-72">
-            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-              <Send className="h-5 w-5 text-emerald-300" />
-              <p className="mt-3 text-2xl font-extrabold">{announcements.length}</p>
-              <p className="text-xs text-slate-300">Published</p>
-            </div>
-            <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4">
-              <CalendarClock className="h-5 w-5 text-water-300" />
-              <p className="mt-3 text-2xl font-extrabold">{datedToday}</p>
-              <p className="text-xs text-slate-300">Dated today</p>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">
@@ -186,16 +147,7 @@ export default function AnnouncementManagementPage() {
               tone="emerald"
               value={category}
             />
-            <button
-              aria-label="Refresh announcements"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-              disabled={loading}
-              onClick={loadAnnouncements}
-              type="button"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
+
           </div>
 
           {loading ? (
