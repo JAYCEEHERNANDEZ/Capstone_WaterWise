@@ -21,6 +21,7 @@ export const registerConsumer = async (req, res) => {
       password,
       fullName,
       email,
+      contactNumber,
       purokNo = null,
     } = req.body ?? {};
 
@@ -29,6 +30,7 @@ export const registerConsumer = async (req, res) => {
       password,
       fullName,
       email,
+      contactNumber,
       purokNo
     );
 

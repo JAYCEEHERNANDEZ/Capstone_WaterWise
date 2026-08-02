@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS consumers (
     username VARCHAR(50) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
+    contact_number VARCHAR(20),
     purok_no INTEGER,
     password VARCHAR(255) NOT NULL,
     status VARCHAR(20) DEFAULT 'active',
@@ -104,6 +105,11 @@ CREATE TABLE IF NOT EXISTS generated_reports (
     report_data JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Existing installations receive the resident contact field without invalidating
+-- legacy accounts. New accounts require it through backend validation.
+ALTER TABLE consumers
+ADD COLUMN IF NOT EXISTS contact_number VARCHAR(20);
 
 CREATE INDEX IF NOT EXISTS idx_generated_reports_created_at
 ON generated_reports (created_at DESC);

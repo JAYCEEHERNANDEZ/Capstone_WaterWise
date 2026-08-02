@@ -16,6 +16,7 @@ function toManagementConsumer(consumer) {
     fullName: consumer.full_name ?? consumer.consumerName ?? consumer.name ?? "",
     purok: consumer.purok ?? (consumer.purok_no == null ? "Unassigned" : `Purok ${consumer.purok_no}`),
     email: consumer.email ?? "Not available",
+    contactNumber: consumer.contactNumber ?? consumer.contact_number ?? "",
     status: consumer.status ?? "inactive",
   };
 }
@@ -76,14 +77,7 @@ function ConsumerManagementPage() {
     try {
       setError("");
       const created = await createConsumer(consumer);
-      const savedConsumer = {
-        id: created.id,
-        accountName: created.username,
-        fullName: created.full_name ?? created.name,
-        purok: created.purok,
-        email: created.email,
-        status: created.status ?? "active",
-      };
+      const savedConsumer = toManagementConsumer(created);
       setConsumers((current) => [savedConsumer, ...current]);
       setSelectedConsumer(null);
       setFormMode("");
@@ -142,6 +136,20 @@ function ConsumerManagementPage() {
     <main className="space-y-6">
       <PageHeader description="Register community accounts, review service locations, and monitor billing readiness from one workspace." eyebrow="Resident accounts" title="Resident management" />
 
+      <div className="hidden justify-end lg:flex">
+        <button
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white shadow-card transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2"
+          onClick={() => {
+            setSelectedConsumer(null);
+            setFormMode("add");
+          }}
+          type="button"
+        >
+          <FiPlus aria-hidden="true" className="h-5 w-5" />
+          Add Resident
+        </button>
+      </div>
+
       <section aria-label="Resident summary" className="grid gap-3 sm:grid-cols-2">
         <KPI description="Registered community accounts" icon={FiUsers} title="Total residents" value={consumers.length} />
         <KPI description="Accounts ready for service" icon={FiCheckCircle} title="Active accounts" value={consumers.filter((item) => item.status?.toLowerCase() === "active").length} />
@@ -193,15 +201,15 @@ function ConsumerManagementPage() {
 
       <button
         aria-label="Add resident"
-        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-water-600 text-white shadow-raised transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 lg:bottom-6 lg:right-6"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-water-600 px-5 font-bold text-white shadow-modal transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 lg:hidden"
         onClick={() => {
           setSelectedConsumer(null);
           setFormMode("add");
         }}
-        title="Add resident"
         type="button"
       >
-        <FiPlus aria-hidden="true" className="h-6 w-6" />
+        <FiPlus aria-hidden="true" className="h-5 w-5" />
+        Add Resident
       </button>
     </main>
   );

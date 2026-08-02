@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { CheckCircle2, CircleOff, Eye, EyeOff, Phone, ShieldCheck } from "lucide-react";
 import Dropdown from "./Dropdown";
 
 const EMAIL_DOMAIN = "@waterwise.app";
@@ -9,6 +9,8 @@ const initialState = {
   fullName: "",
   purok: "",
   email: "",
+  contactNumber: "",
+  status: "active",
 };
 
 function createInitialState(initialData) {
@@ -30,6 +32,11 @@ function isStrongPassword(password) {
     /\d/.test(password) &&
     /[^A-Za-z0-9]/.test(password)
   );
+}
+
+function isValidContactNumber(contactNumber) {
+  const compactNumber = contactNumber.trim().replace(/[\s()-]/g, "");
+  return /^(?:09\d{9}|\+639\d{9})$/.test(compactNumber);
 }
 
 function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword = false, initialData = null, onCancel }) {
@@ -65,6 +72,11 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
       validationErrors.email = "Enter an email name before @waterwise.app.";
     } else if (!/^[^\s@]+@waterwise\.app$/i.test(consumer.email)) {
       validationErrors.email = "Use a valid @waterwise.app email address.";
+    }
+    if (!consumer.contactNumber.trim()) {
+      validationErrors.contactNumber = "Enter the resident's contact number.";
+    } else if (!isValidContactNumber(consumer.contactNumber)) {
+      validationErrors.contactNumber = "Enter a valid Philippine mobile number, such as 09171234567.";
     }
     if (requirePassword) {
       if (!password) {
@@ -182,6 +194,28 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
         </div>
 
         <div className="sm:col-span-2">
+          <label className={labelClass} htmlFor="resident-contact-number">Contact number</label>
+          <div className="relative mt-2">
+            <Phone aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <input
+              aria-describedby={describedBy("contactNumber", "contact-number-helper")}
+              aria-invalid={Boolean(errors.contactNumber)}
+              autoComplete="tel"
+              className={inputClass("contactNumber", "pl-12 font-mono tabular-nums")}
+              id="resident-contact-number"
+              inputMode="tel"
+              maxLength={20}
+              onChange={(event) => updateField("contactNumber", event.target.value.replace(/[^\d+\s()-]/g, ""))}
+              placeholder="0917 123 4567"
+              type="tel"
+              value={consumer.contactNumber}
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-slate-500" id="contact-number-helper">Use an active Philippine mobile number for resident contact.</p>
+          {errors.contactNumber && <p className={errorClass} id="contactNumber-error" role="alert">{errors.contactNumber}</p>}
+        </div>
+
+        <div className="sm:col-span-2">
           <label className={labelClass} htmlFor="resident-email">Email address</label>
           <div className={`mt-2 flex min-h-12 overflow-hidden rounded-xl border bg-white transition-colors focus-within:ring-4 ${errors.email ? "border-red-600 focus-within:border-red-600 focus-within:ring-red-100" : "border-slate-300 focus-within:border-water-600 focus-within:ring-water-100"}`}>
             <input
@@ -237,6 +271,36 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
               Use 8 or more characters with uppercase, lowercase, a number, and a symbol.
             </p>
             {errors.password && <p className={errorClass} id="password-error" role="alert">{errors.password}</p>}
+          </div>
+        )}
+
+        {initialData && (
+          <div className="sm:col-span-2">
+            <div className="flex min-h-20 items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${consumer.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                  {consumer.status === "active"
+                    ? <CheckCircle2 aria-hidden="true" className="h-5 w-5" />
+                    : <CircleOff aria-hidden="true" className="h-5 w-5" />}
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-navy-900">Account status</p>
+                  <p className={`mt-1 text-sm font-semibold ${consumer.status === "active" ? "text-emerald-700" : "text-red-700"}`}>
+                    {consumer.status === "active" ? "Active — resident can use the account" : "Inactive — account access is disabled"}
+                  </p>
+                </div>
+              </div>
+              <button
+                aria-checked={consumer.status === "active"}
+                aria-label={`Set resident account ${consumer.status === "active" ? "inactive" : "active"}`}
+                className={`relative h-11 w-[4.5rem] shrink-0 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 ${consumer.status === "active" ? "border-emerald-600 bg-emerald-600" : "border-slate-300 bg-slate-300"}`}
+                onClick={() => updateField("status", consumer.status === "active" ? "inactive" : "active")}
+                role="switch"
+                type="button"
+              >
+                <span className={`absolute left-1 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform ${consumer.status === "active" ? "translate-x-7" : "translate-x-0"}`} />
+              </button>
+            </div>
           </div>
         )}
 
