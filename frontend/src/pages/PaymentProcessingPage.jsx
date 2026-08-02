@@ -4,8 +4,10 @@ import { useSearchParams } from "react-router-dom";
 import ConsumerInfoGrid from "../components/ConsumerInfoGrid";
 import CurrentBalanceCard from "../components/CurrentBalanceCard";
 import DigitalReceiptModal from "../components/DigitalReceiptModal";
+import Filter from "../components/Filter";
 import PaymentForm from "../components/PaymentForm";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import Search from "../components/Search";
 import Table from "../components/Table";
 import { fetchBillingHistory } from "../services/billingAPI";
 import {
@@ -21,6 +23,8 @@ export default function PaymentProcessingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [paymentQuery, setPaymentQuery] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("all");
   const requestedBillingId = Number(searchParams.get("billingId"));
   const preselectedBilling = billingRecords.find(
     (record) => record.id === requestedBillingId && record.outstandingBalance > 0,
@@ -133,6 +137,16 @@ export default function PaymentProcessingPage() {
   const [purok = "N/A", houseNumber = "N/A"] = selectedAddress.split(",");
   const totalCollected = payments.reduce((sum, payment) => sum + Number(payment.amountPaid || 0), 0);
   const fullyPaid = payments.filter((payment) => payment.paymentStatus === "Paid").length;
+  const paymentSearchTerm = paymentQuery.trim().toLowerCase();
+  const visiblePayments = payments.filter((payment) => {
+    const matchesName =
+      !paymentSearchTerm ||
+      String(payment.consumerName ?? "").toLowerCase().includes(paymentSearchTerm);
+    const matchesStatus =
+      paymentStatus === "all" || payment.paymentStatus === paymentStatus;
+
+    return matchesName && matchesStatus;
+  });
 
   return (
     <main className="space-y-6">
@@ -167,18 +181,40 @@ export default function PaymentProcessingPage() {
         onSubmit={recordPayment}
       />
 
-      <section className="ww-glass-strong overflow-hidden rounded-2xl">
-        <div className="border-b border-slate-100 p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">Transaction ledger</p><h3 className="mt-1 text-2xl font-extrabold text-slate-900">Payment History</h3><p className="mt-1 text-sm text-slate-500">Payments loaded from the server and newly recorded transactions.</p></div>
-        {loading ? (
-          <LoadingSkeleton className="p-4 sm:p-6" label="Loading payment history" variant="table" />
-        ) : (
-          <div className="p-4 sm:p-6"><Table ariaLabel="Payment history" className="shadow-none" columns={[{ key: "consumer", label: "Consumer" }, { key: "date", label: "Date" }, { key: "method", label: "Method" }, { key: "reference", label: "Reference" }, { key: "amount", label: "Amount" }, { key: "status", label: "Status" }, { key: "receipt", label: "Receipt", className: "text-right" }]} data={payments} emptyDescription="Completed transactions will appear in this ledger." emptyTitle="No payments recorded yet" getRowKey={(payment) => payment.id} rowClassName="transition-colors hover:bg-slate-50" tableClassName="w-full min-w-[900px] text-left text-sm" renderRow={(payment) => {
+      <div
+        aria-label="Payment history table controls"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
+        role="search"
+      >
+        <Search
+          ariaLabel="Search payment history by resident name"
+          className="flex-1"
+          onValueChange={setPaymentQuery}
+          placeholder="Search resident name"
+          value={paymentQuery}
+        />
+        <Filter
+          ariaLabel="Filter payment history by status"
+          className="w-full sm:w-48"
+          onValueChange={setPaymentStatus}
+          options={[
+            { label: "All statuses", value: "all" },
+            { label: "Paid", value: "Paid" },
+            { label: "Partially paid", value: "Partially Paid" },
+          ]}
+          value={paymentStatus}
+        />
+      </div>
+
+      {loading ? (
+        <LoadingSkeleton label="Loading payment history" variant="table" />
+      ) : (
+        <Table ariaLabel="Payment history" columns={[{ key: "consumer", label: "Consumer" }, { key: "date", label: "Date" }, { key: "method", label: "Method" }, { key: "reference", label: "Reference" }, { key: "amount", label: "Amount" }, { key: "status", label: "Status" }, { key: "receipt", label: "Receipt", className: "text-right" }]} data={visiblePayments} emptyDescription={payments.length ? "No payments match the current search and filter." : "Completed transactions will appear in this ledger."} emptyTitle={payments.length ? "No matching payments" : "No payments recorded yet"} getRowKey={(payment) => payment.id} rowClassName="transition-colors hover:bg-slate-50" tableClassName="w-full min-w-[900px] text-left text-sm" renderRow={(payment) => {
             const paid = payment.paymentStatus === "Paid";
             const StatusIcon = paid ? CheckCircle2 : Clock3;
             return <><td className="px-4 py-4 font-bold text-slate-900">{payment.consumerName}</td><td className="px-4 py-4 font-mono text-xs text-slate-600">{payment.paymentDate}</td><td className="px-4 py-4 text-slate-600">{payment.paymentMethod}</td><td className="px-4 py-4 font-mono text-xs text-slate-600">{payment.referenceNumber || "—"}</td><td className="px-4 py-4 font-mono font-bold">₱{payment.amountPaid.toLocaleString()}</td><td className="px-4 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${paid ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}><StatusIcon aria-hidden="true" className="h-3.5 w-3.5" />{payment.paymentStatus}</span></td><td className="px-4 py-4 text-right"><button className="min-h-11 rounded-xl bg-water-50 px-3 font-bold text-water-700 hover:bg-water-100" onClick={() => setSelectedPayment(payment)} type="button">View Receipt</button></td></>;
-          }} /></div>
-        )}
-      </section>
+          }} />
+      )}
 
 
       <DigitalReceiptModal isOpen={Boolean(selectedPayment)} onClose={() => setSelectedPayment(null)} receiptData={selectedPayment} />

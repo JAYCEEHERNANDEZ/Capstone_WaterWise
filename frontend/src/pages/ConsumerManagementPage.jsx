@@ -208,10 +208,14 @@ function ConsumerManagementPage() {
 
       {error && !formMode && <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">{error}</p>}
 
-      <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row">
+      <div
+        aria-label="Resident table controls"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
+        role="search"
+      >
         <Search ariaLabel="Search residents by username or name" className="flex-1" onValueChange={setQuery} placeholder="Search username or name" value={query} />
-        <Filter ariaLabel="Filter residents by purok" className="sm:w-44" onValueChange={setPurok} options={purokOptions} value={purok} />
-      </section>
+        <Filter ariaLabel="Filter residents by purok" className="w-full sm:w-48" onValueChange={setPurok} options={purokOptions} value={purok} />
+      </div>
 
       <ConsumerListTable
         consumers={visibleConsumers}

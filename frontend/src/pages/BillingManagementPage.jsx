@@ -93,12 +93,12 @@ export default function BillingManagementPage() {
 
       <div
         aria-label="Billing table controls"
-        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
         role="search"
       >
         <Search
           ariaLabel="Search billing history"
-          className="w-full sm:w-80"
+          className="flex-1"
           onValueChange={setQuery}
           placeholder="Search consumer, invoice, or period"
           value={query}
@@ -117,25 +117,23 @@ export default function BillingManagementPage() {
         />
       </div>
 
-      <section className="ww-glass-strong rounded-2xl p-4 sm:p-6" aria-label="Billing records">
-        {error && (
-          <div
-            className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-            role="alert"
-          >
-            <span>{error}</span>
-            <button className="min-h-11 font-bold underline" onClick={loadBillingHistory} type="button">
-              Try again
-            </button>
-          </div>
-        )}
+      {error && (
+        <div
+          className="flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          role="alert"
+        >
+          <span>{error}</span>
+          <button className="min-h-11 font-bold underline" onClick={loadBillingHistory} type="button">
+            Try again
+          </button>
+        </div>
+      )}
 
-        {loading ? (
-          <LoadingSkeleton label="Loading billing records" variant="table" />
-        ) : (
-          <BillingHistoryTable historyData={visibleHistory} />
-        )}
-      </section>
+      {loading ? (
+        <LoadingSkeleton label="Loading billing records" variant="table" />
+      ) : (
+        <BillingHistoryTable historyData={visibleHistory} />
+      )}
     </main>
   );
 }

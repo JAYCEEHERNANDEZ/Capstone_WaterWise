@@ -162,7 +162,11 @@ export default function AnnouncementManagementPage() {
         </div>
 
         <div className="min-w-0 space-y-4">
-          <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row">
+          <div
+            aria-label="Announcement list controls"
+            className="flex flex-col gap-3 sm:flex-row sm:items-center"
+            role="search"
+          >
             <Search
               ariaLabel="Search announcements"
               className="flex-1"
@@ -173,7 +177,7 @@ export default function AnnouncementManagementPage() {
             />
             <Filter
               ariaLabel="Filter announcements by category"
-              className="sm:w-52"
+              className="w-full sm:w-52"
               onValueChange={setCategory}
               options={[
                 { label: "All categories", value: "all" },
@@ -192,7 +196,7 @@ export default function AnnouncementManagementPage() {
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </button>
-          </section>
+          </div>
 
           {loading ? (
             <LoadingSkeleton label="Loading announcements" variant="list" />

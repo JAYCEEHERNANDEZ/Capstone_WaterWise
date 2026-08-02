@@ -101,10 +101,14 @@ export default function AdminReadingsPage() {
         </div>
       </header>
 
-      <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row">
+      <div
+        aria-label="Meter reading table controls"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
+        role="search"
+      >
         <Search ariaLabel="Search consumption readings" className="flex-1" onValueChange={setQuery} placeholder="Search consumer number, name, or purok" value={query} />
-        <Filter ariaLabel="Filter by purok" className="sm:w-44" onValueChange={setPurok} options={[{ label: "All puroks", value: "all" }, ...[1, 2, 3, 4, 5].map((number) => ({ label: `Purok ${number}`, value: `Purok ${number}` }))]} value={purok} />
-      </section>
+        <Filter ariaLabel="Filter by purok" className="w-full sm:w-48" onValueChange={setPurok} options={[{ label: "All puroks", value: "all" }, ...[1, 2, 3, 4, 5].map((number) => ({ label: `Purok ${number}`, value: `Purok ${number}` }))]} value={purok} />
+      </div>
 
       {error && <div className="flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{error}</span><button className="font-bold underline" onClick={loadReadings} type="button">Try again</button></div>}
       {loading ? <LoadingSkeleton label="Loading meter readings" variant="table" /> : <MeterReadingTable readOnly readings={readings} />}
