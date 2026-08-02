@@ -90,6 +90,7 @@ function ReviewRow({ label, value }) {
 export default function PaymentForm({
   billingRecords = [],
   initialData = null,
+  onCancel,
   onSubmit = () => {},
   onSuccess,
 }) {
@@ -539,12 +540,21 @@ export default function PaymentForm({
             </div>
           </div>
 
-          <button
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white hover:bg-water-700"
-            type="submit"
-          >
-            Review payment
-          </button>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50"
+              onClick={onCancel}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-5 font-bold text-white hover:bg-water-700"
+              type="submit"
+            >
+              Review payment
+            </button>
+          </div>
         </div>
       ) : (
         <section aria-labelledby="payment-review-heading">
@@ -595,17 +605,27 @@ export default function PaymentForm({
             <PaymentStatus status={paymentStatus} />
           </div>
 
-          <button
-            className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 font-bold text-white hover:bg-emerald-700 disabled:bg-emerald-300"
-            disabled={submitting}
-            onClick={confirmPayment}
-            type="button"
-          >
-            <WalletCards aria-hidden="true" className="h-4 w-4" />
-            {submitting
-              ? "Confirming payment…"
-              : `Confirm ${currency(amountApplied)} payment`}
-          </button>
+          <div className="mt-6 grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)]">
+            <button
+              className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50 disabled:opacity-60"
+              disabled={submitting}
+              onClick={onCancel}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 font-bold text-white hover:bg-emerald-700 disabled:bg-emerald-300"
+              disabled={submitting}
+              onClick={confirmPayment}
+              type="button"
+            >
+              <WalletCards aria-hidden="true" className="h-4 w-4" />
+              {submitting
+                ? "Confirming payment…"
+                : `Confirm ${currency(amountApplied)} payment`}
+            </button>
+          </div>
         </section>
       )}
     </form>

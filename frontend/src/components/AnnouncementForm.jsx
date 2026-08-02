@@ -127,6 +127,7 @@ export default function AnnouncementForm({ onSubmit, initialData = null, onCance
         eyebrow="Community post"
         isOpen={isOpen}
         onClose={closeComposer}
+        showCloseButton={false}
         size="md"
         title={initialData ? "Update announcement" : "Create announcement"}
       >

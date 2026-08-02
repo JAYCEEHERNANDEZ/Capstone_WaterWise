@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AlertTriangle, ArrowLeft, CheckCircle2 } from "lucide-react";
 
-export default function ConsumptionEntryPanel({ consumer, embedded = false, onSave, previousReading = 0, saving = false }) {
+export default function ConsumptionEntryPanel({ consumer, embedded = false, onCancel, onSave, previousReading = 0, saving = false }) {
   const [currentReading, setCurrentReading] = useState("");
   const [error, setError] = useState("");
   const [isReviewing, setIsReviewing] = useState(false);
@@ -84,7 +84,10 @@ export default function ConsumptionEntryPanel({ consumer, embedded = false, onSa
             <p className="ww-data-value mt-2 text-2xl font-extrabold text-water-800">{Math.max(consumption, 0).toLocaleString()} m³</p>
           </div>
           {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 sm:col-span-2" role="alert">{error}</p>}
-          <button className="ww-primary-button px-5 py-3 sm:col-span-2" type="submit">Review reading</button>
+          <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+            <button className="min-h-12 rounded-xl border border-slate-300 bg-white px-5 font-bold text-navy-900 hover:bg-slate-50" onClick={onCancel} type="button">Cancel</button>
+            <button className="ww-primary-button px-5 py-3" type="submit">Review reading</button>
+          </div>
         </form>
       ) : (
         <div className="mt-5">
@@ -114,7 +117,10 @@ export default function ConsumptionEntryPanel({ consumer, embedded = false, onSa
 
           {error && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700" role="alert">{error}</p>}
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <button className="flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60" disabled={saving} onClick={onCancel} type="button">
+              Cancel
+            </button>
             <button className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 font-bold text-slate-700 hover:bg-slate-50" disabled={saving} onClick={() => { setIsReviewing(false); setError(""); }} type="button">
               <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Edit reading
             </button>

@@ -169,6 +169,7 @@ function ConsumerManagementPage() {
         eyebrow="Resident account"
         isOpen={Boolean(formMode)}
         onClose={closeForm}
+        showCloseButton={false}
         size="md"
         title={formMode === "edit" ? "Edit resident" : "Add resident"}
       >

@@ -110,6 +110,7 @@ function EventDialog({ defaultDate, event, isOpen, onClose, onSubmit, submitting
       eyebrow="Community calendar"
       isOpen={isOpen}
       onClose={onClose}
+      showCloseButton={false}
       size="md"
       title={event ? "Edit event" : "Create an event"}
     >

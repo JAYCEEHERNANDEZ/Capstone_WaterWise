@@ -12,6 +12,50 @@ const trendIcons = {
   neutral: Minus,
 };
 
+const descriptionHighlightPattern = /((?:[+-]?₱\s*)?(?:\d{1,2}:\d{2}\s?(?:AM|PM)?|[+-]?\d[\d,]*(?:\.\d+)?)(?:\s?(?:%|m³|m3|liters?|L))?|\b(?:increase(?:d|s)?|increasing|higher|grew|growth|gained|decrease(?:d|s)?|decreasing|lower|declined?|dropped?)\b)/gi;
+
+const positiveTrendPattern = /\b(increase(?:d|s)?|increasing|higher|more|above|grew|growth|gained|up)\b/i;
+const negativeTrendPattern = /\b(decrease(?:d|s)?|decreasing|lower|less|below|declined?|dropped?|down)\b/i;
+
+function getDescriptionNumberTone(description, number, index) {
+  const context = description.slice(Math.max(0, index - 28), index + number.length + 28);
+  if (number.trim().startsWith("+") || positiveTrendPattern.test(number) || positiveTrendPattern.test(context)) return "positive";
+  if (number.trim().startsWith("-") || negativeTrendPattern.test(number) || negativeTrendPattern.test(context)) return "negative";
+  return "neutral";
+}
+
+function DescriptionText({ children }) {
+  if (typeof children !== "string") return children;
+
+  const matches = [...children.matchAll(descriptionHighlightPattern)];
+  if (!matches.length) return children;
+
+  const parts = [];
+  let cursor = 0;
+  matches.forEach((match) => {
+    const index = match.index ?? 0;
+    if (index > cursor) parts.push(children.slice(cursor, index));
+    const tone = getDescriptionNumberTone(children, match[0], index);
+    parts.push(
+      <span
+        className={`mx-0.5 inline-flex rounded-full border px-2 py-0.5 font-mono font-bold tabular-nums ${
+          tone === "positive"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : tone === "negative"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-water-200 bg-water-50 text-water-800"
+        }`}
+        key={`${index}-${match[0]}`}
+      >
+        {match[0]}
+      </span>,
+    );
+    cursor = index + match[0].length;
+  });
+  if (cursor < children.length) parts.push(children.slice(cursor));
+  return parts;
+}
+
 /** A uniform metric card for new page summaries. Existing KPI components stay independent. */
 export default function KPI({
   title,
@@ -27,6 +71,13 @@ export default function KPI({
   className = "",
 }) {
   const TrendIcon = trendIcons[trendDirection] ?? Minus;
+  const resolvedTrendTone = trendTone === "neutral"
+    ? trendDirection === "up"
+      ? "positive"
+      : trendDirection === "down"
+        ? "negative"
+        : "neutral"
+    : trendTone;
 
   return (
     <article
@@ -61,15 +112,15 @@ export default function KPI({
       {trend ? (
         <div className="mt-3 flex min-w-0 items-center gap-2 text-xs">
           <span
-            className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 font-bold ${trendStyles[trendTone] ?? trendStyles.neutral}`}
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 font-bold ${trendStyles[resolvedTrendTone] ?? trendStyles.neutral}`}
           >
             <TrendIcon aria-hidden="true" className="h-3.5 w-3.5" />
             {trend}
           </span>
-          {description ? <span className="truncate text-slate-500">{description}</span> : null}
+          {description ? <span className="min-w-0 text-slate-500"><DescriptionText>{description}</DescriptionText></span> : null}
         </div>
       ) : description ? (
-        <p className="mt-3 text-xs leading-5 text-slate-500">{description}</p>
+        <p className="mt-3 text-xs leading-5 text-slate-500"><DescriptionText>{description}</DescriptionText></p>
       ) : null}
     </article>
   );

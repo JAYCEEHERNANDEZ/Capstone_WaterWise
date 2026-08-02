@@ -83,11 +83,12 @@ export default function RecordConsumptionPage() {
         eyebrow="Field operations"
         isOpen={Boolean(selectedConsumer)}
         onClose={() => setSelectedConsumer(null)}
+        showCloseButton={false}
         size="md"
         title="Record meter reading"
       >
         {error && <div className="mx-5 mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:mx-6" role="alert">{error}</div>}
-        <ConsumptionEntryPanel embedded consumer={selectedConsumer} key={`${selectedConsumer?.id}-${latestReading?.id ?? "new"}`} onSave={saveReading} previousReading={latestReading?.currentReading ?? 0} saving={saving} />
+        <ConsumptionEntryPanel embedded consumer={selectedConsumer} key={`${selectedConsumer?.id}-${latestReading?.id ?? "new"}`} onCancel={() => setSelectedConsumer(null)} onSave={saveReading} previousReading={latestReading?.currentReading ?? 0} saving={saving} />
       </Modal>
     </main>
   );

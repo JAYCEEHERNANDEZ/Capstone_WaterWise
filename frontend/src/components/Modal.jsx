@@ -177,7 +177,7 @@ export default function Modal({
                   <button
                     {...restCloseButtonProps}
                     aria-label={closeLabel}
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 ${closeButtonClass}`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors duration-[120ms] hover:bg-slate-50 hover:text-navy-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 ${closeButtonClass}`}
                     onClick={onClose}
                     ref={closeButtonRef}
                     type="button"

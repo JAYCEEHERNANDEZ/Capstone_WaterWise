@@ -51,6 +51,7 @@ export default function PaymentModal({
       eyebrow="Payment administration"
       isOpen={isOpen}
       onClose={onClose}
+      showCloseButton={Boolean(completedPayment)}
       title={completedPayment ? "Payment recorded" : "Record payment"}
       zIndexClass="z-40"
     >
@@ -131,6 +132,7 @@ export default function PaymentModal({
                 key={`${effectiveInitialBilling?.id ?? "new"}-${formVersion}`}
                 billingRecords={billingRecords}
                 initialData={initialData}
+                onCancel={onClose}
                 onSubmit={onSubmit}
                 onSuccess={setCompletedPayment}
               />
