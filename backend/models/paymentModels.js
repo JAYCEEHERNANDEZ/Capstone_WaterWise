@@ -1,7 +1,8 @@
 import { supabase } from "../config/supabase.js";
+import { randomUUID } from "node:crypto";
 
 const PAYMENT_FIELDS =
-  "id, billing_id, total_paid, remaining_balance, created_at, updated_at";
+  "id, billing_id, total_paid, remaining_balance, payment_date, payment_method, reference_number, created_at, updated_at";
 
 const createError = (message, statusCode = 400) => {
   const error = new TypeError(message);
@@ -25,80 +26,79 @@ const parsePaymentAmount = (value) => {
   return Number(amount.toFixed(2));
 };
 
-export async function createPayment({ billingId, totalPaid, amount }) {
+const parsePaymentDate = (value) => {
+  const date = value ?? new Date().toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(`${date}T00:00:00Z`))) {
+    throw createError("A valid payment date is required.");
+  }
+  return date;
+};
+
+const parsePaymentMethod = (value) => {
+  const method = String(value ?? "Cash").trim();
+  if (!["Cash", "GCash", "Bank transfer"].includes(method)) {
+    throw createError("Unsupported payment method.");
+  }
+  return method;
+};
+
+const parseOptionalReference = (value) => {
+  const reference = String(value ?? "").trim();
+  if (reference.length > 100) {
+    throw createError("Reference number cannot exceed 100 characters.");
+  }
+  return reference || null;
+};
+
+const paymentErrorStatus = (message) => {
+  if (message.includes("not found")) return 404;
+  if (message.includes("already fully paid")) return 409;
+  return 400;
+};
+
+export async function createPayment({
+  billingId,
+  totalPaid,
+  amount,
+  paymentDate,
+  paymentMethod,
+  referenceNumber,
+  idempotencyKey,
+}) {
   const normalizedBillingId = parsePositiveId(billingId, "billing ID");
   const paymentAmount = parsePaymentAmount(totalPaid ?? amount);
+  const normalizedDate = parsePaymentDate(paymentDate);
+  const normalizedMethod = parsePaymentMethod(paymentMethod);
+  const normalizedReference = parseOptionalReference(referenceNumber);
+  const normalizedIdempotencyKey = String(idempotencyKey ?? randomUUID()).trim();
 
-  const { data: billing, error: billingError } = await supabase
-    .from("billing")
-    .select("id, user_id, total_bill, remaining_balance, status")
-    .eq("id", normalizedBillingId)
-    .maybeSingle();
-
-  if (billingError) {
-    throw createError(`Failed to retrieve billing: ${billingError.message}`, 500);
-  }
-  if (!billing) {
-    throw createError("Billing record not found.", 404);
+  if (normalizedMethod !== "Cash" && !normalizedReference) {
+    throw createError("An electronic payment reference number is required.");
   }
 
-  const currentBalance = Number(billing.remaining_balance ?? 0);
-  if (currentBalance <= 0 || billing.status === "Paid") {
-    throw createError("This billing record is already fully paid.", 409);
-  }
-  if (paymentAmount > currentBalance) {
-    throw createError("Payment amount cannot exceed the remaining balance.");
+  if (!normalizedIdempotencyKey || normalizedIdempotencyKey.length > 200) {
+    throw createError("A valid payment idempotency key is required.");
   }
 
-  const remainingBalance = Number((currentBalance - paymentAmount).toFixed(2));
-  const nextStatus = remainingBalance === 0 ? "Paid" : "Partially Paid";
+  const { data, error } = await supabase.rpc("record_payment_transaction", {
+    p_amount: paymentAmount,
+    p_billing_id: normalizedBillingId,
+    p_idempotency_key: normalizedIdempotencyKey,
+    p_payment_date: normalizedDate,
+    p_payment_method: normalizedMethod,
+    p_reference_number: normalizedReference,
+  });
 
-  const { data: payment, error: paymentError } = await supabase
-    .from("payments")
-    .insert({
-      billing_id: normalizedBillingId,
-      total_paid: paymentAmount,
-      remaining_balance: remainingBalance,
-    })
-    .select(PAYMENT_FIELDS)
-    .single();
-
-  if (paymentError) {
-    if (paymentError.code === "23503") {
-      throw createError("Billing record not found.", 404);
-    }
-    throw createError(`Failed to create payment: ${paymentError.message}`, 500);
+  if (error) {
+    const message = error.message || "Failed to record payment.";
+    throw createError(message, paymentErrorStatus(message));
   }
 
-  const { data: updatedBilling, error: updateError } = await supabase
-    .from("billing")
-    .update({
-      remaining_balance: remainingBalance,
-      status: nextStatus,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", normalizedBillingId)
-    .eq("remaining_balance", currentBalance)
-    .select(
-      "id, consumption_id, user_id, billing_date, due_date, total_bill, remaining_balance, status, created_at, updated_at"
-    )
-    .single();
-
-  if (updateError) {
-    await supabase.from("payments").delete().eq("id", payment.id);
-    if (updateError.code === "PGRST116") {
-      throw createError(
-        "The billing balance changed while this payment was being processed. Please try again.",
-        409
-      );
-    }
-    throw createError(
-      `Failed to update billing after payment: ${updateError.message}`,
-      500
-    );
+  if (!data?.id || !data?.billing) {
+    throw createError("The payment transaction returned an invalid result.", 500);
   }
 
-  return { ...payment, billing: updatedBilling };
+  return data;
 }
 
 export async function getPayments() {

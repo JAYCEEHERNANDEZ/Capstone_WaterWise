@@ -1,106 +1,123 @@
-import { AlertCircle, CheckCircle2, Clock3, Eye, WalletCards } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3 } from "lucide-react";
 import Table from "./Table";
 
 function getStatusConfig(status) {
   if (status === "Paid") {
-    return { Icon: CheckCircle2, className: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+    return {
+      Icon: CheckCircle2,
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    };
   }
 
   if (status === "Partially Paid") {
-    return { Icon: Clock3, className: "border-amber-200 bg-amber-50 text-amber-800" };
+    return {
+      Icon: Clock3,
+      className: "border-amber-200 bg-amber-50 text-amber-800",
+    };
   }
 
-  return { Icon: AlertCircle, className: "border-red-200 bg-red-50 text-red-700" };
+  return {
+    Icon: AlertCircle,
+    className: "border-red-200 bg-red-50 text-red-700",
+  };
 }
 
-export default function BillingHistoryTable({ historyData = [], onSelectReceipt, onPayBalance, showConsumerDetails = true, receiptLabel = "View Receipt", allowAllReceipts = false }) {
+export default function BillingHistoryTable({ historyData = [], showConsumerDetails = true }) {
   return (
     <Table
       ariaLabel="Billing history"
       columns={[
-        ...(showConsumerDetails ? [{ key: "consumer", label: "Consumer Name" }, { key: "purok", label: "Purok" }] : []),
-        { key: "period", label: "Billing Period" }, { key: "date", label: "Reading Date" },
-        { key: "consumption", label: "Consumption" }, { key: "amount", label: "Amount Due" },
-        { key: "status", label: "Status" }, { key: "action", label: "Action", className: "text-right" },
+        ...(showConsumerDetails
+          ? [
+              { key: "consumer", label: "Consumer Name" },
+              { key: "purok", label: "Purok" },
+            ]
+          : []),
+        { key: "invoice", label: "Invoice" },
+        { key: "period", label: "Billing Period" },
+        { key: "date", label: "Reading Date" },
+        { key: "consumption", label: "Consumption" },
+        { key: "amount", label: "Total Bill", className: "text-right" },
+        { key: "balance", label: "Balance", className: "text-right" },
+        { key: "status", label: "Status" },
       ]}
       data={historyData}
       emptyDescription="There are no billing records yet."
       emptyTestId="billing-history-empty-state"
       emptyTitle="No billing records"
       getRowKey={(row) => row.invoiceNumber}
-      tableClassName={`block w-full text-left text-sm md:table ${showConsumerDetails ? "md:min-w-[980px]" : "md:min-w-[760px]"}`}
-      testId="billing-history-table"
       rowClassName="grid grid-cols-2 gap-x-4 gap-y-3 p-4 text-navy-900 transition-colors hover:bg-slate-50 md:table-row md:p-0"
+      tableClassName={`block w-full text-left text-sm md:table ${
+        showConsumerDetails ? "md:min-w-[1120px]" : "md:min-w-[860px]"
+      }`}
+      testId="billing-history-table"
       renderRow={(row) => {
-            const canViewReceipt = allowAllReceipts || row.status === "Paid";
-            const canPayBalance = row.outstandingBalance > 0 && (row.status === "Unpaid" || row.status === "Partially Paid");
-            const { Icon: StatusIcon, className: statusClassName } = getStatusConfig(row.status);
+        const { Icon: StatusIcon, className: statusClassName } = getStatusConfig(row.status);
 
-            return (
-              <>
-                {showConsumerDetails && <td className="col-span-2 flex flex-col border-b border-slate-100 pb-3 font-extrabold before:text-xs before:font-semibold before:text-slate-500 before:content-['Consumer_name'] md:table-cell md:border-0 md:px-4 md:py-4 md:text-sm md:before:hidden" data-testid="row-consumer-name">{row.consumerName ?? "Unknown consumer"}</td>}
-                {showConsumerDetails && <td className="flex flex-col gap-1 text-slate-600 before:text-xs before:font-semibold before:text-slate-500 before:content-['Purok'] md:table-cell md:px-4 md:py-4 md:before:hidden" data-testid="row-purok">{row.purok ?? "Unassigned"}</td>}
-                <td className="col-span-2 flex items-center justify-between border-b border-slate-100 pb-3 text-base font-extrabold before:text-xs before:font-semibold before:text-slate-500 before:content-['Billing_period'] md:table-cell md:border-0 md:px-4 md:py-4 md:text-sm md:before:hidden" data-testid="row-month">
-                  {row.billingPeriod}
-                </td>
-                <td
-                  className="flex flex-col gap-1 font-mono text-slate-600 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Reading_date'] md:table-cell md:px-4 md:py-4 md:before:hidden"
-                  data-testid="row-reading-date"
-                >
-                  {row.readingDate}
-                </td>
-                <td className="flex flex-col gap-1 text-right font-mono before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Consumption'] md:table-cell md:px-4 md:py-4 md:text-left md:before:hidden" data-testid="row-consumption">
-                  {row.cubicMetersConsumed} m³
-                </td>
-                <td className="flex flex-col gap-1 font-mono before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Amount_due'] md:table-cell md:px-4 md:py-4 md:before:hidden" data-testid="row-amount-due">
-                  ₱{row.amountDue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </td>
-                <td className="flex items-end justify-end md:table-cell md:px-4 md:py-4">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${statusClassName}`}
-                    data-status={row.status}
-                    data-testid="row-status"
-                  >
-                    <StatusIcon aria-hidden="true" className="h-3.5 w-3.5" />
-                    {row.status}
-                  </span>
-                </td>
-                <td className="col-span-2 pt-1 text-right md:table-cell md:px-4 md:py-4">
-                  <div className="flex flex-col gap-2 md:flex-row md:justify-end md:gap-3">
-                    <button
-                      className={[
-                        "min-h-11 w-full rounded-xl border px-4 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 md:w-auto",
-                        canViewReceipt
-                          ? "border-water-200 bg-water-50 text-water-600 hover:bg-water-100"
-                          : "cursor-not-allowed bg-slate-100 text-slate-400",
-                      ].join(" ")}
-                      data-testid={`view-receipt-${row.invoiceNumber}`}
-                      disabled={!canViewReceipt}
-                      onClick={() => canViewReceipt && onSelectReceipt && onSelectReceipt(row)}
-                      type="button"
-                    >
-                      {canViewReceipt && <Eye aria-hidden="true" className="mr-2 inline h-4 w-4" />}
-                      {canViewReceipt ? receiptLabel : "Unavailable"}
-                    </button>
-                    <button
-                      className={[
-                        "min-h-11 w-full rounded-xl border px-4 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 md:w-auto",
-                        canPayBalance
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                          : "cursor-not-allowed bg-slate-100 text-slate-400",
-                      ].join(" ")}
-                      data-testid={`pay-balance-${row.invoiceNumber}`}
-                      disabled={!canPayBalance}
-                      onClick={() => canPayBalance && onPayBalance && onPayBalance(row)}
-                      type="button"
-                    >
-                      {canPayBalance ? <WalletCards aria-hidden="true" className="mr-2 inline h-4 w-4" /> : <CheckCircle2 aria-hidden="true" className="mr-2 inline h-4 w-4" />}
-                      {canPayBalance ? `Pay ₱${row.outstandingBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "Paid"}
-                    </button>
-                  </div>
-                </td>
-              </>
-            );
+        return (
+          <>
+            {showConsumerDetails && (
+              <td
+                className="col-span-2 flex flex-col border-b border-slate-100 pb-3 font-extrabold before:text-xs before:font-semibold before:text-slate-500 before:content-['Consumer_name'] md:table-cell md:border-0 md:px-4 md:py-4 md:text-sm md:before:hidden"
+                data-testid="row-consumer-name"
+              >
+                {row.consumerName ?? "Unknown consumer"}
+              </td>
+            )}
+            {showConsumerDetails && (
+              <td
+                className="flex flex-col gap-1 text-slate-600 before:text-xs before:font-semibold before:text-slate-500 before:content-['Purok'] md:table-cell md:px-4 md:py-4 md:before:hidden"
+                data-testid="row-purok"
+              >
+                {row.purok ?? "Unassigned"}
+              </td>
+            )}
+            <td className="flex flex-col gap-1 font-mono text-xs font-bold text-water-700 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Invoice'] md:table-cell md:px-4 md:py-4 md:before:hidden">
+              {row.invoiceNumber}
+            </td>
+            <td
+              className="col-span-2 flex items-center justify-between border-b border-slate-100 pb-3 text-base font-extrabold before:text-xs before:font-semibold before:text-slate-500 before:content-['Billing_period'] md:table-cell md:border-0 md:px-4 md:py-4 md:text-sm md:before:hidden"
+              data-testid="row-month"
+            >
+              {row.billingPeriod}
+            </td>
+            <td
+              className="flex flex-col gap-1 font-mono text-slate-600 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Reading_date'] md:table-cell md:px-4 md:py-4 md:before:hidden"
+              data-testid="row-reading-date"
+            >
+              {row.readingDate}
+            </td>
+            <td
+              className="flex flex-col gap-1 font-mono before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Consumption'] md:table-cell md:px-4 md:py-4 md:before:hidden"
+              data-testid="row-consumption"
+            >
+              {row.cubicMetersConsumed} m³
+            </td>
+            <td
+              className="flex flex-col gap-1 font-mono font-bold tabular-nums before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Total_bill'] md:table-cell md:px-4 md:py-4 md:text-right md:before:hidden"
+              data-testid="row-amount-due"
+            >
+              ₱{Number(row.amountDue ?? 0).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </td>
+            <td className="flex flex-col gap-1 font-mono font-bold tabular-nums text-slate-700 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Balance'] md:table-cell md:px-4 md:py-4 md:text-right md:before:hidden">
+              ₱{Number(row.outstandingBalance ?? row.amountDue ?? 0).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
+            </td>
+            <td className="flex flex-col items-end gap-1 before:self-start before:text-xs before:font-semibold before:text-slate-500 before:content-['Status'] md:table-cell md:px-4 md:py-4 md:before:hidden">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${statusClassName}`}
+                data-status={row.status}
+                data-testid="row-status"
+              >
+                <StatusIcon aria-hidden="true" className="h-3.5 w-3.5" />
+                {row.status}
+              </span>
+            </td>
+          </>
+        );
       }}
     />
   );

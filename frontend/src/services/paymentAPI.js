@@ -6,8 +6,9 @@ export function normalizePaymentRecord(record) {
     id: record.id,
     billingId: record.billing_id,
     consumerName: record.consumerName ?? `Billing #${record.billing_id}`,
-    paymentDate: record.created_at,
-    paymentMethod: "Recorded payment",
+    paymentDate: record.payment_date ?? record.created_at,
+    paymentMethod: record.payment_method ?? "Cash",
+    referenceNumber: record.reference_number ?? "",
     amountPaid: Number(record.total_paid ?? 0),
     remainingBalance,
     paymentStatus: remainingBalance === 0 ? "Paid" : "Partially Paid",
@@ -36,6 +37,10 @@ export async function fetchConsumerPayments(consumerId, options = {}) {
 export async function recordPayment(payload, options = {}) {
   const response = await apiClient.post("/payments", {
     billingId: payload.billingId,
+    idempotencyKey: payload.idempotencyKey,
+    paymentDate: payload.paymentDate,
+    paymentMethod: payload.paymentMethod,
+    referenceNumber: payload.referenceNumber || null,
     totalPaid: Number(payload.amountPaid ?? payload.amount),
   }, options);
   const result = response.data?.data;
