@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiCheckCircle, FiPlus, FiUsers, FiX } from "react-icons/fi";
+import { FiCheckCircle, FiPlus, FiUsers } from "react-icons/fi";
 import ConsumerForm from "../components/ConsumerForm";
 import ConsumerListTable from "../components/ConsumerListTable";
 import Filter from "../components/Filter";
 import KPI from "../components/KPI";
+import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
 import Search from "../components/Search";
 import { createConsumer, fetchConsumerDirectory, updateConsumer } from "../services/consumerDirectoryAPI";
@@ -137,23 +138,6 @@ function ConsumerManagementPage() {
     setError("");
   };
 
-  useEffect(() => {
-    if (!formMode) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") closeForm();
-    };
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [formMode]);
-
   return (
     <main className="space-y-6">
       <PageHeader description="Register community accounts, review service locations, and monitor billing readiness from one workspace." eyebrow="Resident accounts" title="Resident management" />
@@ -163,43 +147,32 @@ function ConsumerManagementPage() {
         <KPI description="Accounts ready for service" icon={FiCheckCircle} title="Active accounts" value={consumers.filter((item) => item.status?.toLowerCase() === "active").length} />
       </section>
 
-      {formMode && (
-        <div
-          aria-labelledby="consumer-form-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4 "
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeForm();
-          }}
-          role="dialog"
-        >
-          <div className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl shadow-2xl">
-            <button
-              aria-label="Close consumer form"
-              className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-navy-900"
-              onClick={closeForm}
-              type="button"
-            >
-              <FiX className="h-5 w-5" />
-            </button>
+      <Modal
+        closeLabel="Close resident form"
+        description={formMode === "edit" ? "Update the resident's service information." : "Enter the resident's details and create secure sign-in credentials."}
+        eyebrow="Resident account"
+        isOpen={Boolean(formMode)}
+        onClose={closeForm}
+        size="md"
+        title={formMode === "edit" ? "Edit resident" : "Add resident"}
+      >
             {error && (
               <p
-                className="rounded-t-3xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700"
+                className="mx-5 mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 sm:mx-6"
                 role="alert"
               >
                 {error}
               </p>
             )}
             <ConsumerForm
+              embedded
               initialData={formMode === "edit" ? selectedConsumer : null}
               key={`${formMode}-${selectedConsumer?.id ?? "new"}`}
               onCancel={closeForm}
               onSubmit={formMode === "edit" ? editConsumer : addConsumer}
               requirePassword={formMode === "add"}
             />
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {error && !formMode && <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">{error}</p>}
 

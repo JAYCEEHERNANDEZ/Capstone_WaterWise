@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -13,12 +12,12 @@ import {
   RotateCcw,
   Tag,
   Trash2,
-  X,
 } from "lucide-react";
 import EventForm from "../components/EventForm";
 import Dropdown from "../components/Dropdown";
 import KPI from "../components/KPI";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
 import {
   createEvent as createEventRequest,
@@ -101,81 +100,18 @@ function EventStatus({ event }) {
 }
 
 function EventDialog({ defaultDate, event, isOpen, onClose, onSubmit, submitting }) {
-  const closeButtonRef = useRef(null);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const previouslyFocused = document.activeElement;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (keyboardEvent) => {
-      if (keyboardEvent.key === "Escape" && !submitting) onClose();
-      if (keyboardEvent.key !== "Tab") return;
-      const dialog = closeButtonRef.current?.closest('[role="dialog"]');
-      const focusable = dialog?.querySelectorAll(
-        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex="0"]',
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (keyboardEvent.shiftKey && document.activeElement === first) {
-        keyboardEvent.preventDefault();
-        last.focus();
-      } else if (!keyboardEvent.shiftKey && document.activeElement === last) {
-        keyboardEvent.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    requestAnimationFrame(() => closeButtonRef.current?.focus());
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = originalOverflow;
-      previouslyFocused?.focus?.();
-    };
-  }, [isOpen, onClose, submitting]);
-
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div
-      aria-label={event ? "Edit event" : "Create event"}
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/50 sm:items-center sm:p-6"
-      onMouseDown={(mouseEvent) => {
-        if (mouseEvent.target === mouseEvent.currentTarget && !submitting) onClose();
-      }}
-      role="dialog"
+  return (
+    <Modal
+      bodyClassName="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6"
+      closeLabel="Close event form"
+      description={event ? "Update the information shown on the calendar." : "Add clear schedule information for officials and residents."}
+      dismissible={!submitting}
+      eyebrow="Community calendar"
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      title={event ? "Edit event" : "Create an event"}
     >
-      <section className="max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white shadow-modal sm:max-w-2xl sm:rounded-3xl">
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">
-              Community calendar
-            </p>
-            <h2 className="mt-1 text-xl font-extrabold tracking-tight text-navy-900 sm:text-2xl">
-              {event ? "Edit event" : "Create an event"}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {event
-                ? "Update the information shown on the calendar."
-                : "Add clear schedule information for officials and residents."}
-            </p>
-          </div>
-          <button
-            ref={closeButtonRef}
-            aria-label="Close event form"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-            disabled={submitting}
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" className="h-5 w-5" />
-          </button>
-        </header>
-        <div className="p-5 sm:p-6">
           <EventForm
             defaultDate={defaultDate}
             initialEvent={event}
@@ -183,10 +119,7 @@ function EventDialog({ defaultDate, event, isOpen, onClose, onSubmit, submitting
             onSubmit={onSubmit}
             submitting={submitting}
           />
-        </div>
-      </section>
-    </div>,
-    document.body,
+    </Modal>
   );
 }
 

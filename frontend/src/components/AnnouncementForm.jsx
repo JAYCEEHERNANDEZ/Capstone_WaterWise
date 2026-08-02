@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useRef, useState } from "react";
 import {
   FileText,
   Megaphone,
   Send,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import Dropdown from "./Dropdown";
+import Modal from "./Modal";
 
 const ANNOUNCEMENT_CATEGORIES = [
   "General Announcement",
@@ -30,45 +29,7 @@ export default function AnnouncementForm({ onSubmit, initialData = null, onCance
   const [errors, setErrors] = useState({});
   const [isOpen, setIsOpen] = useState(Boolean(initialData));
   const [submitting, setSubmitting] = useState(false);
-  const closeButtonRef = useRef(null);
   const formRef = useRef(null);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const previouslyFocused = document.activeElement;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape" && !submitting) {
-        setIsOpen(false);
-        onCancel?.();
-      }
-      if (event.key !== "Tab") return;
-      const modal = closeButtonRef.current?.closest('[role="dialog"]');
-      const focusable = modal?.querySelectorAll(
-        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])',
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    requestAnimationFrame(() => closeButtonRef.current?.focus());
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = originalOverflow;
-      previouslyFocused?.focus?.();
-    };
-  }, [isOpen, onCancel, submitting]);
 
   const closeComposer = () => {
     if (submitting) return;
@@ -159,38 +120,16 @@ export default function AnnouncementForm({ onSubmit, initialData = null, onCance
         </div>
       </section>
 
-      {isOpen &&
-        createPortal(
-          <div
-            aria-label={initialData ? "Update announcement" : "Create announcement"}
-            aria-modal="true"
-            className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/50 sm:items-center sm:p-6"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) closeComposer();
-            }}
-            role="dialog"
-          >
-            <section className="max-h-[94dvh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white shadow-modal sm:max-w-2xl sm:rounded-3xl">
-              <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white p-5 sm:px-6">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Community post</p>
-                  <h2 className="mt-1 text-xl font-extrabold text-navy-900 sm:text-2xl">
-                    {initialData ? "Update announcement" : "Create announcement"}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">This message will appear in every resident portal.</p>
-                </div>
-                <button
-                  ref={closeButtonRef}
-                  aria-label="Close announcement form"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-                  disabled={submitting}
-                  onClick={closeComposer}
-                  type="button"
-                >
-                  <X aria-hidden="true" className="h-5 w-5" />
-                </button>
-              </header>
-
+      <Modal
+        closeLabel="Close announcement form"
+        description="This message will appear in every resident portal."
+        dismissible={!submitting}
+        eyebrow="Community post"
+        isOpen={isOpen}
+        onClose={closeComposer}
+        size="md"
+        title={initialData ? "Update announcement" : "Create announcement"}
+      >
               <form className="space-y-5 p-5 sm:p-6" onSubmit={handleSubmit} ref={formRef}>
                 <div>
                   <label className="text-sm font-bold text-slate-700" htmlFor="announcement-title">Announcement title</label>
@@ -265,10 +204,7 @@ export default function AnnouncementForm({ onSubmit, initialData = null, onCance
                   </button>
                 </div>
               </form>
-            </section>
-          </div>,
-          document.body,
-        )}
+      </Modal>
     </>
   );
 }

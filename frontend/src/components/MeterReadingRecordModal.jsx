@@ -1,7 +1,6 @@
-import { useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
-import { FiDownload, FiPrinter, FiX } from "react-icons/fi";
+import { FiDownload, FiPrinter } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
+import Modal from "./Modal";
 
 function RecordRow({ label, testId, value }) {
   return (
@@ -18,25 +17,6 @@ function RecordRow({ label, testId, value }) {
 }
 
 export default function MeterReadingRecordModal({ isOpen, onClose, recordData }) {
-  const closeButtonRef = useRef(null);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const previouslyFocused = document.activeElement;
-    const closeOnEscape = (event) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", closeOnEscape);
-    closeButtonRef.current?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", closeOnEscape);
-      previouslyFocused?.focus?.();
-    };
-  }, [isOpen, onClose]);
-
   if (!isOpen || !recordData) return null;
 
   const {
@@ -75,35 +55,12 @@ export default function MeterReadingRecordModal({ isOpen, onClose, recordData })
     });
   };
 
-  return createPortal(
-    <div
-      aria-label="Meter reading record"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/45 sm:items-center sm:px-4 sm:py-6"
-      data-print-document-overlay
-      data-testid="meter-reading-record-modal"
-      onClick={onClose}
-      role="dialog"
-    >
-      <div
-        className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-3xl border border-slate-200 bg-white shadow-modal sm:rounded-3xl"
-        data-printable-document
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div
-          className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white p-4 sm:p-5"
-          data-document-header
-        >
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-water-600">
-              Sucol Water System
-            </p>
-            <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
-              Sucol Water System Meter Reading Record
-            </h2>
-          </div>
-
-          <div className="flex gap-2" data-document-actions>
+  return (
+    <Modal
+      closeLabel="Close meter reading record"
+      eyebrow="Sucol Water System"
+      headerActions={
+        <>
             <button
               aria-label="Download meter reading record"
               className="flex h-11 items-center gap-2 rounded-xl bg-water-50 px-3 text-sm font-bold text-water-600 transition hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
@@ -121,18 +78,17 @@ export default function MeterReadingRecordModal({ isOpen, onClose, recordData })
             >
               <FiPrinter aria-hidden="true" className="h-4 w-4" />
             </button>
-            <button
-              ref={closeButtonRef}
-              aria-label="Close meter reading record"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-              onClick={onClose}
-              type="button"
-            >
-              <FiX aria-hidden="true" className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
+        </>
+      }
+      headerActionsProps={{ "data-document-actions": true }}
+      headerProps={{ "data-document-header": true }}
+      isOpen={isOpen}
+      onClose={onClose}
+      overlayProps={{ "data-print-document-overlay": true, "data-testid": "meter-reading-record-modal" }}
+      panelProps={{ "data-printable-document": true }}
+      title="Meter reading record"
+    >
+      <>
         <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="rounded-2xl bg-water-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
@@ -188,8 +144,7 @@ export default function MeterReadingRecordModal({ isOpen, onClose, recordData })
             System-generated meter reading record · Keep this copy for your records
           </p>
         </div>
-      </div>
-    </div>,
-    document.body,
+      </>
+    </Modal>
   );
 }

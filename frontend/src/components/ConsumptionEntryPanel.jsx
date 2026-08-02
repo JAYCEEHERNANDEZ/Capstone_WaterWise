@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AlertTriangle, ArrowLeft, CheckCircle2 } from "lucide-react";
 
-export default function ConsumptionEntryPanel({ consumer, onSave, previousReading = 0, saving = false }) {
+export default function ConsumptionEntryPanel({ consumer, embedded = false, onSave, previousReading = 0, saving = false }) {
   const [currentReading, setCurrentReading] = useState("");
   const [error, setError] = useState("");
   const [isReviewing, setIsReviewing] = useState(false);
@@ -43,7 +43,7 @@ export default function ConsumptionEntryPanel({ consumer, onSave, previousReadin
   };
 
   return (
-    <section className="ww-glass-strong rounded-2xl p-5 sm:p-6">
+    <section className={embedded ? "p-5 sm:p-6" : "ww-glass-strong rounded-2xl p-5 sm:p-6"}>
       <p className="ww-eyebrow !text-water-700">{isReviewing ? "Step 3 of 4" : "Step 2 of 4"}</p>
       <h2 className="mt-1 text-2xl font-extrabold text-slate-900">{isReviewing ? "Review the reading" : "Enter the meter reading"}</h2>
       <p className="mt-1 text-sm leading-6 text-slate-600">

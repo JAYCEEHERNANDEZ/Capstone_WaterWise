@@ -32,7 +32,7 @@ function isStrongPassword(password) {
   );
 }
 
-function ConsumerForm({ onSubmit = () => {}, requirePassword = false, initialData = null, onCancel }) {
+function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword = false, initialData = null, onCancel }) {
   const formRef = useRef(null);
   const [consumer, setConsumer] = useState(() => createInitialState(initialData));
   const [password, setPassword] = useState("");
@@ -111,8 +111,8 @@ function ConsumerForm({ onSubmit = () => {}, requirePassword = false, initialDat
   const describedBy = (field, helperId) => [errors[field] ? `${field}-error` : "", helperId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <form autoComplete="off" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card" onSubmit={handleSubmit} ref={formRef}>
-      <header className="bg-navy-950 p-5 text-white sm:p-6">
+    <form autoComplete="off" className={embedded ? "bg-white" : "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"} onSubmit={handleSubmit} ref={formRef}>
+      {!embedded && <header className="bg-navy-950 p-5 text-white sm:p-6">
         <div className="flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-900 text-water-300">
             <ShieldCheck aria-hidden="true" className="h-5 w-5" />
@@ -125,7 +125,7 @@ function ConsumerForm({ onSubmit = () => {}, requirePassword = false, initialDat
             </p>
           </div>
         </div>
-      </header>
+      </header>}
 
       <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
         <div className="sm:col-span-2">

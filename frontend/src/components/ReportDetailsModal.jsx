@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { CheckCircle2, FileText, X } from "lucide-react";
+import { CheckCircle2, FileText } from "lucide-react";
 import LoadingSkeleton from "./LoadingSkeleton";
+import Modal from "./Modal";
 import { fetchReportDetails } from "../services/reportAPI";
 
 const metricLabel = (key) => key.replace(/([A-Z])/g, " $1").replace(/^./, (letter) => letter.toUpperCase());
@@ -24,8 +24,6 @@ export default function ReportDetailsModal({ onClose, reportId }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     fetchReportDetails(reportId, { signal: controller.signal })
       .then(setReport)
       .catch((requestError) => {
@@ -33,27 +31,21 @@ export default function ReportDetailsModal({ onClose, reportId }) {
           setError(requestError?.response?.data?.message ?? requestError.message ?? "Unable to load report details.");
         }
       });
-    const closeOnEscape = (event) => event.key === "Escape" && onClose();
-    window.addEventListener("keydown", closeOnEscape);
     return () => {
       controller.abort();
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [onClose, reportId]);
+  }, [reportId]);
 
-  return createPortal(
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-5" onMouseDown={(event) => event.target === event.currentTarget && onClose()} role="presentation">
-      <section aria-labelledby="report-details-title" aria-modal="true" className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-3xl border border-slate-200 bg-white shadow-modal sm:rounded-3xl" role="dialog">
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Saved report</p>
-            <h2 className="mt-1 text-xl font-extrabold text-navy-900" id="report-details-title">{report?.title ?? "Report details"}</h2>
-          </div>
-          <button aria-label="Close report details" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" onClick={onClose} type="button"><X aria-hidden="true" className="h-5 w-5" /></button>
-        </header>
-
-        <div className="p-5 sm:p-6">
+  return (
+    <Modal
+      bodyClassName="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6"
+      closeLabel="Close report details"
+      eyebrow="Saved report"
+      isOpen
+      onClose={onClose}
+      title={report?.title ?? "Report details"}
+      zIndexClass="z-[90]"
+    >
           {!report && !error && <LoadingSkeleton label="Loading report details" variant="list" />}
           {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">{error}</div>}
           {report && (
@@ -85,9 +77,6 @@ export default function ReportDetailsModal({ onClose, reportId }) {
               </section>
             </div>
           )}
-        </div>
-      </section>
-    </div>,
-    document.body,
+    </Modal>
   );
 }

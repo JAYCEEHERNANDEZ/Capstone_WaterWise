@@ -1,8 +1,7 @@
-import { useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { CheckCircle2, Clock3 } from "lucide-react";
-import { FiDownload, FiPrinter, FiX } from "react-icons/fi";
+import { FiDownload, FiPrinter } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
+import Modal from "./Modal";
 
 const currency = (value) =>
   `₱${Number(value ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
@@ -22,25 +21,6 @@ function ReceiptLine({ label, testId, value }) {
 }
 
 export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
-  const closeButtonRef = useRef(null);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const previouslyFocused = document.activeElement;
-    const closeOnEscape = (event) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", closeOnEscape);
-    closeButtonRef.current?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", closeOnEscape);
-      previouslyFocused?.focus?.();
-    };
-  }, [isOpen, onClose]);
-
   if (!isOpen || !receiptData) return null;
 
   const amountPaid = Number(receiptData.amountPaid ?? receiptData.amountDue ?? 0);
@@ -84,39 +64,15 @@ export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
     });
   };
 
-  return createPortal(
-    <div
-      aria-label="Payment receipt"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/45 p-3 sm:p-6"
-      data-print-document-overlay
-      data-testid="receipt-modal-overlay"
-      onClick={onClose}
-      role="dialog"
-    >
-      <article
-        className="max-h-[94dvh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-modal"
-        data-printable-document
-        data-testid="receipt-modal-content"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header
-          className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white p-4 sm:p-5"
-          data-document-header
-        >
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-600">
-              Sucol Water System
-            </p>
-            <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
-              Payment receipt
-            </h2>
-            <p className="mt-1 font-mono text-xs font-semibold text-slate-500">
-              {transactionNumber}
-            </p>
-          </div>
-
-          <div className="flex gap-2" data-document-actions>
+  return (
+    <Modal
+      bodyClassName="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6"
+      closeButtonProps={{ "data-testid": "close-modal-btn" }}
+      closeLabel="Close payment receipt"
+      description={<span className="font-mono text-xs font-semibold">{transactionNumber}</span>}
+      eyebrow="Sucol Water System"
+      headerActions={
+        <>
             <button
               aria-label="Download payment receipt"
               className="flex h-11 items-center gap-2 rounded-xl bg-water-50 px-3 text-sm font-bold text-water-700 hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
@@ -135,20 +91,17 @@ export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
             >
               <FiPrinter aria-hidden="true" className="h-4 w-4" />
             </button>
-            <button
-              ref={closeButtonRef}
-              aria-label="Close payment receipt"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-              data-testid="close-modal-btn"
-              onClick={onClose}
-              type="button"
-            >
-              <FiX aria-hidden="true" className="h-5 w-5" />
-            </button>
-          </div>
-        </header>
-
-        <div className="p-4 sm:p-6">
+        </>
+      }
+      headerActionsProps={{ "data-document-actions": true }}
+      headerProps={{ "data-document-header": true }}
+      isOpen={isOpen}
+      onClose={onClose}
+      overlayProps={{ "data-print-document-overlay": true, "data-testid": "receipt-modal-overlay" }}
+      panelProps={{ "data-printable-document": true, "data-testid": "receipt-modal-content" }}
+      size="md"
+      title="Payment receipt"
+    >
           <section className="rounded-2xl bg-navy-950 p-5 text-white">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -259,9 +212,6 @@ export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
           >
             Payment recorded by WaterWise · Keep this receipt for your records
           </p>
-        </div>
-      </article>
-    </div>,
-    document.body,
+    </Modal>
   );
 }

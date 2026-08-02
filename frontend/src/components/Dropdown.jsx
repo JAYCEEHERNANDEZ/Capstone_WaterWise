@@ -101,6 +101,7 @@ export default function Dropdown({
   const handleMenuKeyDown = (event) => {
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       closeAndFocus();
       return;
     }

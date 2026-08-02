@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { CheckCircle2, FileText, Plus, X } from "lucide-react";
+import { CheckCircle2, FileText, Plus } from "lucide-react";
+import Modal from "./Modal";
 import PaymentForm from "./PaymentForm";
 
 const currency = (value) =>
@@ -16,48 +16,10 @@ export default function PaymentModal({
   onSubmit,
   onViewReceipt,
 }) {
-  const closeButtonRef = useRef(null);
-  const panelRef = useRef(null);
   const successHeadingRef = useRef(null);
   const [completedPayment, setCompletedPayment] = useState(null);
   const [formVersion, setFormVersion] = useState(0);
   const [useInitialBilling, setUseInitialBilling] = useState(true);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const previouslyFocused = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    const closeOnEscape = (event) => {
-      if (event.key === "Escape") onClose();
-      if (event.key !== "Tab") return;
-
-      const focusableElements = panelRef.current?.querySelectorAll(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusableElements?.length) return;
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    };
-
-    document.addEventListener("keydown", closeOnEscape);
-    document.body.style.overflow = "hidden";
-    closeButtonRef.current?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", closeOnEscape);
-      document.body.style.overflow = previousOverflow;
-      previouslyFocused?.focus?.();
-    };
-  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (completedPayment) {
@@ -83,41 +45,15 @@ export default function PaymentModal({
     onRecordAnother?.();
   };
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-navy-950/45 p-3 sm:p-6"
-      onClick={onClose}
-      role="presentation"
+  return (
+    <Modal
+      closeLabel="Close payment modal"
+      eyebrow="Payment administration"
+      isOpen={isOpen}
+      onClose={onClose}
+      title={completedPayment ? "Payment recorded" : "Record payment"}
+      zIndexClass="z-40"
     >
-      <section
-        ref={panelRef}
-        aria-label="Record resident payment"
-        aria-modal="true"
-        className="flex max-h-[94dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-modal"
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-      >
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-600">
-              Payment administration
-            </p>
-            <h2 className="mt-1 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
-              {completedPayment ? "Payment recorded" : "Record payment"}
-            </h2>
-          </div>
-          <button
-            ref={closeButtonRef}
-            aria-label="Close payment modal"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" className="h-5 w-5" />
-          </button>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">
           {completedPayment ? (
             <div className="flex min-h-full flex-col justify-center p-5 sm:p-8">
               <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
@@ -200,9 +136,6 @@ export default function PaymentModal({
               />
             </>
           )}
-        </div>
-      </section>
-    </div>,
-    document.body,
+    </Modal>
   );
 }

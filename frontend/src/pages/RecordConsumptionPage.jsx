@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
 import ConsumerSelectionList from "../components/ConsumerSelectionList";
 import ConsumptionEntryPanel from "../components/ConsumptionEntryPanel";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
 import { fetchConsumerDirectory } from "../services/consumerDirectoryAPI";
 import { createMeterReading, fetchMeterReadings } from "../services/meterReadingAPI";
@@ -74,15 +74,19 @@ export default function RecordConsumptionPage() {
       {success && <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700" role="status"><span aria-hidden="true">✓</span><span>Step 4 of 4 · {success}</span></div>}
       {loading ? <LoadingSkeleton label="Loading assigned residents" variant="list" /> : <div className="w-full"><ConsumerSelectionList consumers={visibleConsumers} onSelect={(consumer) => { setSelectedConsumer(consumer); setError(""); setSuccess(""); }} query={query} selectedId={selectedConsumer?.id} setQuery={setQuery} /></div>}
 
-      {selectedConsumer && (
-        <div aria-label="Record consumption dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-950/55 p-0  sm:items-center sm:p-4" onClick={() => !saving && setSelectedConsumer(null)} role="dialog">
-          <div className="relative w-full max-w-2xl sm:my-auto" onClick={(event) => event.stopPropagation()}>
-            <button aria-label="Close record consumption dialog" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-50" disabled={saving} onClick={() => setSelectedConsumer(null)} type="button"><X className="h-5 w-5" /></button>
-            {error && <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{error}</div>}
-            <ConsumptionEntryPanel consumer={selectedConsumer} key={`${selectedConsumer.id}-${latestReading?.id ?? "new"}`} onSave={saveReading} previousReading={latestReading?.currentReading ?? 0} saving={saving} />
-          </div>
-        </div>
-      )}
+      <Modal
+        closeLabel="Close meter reading form"
+        description={selectedConsumer ? `${selectedConsumer.consumerName} · ${selectedConsumer.purok}` : undefined}
+        dismissible={!saving}
+        eyebrow="Field operations"
+        isOpen={Boolean(selectedConsumer)}
+        onClose={() => setSelectedConsumer(null)}
+        size="md"
+        title="Record meter reading"
+      >
+        {error && <div className="mx-5 mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:mx-6" role="alert">{error}</div>}
+        <ConsumptionEntryPanel embedded consumer={selectedConsumer} key={`${selectedConsumer?.id}-${latestReading?.id ?? "new"}`} onSave={saveReading} previousReading={latestReading?.currentReading ?? 0} saving={saving} />
+      </Modal>
     </main>
   );
 }
