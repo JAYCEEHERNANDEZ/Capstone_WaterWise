@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FiChevronDown, FiDroplet, FiLogOut, FiUser } from "react-icons/fi";
+import { FiChevronDown, FiChevronRight, FiDroplet, FiLogOut, FiUser } from "react-icons/fi";
 
 const WORKSPACE_LABELS = {
   admin: "Barangay operations",
@@ -13,6 +13,7 @@ export default function Header({
   activeRoleLabel,
   notificationSlot,
   onLogout,
+  onProfile,
   subtitle = "Sucol Water System",
   title = "WaterWise",
 }) {
@@ -107,9 +108,29 @@ export default function Header({
                     className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-raised"
                     role="menu"
                   >
-                    <div className="border-b border-slate-100 px-3 py-3">
-                      <p className="truncate text-sm font-bold text-slate-900">{accountName}</p>
-                      <p className="mt-1 text-xs font-semibold text-water-600">{activeRoleLabel}</p>
+                    <div className="border-b border-slate-100 pb-2">
+                      {onProfile ? (
+                        <button
+                          className="group flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-150 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+                          onClick={() => {
+                            setIsAccountOpen(false);
+                            onProfile();
+                          }}
+                          role="menuitem"
+                          type="button"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-bold text-slate-900">{accountName}</span>
+                            <span className="mt-1 block text-xs font-semibold text-water-600">{activeRoleLabel}</span>
+                          </span>
+                          <FiChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-water-700" />
+                        </button>
+                      ) : (
+                        <div className="px-3 py-3">
+                          <p className="truncate text-sm font-bold text-slate-900">{accountName}</p>
+                          <p className="mt-1 text-xs font-semibold text-water-600">{activeRoleLabel}</p>
+                        </div>
+                      )}
                     </div>
                     <button
                       className="mt-1 flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"

@@ -72,7 +72,6 @@ const ROLE_CONFIG = {
     links: [
       { label: "Home", path: "/consumer/usage-metrics", Icon: FiDroplet },
       { label: "Bills", path: "/consumer/billing-ledger", Icon: FiFileText },
-      { label: "Profile", path: "/consumer/profile-details", Icon: FiUsers },
     ],
   },
 };
@@ -240,6 +239,7 @@ export default function AppLayout({ children }) {
           ) : null
         }
         onLogout={handleLogout}
+        onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : undefined}
         title="WaterWise"
       />
 
