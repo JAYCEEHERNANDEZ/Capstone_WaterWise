@@ -92,7 +92,7 @@ export default function RecordConsumptionPage() {
   const visibleConsumers = useMemo(() => {
     const term = query.trim().toLowerCase();
     return consumers.filter((consumer) => {
-      const matchesSearch = !term || [consumer.consumerName, consumer.consumerNo, consumer.purok]
+      const matchesSearch = !term || [consumer.consumerName, consumer.consumerNo]
         .some((value) => String(value).toLowerCase().includes(term));
       const matchesPurok = purok === "all" || consumer.purok === purok;
       return matchesSearch && matchesPurok;
@@ -200,7 +200,7 @@ export default function RecordConsumptionPage() {
       <PageHeader description="Select a resident and type the cumulative meter value." eyebrow="Field workspace" title="Record a meter reading" />
       {loadError && <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{loadError}</span><button className="font-bold underline" onClick={loadData} type="button">Try again</button></div>}
       <div aria-label="Resident directory controls" className="flex flex-col gap-3 sm:flex-row sm:items-center" role="search">
-        <Search ariaLabel="Search residents by name, account number, or purok" className="flex-1" onValueChange={setQuery} placeholder="Search name, account number, or purok" value={query} />
+        <Search ariaLabel="Search residents by name or account number" className="flex-1" onValueChange={setQuery} placeholder="Search name or account number" value={query} />
         <Filter ariaLabel="Filter residents by purok" className="w-full sm:w-48" disabled={loading} onValueChange={setPurok} options={purokOptions} value={purok} />
       </div>
       {loading ? <LoadingSkeleton label="Loading residents and reading status" variant="list" /> : <ConsumerSelectionList consumers={visibleConsumers} emptyDescription={consumers.length ? "Try a different search or choose another purok." : undefined} emptyTitle={consumers.length ? "No matching residents" : undefined} onSelect={selectConsumer} selectedId={selectedConsumer?.id} selectingId={selectingId} />}
