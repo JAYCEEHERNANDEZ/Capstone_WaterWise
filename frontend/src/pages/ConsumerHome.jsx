@@ -40,24 +40,6 @@ const compactDate = (value) => value
     }).format(new Date(`${value}T00:00:00Z`))
   : "None";
 
-function QuickLink({ description, Icon, label, to }) {
-  return (
-    <Link
-      className="group flex min-h-16 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition-colors hover:border-water-200 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-      to={to}
-    >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-700 group-hover:bg-white">
-        <Icon aria-hidden="true" className="h-5 w-5" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold text-navy-900">{label}</span>
-        <span className="mt-0.5 block text-xs text-slate-500">{description}</span>
-      </span>
-      <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-water-700" />
-    </Link>
-  );
-}
-
 export default function ConsumerHome() {
   const [home, setHome] = useState(null);
   const [error, setError] = useState("");
@@ -120,6 +102,32 @@ export default function ConsumerHome() {
     <div className="space-y-5 sm:space-y-6">
       {pageHeader}
 
+      {hasBalance && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5" aria-labelledby="payment-required-heading">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+                <ReceiptText aria-hidden="true" className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-amber-800">Important now</p>
+                <h2 className="mt-1 font-extrabold text-navy-900" id="payment-required-heading">Payment required</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  <strong className="font-extrabold text-amber-800">{currency(home.billing.outstandingBalance)}</strong> remains due
+                  {home.billing.nextDueDate ? <> by <strong className="font-bold text-navy-900">{displayDate(home.billing.nextDueDate)}</strong></> : ""}.
+                </p>
+              </div>
+            </div>
+            <Link
+              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-navy-950 px-5 text-sm font-bold text-white hover:bg-navy-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-900 focus-visible:ring-offset-2 sm:w-auto"
+              to={home.billing.nextBillingId ? `/consumer/billing-ledger?billingId=${home.billing.nextBillingId}` : "/consumer/billing-ledger"}
+            >
+              View bill <ArrowRight aria-hidden="true" className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+      )}
+
       <section className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4" aria-label="Account summary">
         <KPI
           description={hasBalance ? "awaiting payment" : "account is clear"}
@@ -131,6 +139,15 @@ export default function ConsumerHome() {
           icon={WalletCards}
           title="Outstanding balance"
           value={currency(home.billing.outstandingBalance)}
+        />
+        <KPI
+          description={home.billing.nextDueDate ? "payment deadline" : "account is clear"}
+          descriptionHighlight={home.billing.nextDueDate ? displayDate(home.billing.nextDueDate) : "No due date"}
+          descriptionIcon={home.billing.nextDueDate ? CalendarClock : CheckCircle2}
+          descriptionTone={home.billing.nextDueDate ? "warning" : "positive"}
+          icon={CalendarClock}
+          title="Next due date"
+          value={compactDate(home.billing.nextDueDate)}
         />
         <KPI
           description={usageDifference == null ? "no previous month" : usageDifference === 0 ? "from last month" : "than last month"}
@@ -149,15 +166,6 @@ export default function ConsumerHome() {
           value={home.reading.latestUsage.toFixed(1)}
         />
         <KPI
-          description={home.billing.nextDueDate ? "payment deadline" : "account is clear"}
-          descriptionHighlight={home.billing.nextDueDate ? displayDate(home.billing.nextDueDate) : "No due date"}
-          descriptionIcon={home.billing.nextDueDate ? CalendarClock : CheckCircle2}
-          descriptionTone={home.billing.nextDueDate ? "warning" : "positive"}
-          icon={CalendarClock}
-          title="Next due date"
-          value={compactDate(home.billing.nextDueDate)}
-        />
-        <KPI
           description={home.reading.latestDate ? "recorded" : undefined}
           descriptionHighlight={home.reading.latestDate ? displayDate(home.reading.latestDate) : "No reading yet"}
           descriptionIcon={home.reading.latestDate ? CalendarClock : Gauge}
@@ -169,12 +177,10 @@ export default function ConsumerHome() {
         />
       </section>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.65fr)]">
+      <div className="mx-auto w-full max-w-3xl">
         <section className="min-w-0" aria-labelledby="consumer-announcements-heading">
           <div className="mb-4 px-1">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Community feed</p>
-            <h2 className="mt-1 text-xl font-extrabold text-navy-900" id="consumer-announcements-heading">Latest announcements</h2>
-            <p className="mt-1 text-sm text-slate-500">Official updates from WaterWise Administration.</p>
+            <h2 className="text-xl font-extrabold text-navy-900" id="consumer-announcements-heading">Latest announcements</h2>
           </div>
           <AnnouncementPage announcements={home.announcements} showEndMarker={false} showHeader={false} />
           <Link
@@ -185,36 +191,6 @@ export default function ConsumerHome() {
             <ArrowRight aria-hidden="true" className="h-4 w-4" />
           </Link>
         </section>
-
-        <aside className="space-y-4 xl:sticky xl:top-24" aria-label="Important account information">
-          <section className={`rounded-2xl border p-5 ${hasBalance ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
-            <div className="flex items-start gap-3">
-              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${hasBalance ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"}`}>
-                {hasBalance ? <ReceiptText aria-hidden="true" className="h-5 w-5" /> : <CheckCircle2 aria-hidden="true" className="h-5 w-5" />}
-              </span>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Important now</p>
-                <h2 className="mt-1 font-extrabold text-navy-900">{hasBalance ? "Payment required" : "Account up to date"}</h2>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  {hasBalance
-                    ? `${currency(home.billing.outstandingBalance)} remains due${home.billing.nextDueDate ? ` by ${displayDate(home.billing.nextDueDate)}` : ""}.`
-                    : "You have no outstanding water bill balance."}
-                </p>
-              </div>
-            </div>
-            <Link className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-navy-950 px-4 text-sm font-bold text-white hover:bg-navy-900" to={home.billing.nextBillingId ? `/consumer/billing-ledger?billingId=${home.billing.nextBillingId}` : "/consumer/billing-ledger"}>
-              View bills <ArrowRight aria-hidden="true" className="h-4 w-4" />
-            </Link>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
-            <p className="px-1 text-xs font-bold uppercase tracking-[0.12em] text-water-700">Quick access</p>
-            <div className="mt-3 grid gap-2">
-              <QuickLink description="Review trends and monthly usage" Icon={Gauge} label="Open Analytics" to="/consumer/analytics" />
-              <QuickLink description="View account and service details" Icon={ReceiptText} label="Household Profile" to="/consumer/profile-details" />
-            </div>
-          </section>
-        </aside>
       </div>
     </div>
   );
