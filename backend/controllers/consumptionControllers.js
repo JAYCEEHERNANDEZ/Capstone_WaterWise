@@ -10,51 +10,20 @@ import {
   getPerPurokYearlyHistory,
 } from "../services/consumptionServices.js";
 import {
+  getConsumptionRecordingContext,
+  getConsumptionRecordingContexts,
   getAllConsumptionReadings,
   getConsumptionByConsumer,
 } from "../models/consumptionModels.js";
-import {
-  createMonthlyBilling,
-  getBillingsByConsumer,
-} from "../models/billingModels.js";
-
-const sameBillingMonth = (billingDate, readingDate) =>
-  String(billingDate).slice(0, 7) === String(readingDate).slice(0, 7);
-
-const createOrGetMonthlyBilling = async (consumerId, readingDate) => {
-  try {
-    return await createMonthlyBilling({
-      consumerId,
-      billingDate: readingDate,
-    });
-  } catch (error) {
-    if (error.statusCode !== 409) throw error;
-
-    const existingBillings = await getBillingsByConsumer(consumerId);
-    const existingBilling = existingBillings.find((billing) =>
-      sameBillingMonth(billing.billing_date, readingDate)
-    );
-
-    if (!existingBilling) throw error;
-    return existingBilling;
-  }
-};
 
 export const addConsumptionReading = async (req, res) => {
   try {
-    const reading = await createReading(req.body ?? {});
-    const billing = await createOrGetMonthlyBilling(
-      reading.consumer_id,
-      reading.reading_date
-    );
+    const result = await createReading(req.body ?? {});
 
     return res.status(201).json({
       success: true,
       message: "Meter reading created and monthly billing generated.",
-      data: {
-        ...reading,
-        billing,
-      },
+      data: result,
     });
   } catch (error) {
     console.error("Create meter reading error:", error);
@@ -62,6 +31,36 @@ export const addConsumptionReading = async (req, res) => {
     return res.status(error.statusCode ?? 500).json({
       success: false,
       message: error.message || "Failed to create meter reading.",
+    });
+  }
+};
+
+export const listConsumptionRecordingContexts = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      data: await getConsumptionRecordingContexts(),
+    });
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({
+      success: false,
+      message: error.message || "Failed to retrieve recording contexts.",
+    });
+  }
+};
+
+export const showConsumptionRecordingContext = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      data: await getConsumptionRecordingContext(
+        req.params.consumerId,
+      ),
+    });
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({
+      success: false,
+      message: error.message || "Failed to retrieve the recording context.",
     });
   }
 };

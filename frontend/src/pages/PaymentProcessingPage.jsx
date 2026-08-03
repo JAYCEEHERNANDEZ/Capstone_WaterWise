@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Banknote, CheckCircle2, Clock3, Plus, ReceiptText } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import DigitalReceiptModal from "../components/DigitalReceiptModal";
+import PaymentReceiptModal from "../components/PaymentReceiptModal";
 import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import KPI from "../components/KPI";
@@ -348,7 +348,7 @@ export default function PaymentProcessingPage() {
         onSubmit={recordPayment}
         onViewReceipt={setSelectedPayment}
       />
-      <DigitalReceiptModal
+      <PaymentReceiptModal
         isOpen={Boolean(selectedPayment)}
         onClose={() => setSelectedPayment(null)}
         receiptData={selectedPayment}

@@ -21,7 +21,7 @@ function ReceiptLine({ label, testId, value }) {
   );
 }
 
-export default function DigitalReceiptModal({ isOpen, receiptData, onClose }) {
+export default function PaymentReceiptModal({ isOpen, receiptData, onClose }) {
   const toast = useToast();
   if (!isOpen || !receiptData) return null;
 
