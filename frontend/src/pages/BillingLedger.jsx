@@ -7,6 +7,7 @@ import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageHeader from "../components/PageHeader";
 import PaymentReceiptModal from "../components/PaymentReceiptModal";
+import { useToast } from "../components/Toast";
 import { fetchBillingLedger } from "../services/consumerPortal.service";
 import { isCanceledRequest } from "../services/apiClient";
 
@@ -52,13 +53,13 @@ export default function BillingLedger({
   historyData: historyDataProp,
   ledgerAccount: ledgerAccountProp,
 }) {
+  const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const usesApi = historyDataProp === undefined;
   const [ledger, setLedger] = useState(null);
   const [error, setError] = useState("");
   const [periodFilter, setPeriodFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [receiptError, setReceiptError] = useState("");
 
   useEffect(() => {
     if (!usesApi) return undefined;
@@ -114,14 +115,16 @@ export default function BillingLedger({
   const openReceipt = (bill) => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("billingId", String(bill.id));
-    setReceiptError("");
 
     if (bill.status === "Paid") {
       const billPayments = ledger?.payments?.filter((record) => record.billingId === bill.id) ?? [];
       const payment = billPayments.find((record) => Number(record.balanceAfterPayment ?? record.remainingBalance) === 0)
         ?? billPayments[0];
       if (!payment) {
-        setReceiptError("The payment receipt for this paid bill is unavailable.");
+        toast.error(
+          "Payment receipt unavailable",
+          "This paid bill has no recorded payment transaction. It may be a legacy record.",
+        );
         return;
       }
       nextParams.set("paymentId", String(payment.id));
@@ -211,12 +214,6 @@ export default function BillingLedger({
           >
             Clear filters
           </button>
-        )}
-
-        {receiptError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">
-            {receiptError}
-          </div>
         )}
 
         <BillingHistoryTable
