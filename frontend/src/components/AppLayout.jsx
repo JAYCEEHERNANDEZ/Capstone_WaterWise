@@ -10,12 +10,12 @@ import {
   FiMessageSquare,
   FiUsers,
   FiWifiOff,
-  FiX,
 } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router";
 import { getCurrentAccount, logout } from "../services/auth.service";
 import { getStoredAccount } from "../services/authToken";
 import { isCanceledRequest } from "../services/apiClient";
+import { getNotificationPresentation } from "../utils/notificationPresentation";
 import {
   fetchNotifications,
   markNotificationRead,
@@ -23,6 +23,7 @@ import {
 import NotificationPage from "../pages/NotificationPage";
 import Header from "./Header";
 import NotificationBadgeTrigger from "./NotificationBadgeTrigger";
+import Modal from "./Modal";
 import Sidebar from "./Sidebar";
 import { useToast } from "./Toast";
 
@@ -86,12 +87,14 @@ export default function AppLayout({ children }) {
   const toast = useToast();
   const location = useLocation();
   const navigate = useNavigate();
-  const notificationCloseRef = useRef(null);
+  const notificationMenuRef = useRef(null);
+  const notificationTriggerRef = useRef(null);
   const pathRole = getRoleFromPath(location.pathname);
   const [account, setAccount] = useState(getStoredAccount);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isNotificationLoading, setIsNotificationLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const [accountName, setAccountName] = useState("");
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const activeRole = account?.role ?? pathRole ?? "consumer";
@@ -168,25 +171,27 @@ export default function AppLayout({ children }) {
     };
   }, [activeRole, navigate]);
 
-  // The drawer behaves as a focused modal on smaller screens and restores focus
-  // to the originating control when it closes.
   useEffect(() => {
     if (!isNotificationOpen) return undefined;
 
-    const previouslyFocusedElement = document.activeElement;
-    const originalOverflow = document.body.style.overflow;
+    const closeOnOutsideClick = (event) => {
+      if (!notificationMenuRef.current?.contains(event.target)) {
+        setIsNotificationOpen(false);
+      }
+    };
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") setIsNotificationOpen(false);
+      if (event.key === "Escape") {
+        setIsNotificationOpen(false);
+        notificationTriggerRef.current?.focus();
+      }
     };
 
-    document.body.style.overflow = "hidden";
+    document.addEventListener("pointerdown", closeOnOutsideClick);
     document.addEventListener("keydown", handleKeyDown);
-    notificationCloseRef.current?.focus();
 
     return () => {
-      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
       document.removeEventListener("keydown", handleKeyDown);
-      previouslyFocusedElement?.focus?.();
     };
   }, [isNotificationOpen]);
 
@@ -218,11 +223,17 @@ export default function AppLayout({ children }) {
   };
 
   const handleNotificationClick = (notification) => {
-    if (notification.category === "bill" && notification.actionPath) {
-      setIsNotificationOpen(false);
+    setIsNotificationOpen(false);
+    if (notification.actionPath) {
       navigate(notification.actionPath);
+      return;
     }
+    setSelectedNotification(notification);
   };
+
+  const selectedNotificationPresentation = getNotificationPresentation(
+    selectedNotification ?? {},
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
@@ -232,10 +243,36 @@ export default function AppLayout({ children }) {
         activeRoleLabel={activeRoleConfig.label}
         notificationSlot={
           activeRole === "consumer" ? (
-            <NotificationBadgeTrigger
-              onToggleHub={() => setIsNotificationOpen((isOpen) => !isOpen)}
-              unreadCount={unreadCount}
-            />
+            <div className="relative" ref={notificationMenuRef}>
+              <NotificationBadgeTrigger
+                buttonRef={notificationTriggerRef}
+                isOpen={isNotificationOpen}
+                onToggleHub={() => setIsNotificationOpen((isOpen) => !isOpen)}
+                unreadCount={unreadCount}
+              />
+              {isNotificationOpen && (
+                <section
+                  aria-label="Notifications"
+                  className="ww-popover-enter fixed right-3 top-[4.5rem] z-50 flex max-h-[min(70vh,38rem)] w-[calc(100vw-1.5rem)] max-w-[26rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-modal sm:right-6 sm:top-20"
+                  id="consumer-notification-popup"
+                  role="dialog"
+                >
+                  <header className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 px-4 py-3">
+                    <div>
+                      <h2 className="text-xl font-extrabold tracking-[-0.03em] text-navy-900">Notifications</h2>
+                      <p className="mt-0.5 text-xs font-medium text-slate-500">{unreadCount ? `${unreadCount} unread` : "You’re all caught up"}</p>
+                    </div>
+                    {unreadCount > 0 && <span className="rounded-full bg-water-50 px-3 py-1 text-xs font-bold text-water-700">New</span>}
+                  </header>
+                  <NotificationPage
+                    isLoading={isNotificationLoading}
+                    notifications={notifications}
+                    onNotificationClick={handleNotificationClick}
+                    onMarkAsRead={handleMarkNotificationAsRead}
+                  />
+                </section>
+              )}
+            </div>
           ) : null
         }
         onLogout={handleLogout}
@@ -271,57 +308,50 @@ export default function AppLayout({ children }) {
         </main>
       </div>
 
-      <button
-        aria-label="Close notification center"
-        className={[
-          "fixed inset-0 z-40 bg-slate-950/45 transition-opacity duration-200",
-          isNotificationOpen ? "opacity-100" : "pointer-events-none opacity-0",
-        ].join(" ")}
-        onClick={() => setIsNotificationOpen(false)}
-        tabIndex={isNotificationOpen ? 0 : -1}
-        type="button"
-      />
-
-      <aside
-        aria-hidden={!isNotificationOpen}
-        aria-label="Notification center"
-        aria-modal={isNotificationOpen ? "true" : undefined}
-        className={[
-          "fixed inset-y-0 right-0 z-50 h-full w-[min(94vw,27rem)] border-l border-slate-200 bg-white shadow-2xl transition-transform duration-200 ease-out",
-          isNotificationOpen ? "translate-x-0" : "translate-x-full",
-        ].join(" ")}
-        inert={!isNotificationOpen}
-        role="dialog"
+      <Modal
+        description={selectedNotificationPresentation.label}
+        eyebrow={selectedNotification?.priority === "critical" ? "Urgent update" : "WaterWise notification"}
+        isOpen={Boolean(selectedNotification)}
+        onClose={() => setSelectedNotification(null)}
+        size="sm"
+        title={selectedNotification?.title}
       >
-        <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-5">
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">
-              Notification center
-            </h2>
-            <p className="text-xs font-medium text-slate-500">
-              {unreadCount} unread alert{unreadCount === 1 ? "" : "s"}
-            </p>
+        {selectedNotification && (
+          <div className="p-5 sm:p-6">
+            <div className="flex items-start gap-4">
+              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
+                selectedNotification.priority === "critical"
+                  ? "bg-red-100 text-red-700"
+                  : selectedNotification.priority === "high"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-water-100 text-water-700"
+              }`}>
+                <selectedNotificationPresentation.Icon aria-hidden="true" className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm leading-6 text-slate-700">{selectedNotification.message}</p>
+                <p className="mt-3 text-xs font-semibold text-slate-400">
+                  {new Intl.DateTimeFormat("en-PH", {
+                    dateStyle: "medium",
+                    timeStyle: selectedNotification.createdAt ? "short" : undefined,
+                    timeZone: selectedNotification.createdAt ? "Asia/Manila" : "UTC",
+                  }).format(new Date(selectedNotification.createdAt ?? `${selectedNotification.date}T00:00:00Z`))}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end border-t border-slate-200 pt-4">
+              <button
+                className="min-h-11 rounded-xl bg-water-600 px-5 text-sm font-bold text-white hover:bg-water-700"
+                onClick={() => setSelectedNotification(null)}
+                type="button"
+              >
+                Done
+              </button>
+            </div>
           </div>
-          <button
-            ref={notificationCloseRef}
-            aria-label="Close notification center"
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:border-water-200 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2"
-            onClick={() => setIsNotificationOpen(false)}
-            type="button"
-          >
-            <FiX aria-hidden="true" className="h-5 w-5" />
-          </button>
-        </div>
+        )}
+      </Modal>
 
-        <div className="h-[calc(100%-4rem)] overflow-y-auto">
-          <NotificationPage
-            isLoading={isNotificationLoading}
-            notifications={notifications}
-            onNotificationClick={handleNotificationClick}
-            onMarkAsRead={handleMarkNotificationAsRead}
-          />
-        </div>
-      </aside>
     </div>
   );
 }

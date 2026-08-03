@@ -4,6 +4,7 @@ import {
   getNotifications,
   markNotificationAsRead,
 } from "../models/notificationModels.js";
+import { processBillingReminders } from "../services/notificationServices.js";
 
 const sendError = (res, error, fallbackMessage) => {
   console.error(fallbackMessage, error);
@@ -59,5 +60,18 @@ export async function markNotificationRead(req, res) {
     });
   } catch (error) {
     return sendError(res, error, "Failed to mark notification as read.");
+  }
+}
+
+export async function runNotificationReminders(req, res) {
+  try {
+    const result = await processBillingReminders();
+    return res.status(200).json({
+      success: true,
+      message: "Billing reminders processed successfully.",
+      data: result,
+    });
+  } catch (error) {
+    return sendError(res, error, "Failed to process billing reminders.");
   }
 }

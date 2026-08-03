@@ -3,7 +3,7 @@ import { supabase } from "../config/supabase.js";
 const columns =
   "id, consumer_id, reading_date, previous_reading, present_reading, consumption, created_at, consumers(full_name, purok_no)";
 
-export const WATER_RATE_PER_CUBIC_METER = 17;
+export const WATER_RATE_PER_CUBIC_METER = 15;
 
 function unwrap({ data, error }) {
   if (error) {

@@ -1,7 +1,9 @@
 import { supabase } from "../config/supabase.js";
 
 const NOTIFICATION_FIELDS =
-  "id, consumer_id, announcement_type, title, announcement_date, message, created_at, updated_at";
+  "id, consumer_id, announcement_type, notification_type, priority, title, announcement_date, message, billing_id, consumption_id, payment_id, action_path, event_key, created_at, updated_at";
+
+const NOTIFICATION_PRIORITIES = new Set(["low", "normal", "high", "critical"]);
 
 const createError = (message, statusCode = 400) => {
   const error = new TypeError(message);
@@ -29,12 +31,36 @@ const parseDate = (value) => {
   return value;
 };
 
+const parseOptionalId = (value, fieldName) =>
+  value === null || value === undefined || value === ""
+    ? null
+    : parsePositiveId(value, fieldName);
+
+const parseOptionalText = (value, fieldName, maximumLength) => {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "string" || !value.trim()) {
+    throw createError(`${fieldName} must be valid text.`);
+  }
+  const normalized = value.trim();
+  if (normalized.length > maximumLength) {
+    throw createError(`${fieldName} cannot exceed ${maximumLength} characters.`);
+  }
+  return normalized;
+};
+
 export async function createNotification({
   consumerId = null,
   announcementType,
+  notificationType = "announcement",
+  priority = "normal",
   title,
   announcementDate,
   message,
+  billingId = null,
+  consumptionId = null,
+  paymentId = null,
+  actionPath = null,
+  eventKey = null,
 }) {
   if (
     typeof announcementType !== "string" ||
@@ -52,14 +78,36 @@ export async function createNotification({
       ? null
       : parsePositiveId(consumerId, "consumer ID");
 
+  const normalizedType = parseOptionalText(
+    notificationType,
+    "Notification type",
+    50,
+  );
+  const normalizedPriority = String(priority ?? "normal").trim().toLowerCase();
+  if (!NOTIFICATION_PRIORITIES.has(normalizedPriority)) {
+    throw createError("Priority must be low, normal, high, or critical.");
+  }
+
+  const normalizedActionPath = parseOptionalText(actionPath, "Action path", 500);
+  if (normalizedActionPath && !normalizedActionPath.startsWith("/")) {
+    throw createError("Action path must be an application-relative path.");
+  }
+
   const { data, error } = await supabase
     .from("notifications")
     .insert({
       consumer_id: normalizedConsumerId,
       announcement_type: announcementType.trim(),
+      notification_type: normalizedType,
+      priority: normalizedPriority,
       title: title.trim(),
       announcement_date: parseDate(announcementDate),
       message: message.trim(),
+      billing_id: parseOptionalId(billingId, "billing ID"),
+      consumption_id: parseOptionalId(consumptionId, "consumption ID"),
+      payment_id: parseOptionalId(paymentId, "payment ID"),
+      action_path: normalizedActionPath,
+      event_key: parseOptionalText(eventKey, "Event key", 255),
     })
     .select(NOTIFICATION_FIELDS)
     .single();

@@ -389,6 +389,41 @@ BEGIN
     WHERE id = p_billing_id
     RETURNING * INTO updated_billing;
 
+    INSERT INTO notifications (
+        consumer_id,
+        announcement_type,
+        notification_type,
+        priority,
+        title,
+        announcement_date,
+        message,
+        billing_id,
+        payment_id,
+        action_path,
+        event_key
+    ) VALUES (
+        billing_record.user_id,
+        'Payment Alert',
+        'payment_received',
+        CASE WHEN next_balance = 0 THEN 'normal' ELSE 'high' END,
+        CASE WHEN next_balance = 0 THEN 'Payment received' ELSE 'Partial payment received' END,
+        (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::DATE,
+        CASE
+            WHEN next_balance = 0 THEN format(
+                'We received your payment of PHP %s for bill #%s. This bill is now fully paid.',
+                ROUND(p_amount, 2), p_billing_id
+            )
+            ELSE format(
+                'We received your payment of PHP %s for bill #%s. Remaining balance: PHP %s.',
+                ROUND(p_amount, 2), p_billing_id, next_balance
+            )
+        END,
+        p_billing_id,
+        payment_record.id,
+        '/consumer/billing-ledger',
+        format('payment-received:%s', payment_record.id)
+    ) ON CONFLICT (event_key) DO NOTHING;
+
     RETURN (to_jsonb(payment_record) - 'idempotency_key')
         || jsonb_build_object('billing', to_jsonb(updated_billing));
 END;
@@ -405,19 +440,52 @@ CREATE TABLE IF NOT EXISTS notifications (
     id SERIAL PRIMARY KEY,
     consumer_id INT REFERENCES consumers(id) ON DELETE CASCADE,
     announcement_type VARCHAR(50) NOT NULL,
+    notification_type VARCHAR(50) NOT NULL DEFAULT 'announcement',
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal',
     title VARCHAR(255) NOT NULL,
     announcement_date DATE NOT NULL,
     message TEXT NOT NULL,
+    billing_id INTEGER REFERENCES billing(id) ON DELETE SET NULL,
+    consumption_id INTEGER REFERENCES consumption(id) ON DELETE SET NULL,
+    payment_id INTEGER REFERENCES payments(id) ON DELETE SET NULL,
+    action_path TEXT,
+    event_key TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 ALTER TABLE notifications
 ADD COLUMN IF NOT EXISTS consumer_id INT REFERENCES consumers(id) ON DELETE CASCADE;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS notification_type VARCHAR(50) NOT NULL DEFAULT 'announcement';
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS priority VARCHAR(20) NOT NULL DEFAULT 'normal';
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS billing_id INTEGER REFERENCES billing(id) ON DELETE SET NULL;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS consumption_id INTEGER REFERENCES consumption(id) ON DELETE SET NULL;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS payment_id INTEGER REFERENCES payments(id) ON DELETE SET NULL;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS action_path TEXT;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS event_key TEXT;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'notifications_priority_check'
+          AND conrelid = 'notifications'::regclass
+    ) THEN
+        ALTER TABLE notifications
+        ADD CONSTRAINT notifications_priority_check
+        CHECK (priority IN ('low', 'normal', 'high', 'critical'));
+    END IF;
+END;
+$$;
 
 -- Indexes for lightning-fast queries when filtering notifications by target consumer
 CREATE INDEX IF NOT EXISTS notifications_consumer_id_idx 
 ON notifications (consumer_id);
+CREATE INDEX IF NOT EXISTS notifications_billing_id_idx ON notifications (billing_id);
+CREATE INDEX IF NOT EXISTS notifications_type_date_idx
+ON notifications (notification_type, announcement_date DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS notifications_event_key_idx
+ON notifications (event_key);
 
 -- 7. NOTIFICATION READS (Junction table to handle isolated read/unread telemetry)
 CREATE TABLE IF NOT EXISTS notification_reads (
@@ -434,44 +502,54 @@ ADD COLUMN IF NOT EXISTS dismissed_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS notification_reads_consumer_id_idx 
 ON notification_reads (consumer_id);
 
--- 8. AUTOMATED TRIGGER FUNCTION (Updated to map consumer_id context onto billing alerts)
-CREATE OR REPLACE FUNCTION generate_billing_announcement()
+-- Generate the notice from the completed billing row so its amount, due date,
+-- and related IDs always match the consumer's actual bill.
+CREATE OR REPLACE FUNCTION generate_billing_notification()
 RETURNS TRIGGER AS $$
 DECLARE
     consumer_name VARCHAR(100);
-    calculated_bill NUMERIC(10,2);
-    base_rate CONSTANT NUMERIC(10,2) := 15.00; 
+    reading_record consumption%ROWTYPE;
 BEGIN
-    SELECT full_name INTO consumer_name 
-    FROM consumers 
-    WHERE id = NEW.consumer_id;
+    SELECT full_name INTO consumer_name
+    FROM consumers
+    WHERE id = NEW.user_id;
 
-    calculated_bill := NEW.consumption * base_rate;
+    SELECT * INTO reading_record
+    FROM consumption
+    WHERE id = NEW.consumption_id;
 
     INSERT INTO notifications (
         consumer_id,
         announcement_type,
+        notification_type,
+        priority,
         title,
         announcement_date,
         message,
-        created_at,
-        updated_at
+        billing_id,
+        consumption_id,
+        action_path,
+        event_key
     ) VALUES (
-        NEW.consumer_id,
+        NEW.user_id,
         'Billing Alert',
-        'New Consumption Record Posted',
-        CURRENT_DATE,
-        format('Hello %s, a new meter reading has been logged for %s. Previous: %s, Present: %s. Total Consumption: %s units. Estimated Bill: ₱%s.', 
-            consumer_name, 
-            NEW.reading_date, 
-            NEW.previous_reading, 
-            NEW.present_reading, 
-            NEW.consumption,
-            calculated_bill
+        'bill_generated',
+        'high',
+        'New water bill available',
+        (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::DATE,
+        format(
+            'Hello %s, your meter reading for %s has been recorded. Consumption: %s cubic meters. Amount due: PHP %s. Due date: %s.',
+            consumer_name,
+            reading_record.reading_date,
+            reading_record.consumption,
+            NEW.total_bill,
+            NEW.due_date
         ),
-        NOW(),
-        NOW()
-    );
+        NEW.id,
+        NEW.consumption_id,
+        '/consumer/billing-ledger',
+        format('bill-generated:%s', NEW.id)
+    ) ON CONFLICT (event_key) DO NOTHING;
 
     RETURN NEW;
 END;
@@ -479,11 +557,54 @@ $$ LANGUAGE plpgsql;
 
 -- 9. TRIGGER BINDING
 DROP TRIGGER IF EXISTS trg_after_consumption_insert ON consumption;
+DROP TRIGGER IF EXISTS trg_after_billing_insert ON billing;
+DROP FUNCTION IF EXISTS generate_billing_announcement();
 
-CREATE TRIGGER trg_after_consumption_insert
-AFTER INSERT ON consumption
+CREATE TRIGGER trg_after_billing_insert
+AFTER INSERT ON billing
 FOR EACH ROW
-EXECUTE FUNCTION generate_billing_announcement();
+EXECUTE FUNCTION generate_billing_notification();
+
+CREATE OR REPLACE FUNCTION generate_consumer_status_notification()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status IS DISTINCT FROM OLD.status THEN
+        INSERT INTO notifications (
+            consumer_id,
+            announcement_type,
+            notification_type,
+            priority,
+            title,
+            announcement_date,
+            message,
+            action_path,
+            event_key
+        ) VALUES (
+            NEW.id,
+            'Account Alert',
+            'account_status_changed',
+            CASE WHEN NEW.status = 'inactive' THEN 'critical' ELSE 'high' END,
+            CASE WHEN NEW.status = 'inactive' THEN 'Account deactivated' ELSE 'Account activated' END,
+            (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::DATE,
+            CASE
+                WHEN NEW.status = 'inactive'
+                    THEN 'Your WaterWise account has been deactivated. Contact the water district office if you need assistance.'
+                ELSE 'Your WaterWise account is active again. You may now sign in and use the consumer portal.'
+            END,
+            '/consumer/profile-details',
+            format('account-status:%s:%s:%s', NEW.id, NEW.status, txid_current())
+        );
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_after_consumer_status_update ON consumers;
+CREATE TRIGGER trg_after_consumer_status_update
+AFTER UPDATE OF status ON consumers
+FOR EACH ROW
+EXECUTE FUNCTION generate_consumer_status_notification();
 
 -- 10. GEMINI AI CONSUMPTION PREDICTION CACHE
 -- Stores the latest generated result for each forecast type. The backend

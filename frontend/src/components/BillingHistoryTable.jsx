@@ -22,7 +22,7 @@ function getStatusConfig(status) {
   };
 }
 
-export default function BillingHistoryTable({ historyData = [], showConsumerDetails = true }) {
+export default function BillingHistoryTable({ historyData = [], highlightedBillingId, showConsumerDetails = true }) {
   return (
     <Table
       ariaLabel="Billing history"
@@ -46,7 +46,11 @@ export default function BillingHistoryTable({ historyData = [], showConsumerDeta
       emptyTestId="billing-history-empty-state"
       emptyTitle="No billing records"
       getRowKey={(row) => row.invoiceNumber}
-      rowClassName="grid grid-cols-2 gap-x-4 gap-y-3 p-4 text-navy-900 transition-colors hover:bg-slate-50 md:table-row md:p-0"
+      rowClassName={(row) => `grid grid-cols-2 gap-x-4 gap-y-3 p-4 text-navy-900 transition-colors md:table-row md:p-0 ${
+        Number(row.id) === Number(highlightedBillingId)
+          ? "bg-water-50 ring-2 ring-inset ring-water-500"
+          : "hover:bg-slate-50"
+      }`}
       tableClassName={`block w-full text-left text-sm md:table ${
         showConsumerDetails ? "md:min-w-[1120px]" : "md:min-w-[860px]"
       }`}

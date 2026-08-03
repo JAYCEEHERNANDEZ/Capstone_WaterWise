@@ -54,7 +54,24 @@ function normalizeBilling(record, profile, reading) {
     previousReading: Number(reading?.previous_reading ?? 0),
     currentReading: Number(reading?.present_reading ?? 0),
     dueDate: record.due_date,
+    createdAt: reading?.created_at ?? record.created_at,
   };
+}
+
+function notificationActionPath(notification, notificationType, isBillingAlert) {
+  if (notificationType === "account_status_changed") {
+    return "/consumer/profile-details";
+  }
+  if (notificationType === "payment_received" && notification.payment_id) {
+    return `/consumer/billing-ledger?paymentId=${notification.payment_id}&view=payment-receipt`;
+  }
+  if (notificationType === "bill_generated" && notification.billing_id) {
+    return `/consumer/billing-ledger?billingId=${notification.billing_id}&view=consumption-receipt`;
+  }
+  if (isBillingAlert && notification.billing_id) {
+    return `/consumer/billing-ledger?billingId=${notification.billing_id}`;
+  }
+  return notification.action_path ?? (isBillingAlert ? "/consumer/billing-ledger" : undefined);
 }
 
 export async function fetchConsumerProfile(options) {
@@ -96,10 +113,11 @@ export async function fetchConsumerProfile(options) {
 
 export async function fetchBillingLedger(options) {
   const account = await requireConsumerAccount();
-  const [profilePayload, billingPayload, consumptionPayload] = await Promise.all([
+  const [profilePayload, billingPayload, consumptionPayload, paymentPayload] = await Promise.all([
     apiRequest(`/consumers/${account.id}`, options),
     apiRequest(`/billing/consumer/${account.id}`, options),
     apiRequest(`/consumption/consumer/${account.id}`, options),
+    apiRequest(`/payments/consumer/${account.id}`, options),
   ]);
   const profile = profilePayload.data;
   const readingsById = new Map(
@@ -112,6 +130,25 @@ export async function fetchBillingLedger(options) {
     (total, record) => total + record.remainingBalance,
     0,
   );
+  const billsById = new Map(historyData.map((record) => [record.id, record]));
+  const payments = (paymentPayload.data ?? []).map((record) => {
+    const bill = billsById.get(record.billing_id);
+    const remainingBalance = Number(record.remaining_balance ?? 0);
+    return {
+      id: record.id,
+      billingId: record.billing_id,
+      invoiceNumber: bill?.invoiceNumber ?? `INV-${record.billing_id}`,
+      consumerName: profile.full_name,
+      paymentDate: record.payment_date,
+      paymentMethod: record.payment_method ?? "Cash",
+      referenceNumber: record.reference_number ?? "",
+      amountPaid: Number(record.total_paid ?? 0),
+      amountTendered: Number(record.amount_tendered ?? record.total_paid ?? 0),
+      changeGiven: Number(record.change_given ?? 0),
+      remainingBalance,
+      paymentStatus: remainingBalance === 0 ? "Paid" : "Partially Paid",
+    };
+  });
 
   return {
     historyData,
@@ -124,6 +161,7 @@ export async function fetchBillingLedger(options) {
       ),
     },
     officialReceipt: null,
+    payments,
   };
 }
 
@@ -146,19 +184,34 @@ export async function fetchNotifications(options) {
   );
 
   return (payload.data ?? []).map((notification) => {
+    const notificationType = String(
+      notification.notification_type ?? "announcement",
+    ).toLowerCase();
     const isBillingAlert =
-      String(notification.announcement_type).toLowerCase() === "billing alert";
+      notificationType.startsWith("bill_") ||
+      notificationType === "payment_received" ||
+      ["billing alert", "payment alert"].includes(
+        String(notification.announcement_type).toLowerCase(),
+      );
 
     return {
       id: notification.id,
       category: isBillingAlert ? "bill" : "announcement",
+      type: notificationType,
+      priority: notification.priority ?? "normal",
       title: notification.title,
       message: notification.message,
       date: notification.announcement_date,
+      createdAt: notification.created_at,
       isRead: Boolean(notification.is_read),
-      actionPath: isBillingAlert
-        ? "/consumer/billing-ledger?receipt=official"
-        : undefined,
+      actionPath: notificationActionPath(
+        notification,
+        notificationType,
+        isBillingAlert,
+      ),
+      billingId: notification.billing_id,
+      consumptionId: notification.consumption_id,
+      paymentId: notification.payment_id,
     };
   });
 }

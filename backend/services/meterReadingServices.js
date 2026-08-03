@@ -8,7 +8,7 @@ import {
 
 import validateMeterReading from "../validation/meterReading.validation.js";
 
-export const WATER_RATE_PER_CUBIC_METER = 17;
+export const WATER_RATE_PER_CUBIC_METER = 15;
 
 function createValidationError(errors) {
   const error = new Error("Validation failed.");
