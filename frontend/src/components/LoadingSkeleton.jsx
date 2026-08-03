@@ -152,18 +152,34 @@ function MetricsSkeleton() {
 
 function HomeMetricsSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
-      {Array.from({ length: 4 }, (_, index) => (
-        <div className="flex min-h-36 flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:min-h-44 sm:p-5" key={index}>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <SkeletonBlock className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" />
-            <SkeletonBlock className="h-3 w-24 max-w-[60%]" />
+    <>
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <SkeletonBlock className="h-11 w-11 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1">
+              <SkeletonBlock className="h-3 w-24" />
+              <SkeletonBlock className="mt-2 h-5 w-36 max-w-full" />
+              <SkeletonBlock className="mt-2 h-4 w-72 max-w-full" />
+            </div>
           </div>
-          <SkeletonBlock className="mt-5 h-8 w-28 max-w-full" />
-          <SkeletonBlock className="mt-auto h-6 w-36 max-w-full rounded-full" />
+          <SkeletonBlock className="h-11 w-full shrink-0 sm:w-28" />
         </div>
-      ))}
-    </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div className="flex min-h-36 flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:min-h-44 sm:p-5" key={index}>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <SkeletonBlock className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" />
+              <SkeletonBlock className="h-3 w-24 max-w-[60%]" />
+            </div>
+            <SkeletonBlock className="mt-5 h-8 w-28 max-w-full" />
+            <SkeletonBlock className="mt-auto h-6 w-36 max-w-full rounded-full" />
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
