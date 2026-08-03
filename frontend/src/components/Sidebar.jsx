@@ -24,7 +24,7 @@ function NavigationLink({ collapsed = false, item, mobile = false, onNavigate })
   const content = (
     <>
       {Icon && <Icon aria-hidden="true" className={mobile ? "h-5 w-5 shrink-0" : "h-5 w-5 shrink-0"} />}
-      <span className={collapsed && !mobile ? "sr-only" : "truncate"}>{label}</span>
+      <span className={collapsed && !mobile ? "sr-only" : `truncate ${mobile ? "" : "ww-popover-enter"}`}>{label}</span>
       {collapsed && !mobile && (
         <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">
           {label}
@@ -65,13 +65,19 @@ export default function Sidebar({
   subtitle = "Sucol Water System",
   title = "WaterWise",
 }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const closeButtonRef = useRef(null);
   const moreTriggerRef = useRef(null);
   const primaryMobileItems = items.length > 4 ? items.slice(0, 3) : items;
   const additionalMobileItems = items.length > 4 ? items.slice(3) : [];
   const AccountContainer = onProfile ? "button" : "div";
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const openTimer = window.setTimeout(() => setIsCollapsed(false), reduceMotion ? 0 : 180);
+    return () => window.clearTimeout(openTimer);
+  }, []);
 
   useEffect(() => {
     if (!isMoreOpen) return undefined;
@@ -129,14 +135,14 @@ export default function Sidebar({
         </div>
       )}
 
-      <aside className={`fixed inset-x-3 bottom-3 z-40 rounded-full border border-white/50 bg-white/35 pb-[env(safe-area-inset-bottom)] shadow-raised backdrop-blur-xl lg:sticky lg:inset-auto lg:top-4 lg:ml-4 lg:mt-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:self-start lg:overflow-visible lg:rounded-3xl lg:border-slate-200 lg:bg-white lg:pb-0 lg:shadow-card lg:backdrop-blur-none lg:transition-[width] lg:duration-300 lg:ease-out ${isCollapsed ? "lg:w-20" : "lg:w-64"}`}>
+      <aside className={`fixed inset-x-3 bottom-3 z-40 rounded-full border border-white/50 bg-white/35 pb-[env(safe-area-inset-bottom)] shadow-raised backdrop-blur-xl lg:sticky lg:inset-auto lg:top-4 lg:ml-4 lg:mt-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:self-start lg:overflow-visible lg:rounded-3xl lg:border-slate-200 lg:bg-white lg:pb-0 lg:shadow-card lg:backdrop-blur-none lg:transition-[width] lg:duration-500 lg:ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:lg:duration-0 ${isCollapsed ? "lg:w-20" : "lg:w-64"}`}>
         <div className="flex h-full items-center gap-1 p-1.5 lg:flex-col lg:items-stretch lg:gap-0 lg:p-3">
           <div className={`hidden min-h-14 items-center lg:flex ${isCollapsed ? "justify-center" : "gap-3 px-1"}`}>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-600 text-white shadow-sm">
               <FiDroplet aria-hidden="true" className="h-5 w-5" />
             </span>
             {!isCollapsed && (
-              <div className="min-w-0 flex-1">
+              <div className="ww-popover-enter min-w-0 flex-1">
                 <p className="truncate text-base font-extrabold tracking-tight text-navy-900">{title}</p>
                 <p className="truncate text-[11px] font-medium text-slate-500">{subtitle}</p>
               </div>
@@ -144,7 +150,7 @@ export default function Sidebar({
             {!isCollapsed && (
               <button
                 aria-label="Collapse sidebar"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-navy-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+                className="ww-popover-enter flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-navy-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
                 onClick={() => setIsCollapsed(true)}
                 type="button"
               >
@@ -166,7 +172,7 @@ export default function Sidebar({
           )}
 
           <nav className="mt-5 hidden min-h-0 flex-1 overflow-y-auto overflow-x-visible lg:block" aria-label={`${activeRoleLabel ?? "WaterWise"} navigation`}>
-            {!isCollapsed && <p className="mb-2 px-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">Workspace</p>}
+            {!isCollapsed && <p className="ww-popover-enter mb-2 px-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">Workspace</p>}
             <ul className="grid min-w-0 gap-1">
               {items.map((item) => (
                 <li key={getItemLabel(item)}><NavigationLink collapsed={isCollapsed} item={item} /></li>
@@ -182,7 +188,7 @@ export default function Sidebar({
               type={onProfile ? "button" : undefined}
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-water-50 text-water-700"><FiUser aria-hidden="true" className="h-5 w-5" /></span>
-              {!isCollapsed && <span className="min-w-0"><span className="block truncate text-sm font-bold text-navy-900">{accountName}</span><span className="mt-0.5 block truncate text-xs font-medium text-slate-500">{activeRoleLabel}</span></span>}
+              {!isCollapsed && <span className="ww-popover-enter min-w-0"><span className="block truncate text-sm font-bold text-navy-900">{accountName}</span><span className="mt-0.5 block truncate text-xs font-medium text-slate-500">{activeRoleLabel}</span></span>}
               {isCollapsed && <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">{accountName} · {activeRoleLabel}</span>}
             </AccountContainer>
             <button
