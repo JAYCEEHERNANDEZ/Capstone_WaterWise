@@ -378,7 +378,7 @@ export default function EventManagementPage() {
     <main className="space-y-5 sm:space-y-6">
       <PageHeader description="Plan fiestas, assemblies, celebrations, and community activities in one calendar." eyebrow="Community schedule" title="Events calendar" />
 
-      <section aria-label="Event summary" className="grid gap-3 sm:grid-cols-2">
+      <section aria-label="Event summary" className="grid grid-cols-2 gap-2 sm:gap-3">
         <KPI description="Scheduled in the selected month" icon={CalendarDays} title="Events this month" value={monthEventCount} />
         <KPI
           description={nextEvent ? `${nextEvent.title} · ${formatTime(nextEvent.time)}` : "Add an event to the community calendar"}

@@ -158,7 +158,7 @@ function ConsumerManagementPage() {
         </button>
       </div>
 
-      <section aria-label="Resident summary" className="grid gap-3 sm:grid-cols-2">
+      <section aria-label="Resident summary" className="grid grid-cols-2 gap-2 sm:gap-3">
         <KPI description="Registered community accounts" icon={FiUsers} title="Total residents" value={consumers.length} />
         <KPI description="Accounts ready for service" icon={FiCheckCircle} title="Active accounts" value={consumers.filter((item) => item.status?.toLowerCase() === "active").length} />
       </section>

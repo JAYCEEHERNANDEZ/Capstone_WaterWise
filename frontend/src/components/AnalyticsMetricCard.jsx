@@ -18,6 +18,7 @@ function RefreshButton({ label, loading, onRefresh }) {
 }
 
 export default function AnalyticsMetricCard({
+  compact = false,
   description,
   error,
   icon: Icon,
@@ -28,6 +29,7 @@ export default function AnalyticsMetricCard({
   unit = "m³",
   value,
 }) {
+  const heightClass = compact ? "min-h-32 sm:min-h-48" : "min-h-40 sm:min-h-52";
   const refreshButton = (
     <RefreshButton label={label} loading={loading} onRefresh={onRefresh} />
   );
@@ -36,7 +38,7 @@ export default function AnalyticsMetricCard({
     return (
       <KPI
         cardTestId={testId}
-        className="min-h-52"
+        className={heightClass}
         description={description}
         headerAction={refreshButton}
         icon={Icon}
@@ -49,7 +51,7 @@ export default function AnalyticsMetricCard({
 
   return (
     <article
-      className="flex min-h-52 flex-col rounded-2xl border border-slate-200 bg-white p-5 text-navy-900 shadow-card"
+      className={`flex flex-col rounded-2xl border border-slate-200 bg-white p-5 text-navy-900 shadow-card ${heightClass}`}
       data-testid={testId}
     >
       <div className="flex items-start justify-between gap-3">

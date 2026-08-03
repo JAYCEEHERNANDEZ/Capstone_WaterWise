@@ -97,14 +97,14 @@ export default function KPI({
             <Icon aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
           </span>
         ) : null}
-        <h2 className="min-w-0 flex-1 text-[11px] font-bold leading-4 text-slate-600 sm:text-sm">
+        <h2 className="min-w-0 flex-1 text-xs font-bold leading-4 text-slate-600 sm:text-sm">
           {title}
         </h2>
         {headerAction}
         {onMenu ? (
           <button
             aria-label={menuLabel ?? `More options for ${title}`}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-500 focus-visible:ring-offset-2"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-500 focus-visible:ring-offset-2"
             onClick={onMenu}
             type="button"
           >
@@ -113,15 +113,15 @@ export default function KPI({
         ) : null}
       </div>
 
-      <p className="mt-3 min-w-0 font-sans text-xl font-extrabold tracking-tight text-navy-900 tabular-nums sm:mt-5 sm:text-3xl" data-testid={valueTestId}>
+      <p className="mt-2 min-w-0 overflow-hidden font-sans text-[clamp(1.125rem,5vw,1.375rem)] font-extrabold leading-tight tracking-tight text-navy-900 [overflow-wrap:anywhere] tabular-nums sm:mt-5 sm:text-3xl" data-testid={valueTestId}>
         {value}
         {unit ? <span className="ml-1 text-[10px] font-bold text-slate-500 sm:text-sm">{unit}</span> : null}
       </p>
 
       {(supportingValue || description) ? (
-        <div className="mt-auto flex min-w-0 flex-wrap items-center gap-1.5 pt-3 text-[10px] leading-4 sm:pt-4 sm:text-xs">
+        <div className="mt-auto flex min-w-0 flex-wrap items-center gap-1.5 pt-2 text-[10px] leading-4 sm:pt-4 sm:text-xs">
           {supportingValue ? (
-            <span className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-1 font-bold ring-1 ring-inset ${supportingToneStyles[resolvedTone] ?? supportingToneStyles.water}`}>
+            <span className={`inline-flex max-w-full items-center gap-1 rounded-full px-1.5 py-0.5 font-bold ring-1 ring-inset sm:px-2 sm:py-1 ${supportingToneStyles[resolvedTone] ?? supportingToneStyles.water}`}>
               {SupportingIcon ? <SupportingIcon aria-hidden="true" className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> : null}
               <span className="truncate" data-testid={descriptionHighlightTestId}>{supportingValue}</span>
             </span>

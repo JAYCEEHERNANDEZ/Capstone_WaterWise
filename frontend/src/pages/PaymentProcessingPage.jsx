@@ -205,8 +205,8 @@ export default function PaymentProcessingPage() {
         </button>
       </div>
 
-      <section aria-label="Payment summary" className="grid gap-3 sm:grid-cols-3">
-        <KPI description="Across recorded transactions" icon={Banknote} title="All-time collected" value={`₱${totalCollected.toLocaleString("en-US", { minimumFractionDigits: 2 })}`} />
+      <section aria-label="Payment summary" className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+        <KPI className="col-span-2 sm:col-span-1" description="Across recorded transactions" icon={Banknote} title="All-time collected" value={`₱${totalCollected.toLocaleString("en-US", { minimumFractionDigits: 2 })}`} />
         <KPI description="Completed payment records" icon={ReceiptText} title="All transactions" value={payments.length} />
         <KPI description="Transactions with no balance" icon={CheckCircle2} title="Bills fully paid" value={fullyPaid} />
       </section>
