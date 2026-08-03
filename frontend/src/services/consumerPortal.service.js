@@ -93,38 +93,18 @@ function normalizeConsumerAnnouncements(notifications) {
 
 export async function fetchConsumerProfile(options) {
   const account = await requireConsumerAccount();
-  const [profilePayload, billingPayload, consumptionPayload] = await Promise.all([
-    apiRequest(`/consumers/${account.id}`, options),
-    apiRequest(`/billing/consumer/${account.id}`, options),
-    apiRequest(`/consumption/consumer/${account.id}`, options),
-  ]);
+  const profilePayload = await apiRequest(`/consumers/${account.id}`, options);
   const consumer = profilePayload.data;
-  const billings = billingPayload.data ?? [];
-  const readings = consumptionPayload.data ?? [];
-  const latestReading = readings.at(-1);
-  const currentBillings = billings.filter((record) =>
-    isCurrentMonth(record.billing_date)
-  );
 
   return {
-    accountId: `ACC-${consumer.id}`,
+    accountId: consumer.id,
     name: consumer.full_name ?? consumer.username,
-    purok: consumer.purok_no != null ? `Purok ${consumer.purok_no}` : "Not provided",
-    houseNumber: "Not provided",
+    username: consumer.username,
+    purok: consumer.purok_no != null ? `Purok ${consumer.purok_no}` : null,
     email: consumer.email,
-    contactNumber: consumer.contact_number || "Not provided",
-    meterNumber: "Not provided",
+    contactNumber: consumer.contact_number || null,
     status: consumer.status,
-    activeAmountDue: currentBillings.reduce(
-      (total, record) => total + Number(record.remaining_balance ?? 0),
-      0,
-    ),
-    dueDate: formatDate(currentBillings[0]?.due_date),
-    latestMonth: formatMonth(latestReading?.reading_date),
-    volumetricUsage: Number(latestReading?.consumption ?? 0),
-    previousReading: Number(latestReading?.previous_reading ?? 0),
-    currentReading: Number(latestReading?.present_reading ?? 0),
-    lastReadingDate: formatDate(latestReading?.reading_date) || "No reading recorded",
+    accountCreatedDate: formatDate(String(consumer.created_at ?? "").slice(0, 10)),
   };
 }
 

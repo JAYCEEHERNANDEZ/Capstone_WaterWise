@@ -172,20 +172,28 @@ function BillingSkeleton() {
 function ProfileSkeleton() {
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 3 }, (_, index) => (
-          <div className={`rounded-2xl p-5 ${index === 1 ? "bg-navy-950" : "border border-slate-200 bg-white"}`} key={index}>
-            <SkeletonBlock className={`h-3 w-28 ${index === 1 ? "opacity-20" : ""}`} />
-            <SkeletonBlock className={`mt-6 h-8 w-40 ${index === 1 ? "opacity-20" : ""}`} />
-            <SkeletonBlock className={`mt-4 h-12 w-full ${index === 1 ? "opacity-20" : ""}`} />
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-6">
+        <div className="flex items-center gap-4">
+          <SkeletonBlock className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
+          <div className="min-w-0 flex-1">
+            <SkeletonBlock className="h-3 w-24" />
+            <SkeletonBlock className="mt-3 h-7 w-52 max-w-full" />
+            <SkeletonBlock className="mt-2 h-3 w-20" />
           </div>
-        ))}
+          <SkeletonBlock className="hidden h-8 w-28 rounded-full sm:block" />
+        </div>
       </div>
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid items-start gap-4 xl:grid-cols-2">
         {Array.from({ length: 2 }, (_, index) => (
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6" key={index}>
-            <SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="mt-3 h-7 w-48" />
-            <div className="mt-6 grid grid-cols-2 gap-3">{Array.from({ length: 4 }, (_, itemIndex) => <SkeletonBlock className="h-20 w-full" key={itemIndex} />)}</div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-6" key={index}>
+            <SkeletonBlock className="h-3 w-20" />
+            <SkeletonBlock className="mt-3 h-6 w-48 max-w-full" />
+            <SkeletonBlock className="mt-2 h-3 w-64 max-w-full" />
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {Array.from({ length: index === 0 ? 3 : 2 }, (_, itemIndex) => (
+                <SkeletonBlock className="h-[4.625rem] w-full" key={itemIndex} />
+              ))}
+            </div>
           </div>
         ))}
       </div>
