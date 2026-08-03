@@ -46,6 +46,17 @@ CREATE TABLE IF NOT EXISTS consumption (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE consumption ADD COLUMN IF NOT EXISTS idempotency_key TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_consumption_idempotency_key
+ON consumption (idempotency_key)
+WHERE idempotency_key IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_consumption_consumer_month
+ON consumption (
+    consumer_id,
+    EXTRACT(YEAR FROM reading_date),
+    EXTRACT(MONTH FROM reading_date)
+);
+
 -- 5. BILLING HISTORY TABLE
 CREATE TABLE IF NOT EXISTS billing (
     id SERIAL PRIMARY KEY,
@@ -105,6 +116,137 @@ CREATE TABLE IF NOT EXISTS generated_reports (
     report_data JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Record a cumulative meter value and its billing as one transaction. The
+-- initial previous value is accepted only when digitizing a consumer with no
+-- earlier digital reading.
+DROP FUNCTION IF EXISTS record_consumption_and_billing(INTEGER, DATE, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS record_consumption_and_billing(INTEGER, DATE, NUMERIC, NUMERIC, TEXT);
+CREATE OR REPLACE FUNCTION record_consumption_and_billing(
+    p_consumer_id INTEGER,
+    p_present_reading NUMERIC,
+    p_initial_previous_reading NUMERIC,
+    p_idempotency_key TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_consumer consumers%ROWTYPE;
+    v_latest consumption%ROWTYPE;
+    v_reading consumption%ROWTYPE;
+    v_billing billing%ROWTYPE;
+    v_previous NUMERIC(10,2);
+    v_total NUMERIC(10,2);
+    v_reading_date DATE := (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::DATE;
+BEGIN
+    IF p_consumer_id IS NULL OR p_present_reading IS NULL OR NULLIF(TRIM(p_idempotency_key), '') IS NULL THEN
+        RAISE EXCEPTION 'Consumer, present reading, and request key are required.';
+    END IF;
+    IF p_present_reading < 0 OR (p_initial_previous_reading IS NOT NULL AND p_initial_previous_reading < 0) THEN
+        RAISE EXCEPTION 'Meter readings must be non-negative numbers.';
+    END IF;
+
+    -- Serialize readings for the same consumer, including simultaneous first records.
+    PERFORM pg_advisory_xact_lock(p_consumer_id);
+
+    SELECT * INTO v_consumer FROM consumers WHERE id = p_consumer_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Consumer account not found.' USING ERRCODE = '23503'; END IF;
+    IF COALESCE(v_consumer.status, 'active') <> 'active' THEN
+        RAISE EXCEPTION 'Readings cannot be recorded for an inactive consumer.';
+    END IF;
+    IF v_consumer.purok_no IS NULL THEN
+        RAISE EXCEPTION 'Assign the consumer to a purok before recording a reading.';
+    END IF;
+
+    SELECT * INTO v_reading
+    FROM consumption
+    WHERE idempotency_key = p_idempotency_key;
+    IF FOUND THEN
+        IF v_reading.consumer_id <> p_consumer_id
+           OR v_reading.reading_date <> v_reading_date
+           OR v_reading.present_reading <> ROUND(p_present_reading, 2) THEN
+            RAISE EXCEPTION 'This reading request key was already used for different details.';
+        END IF;
+        SELECT * INTO v_billing FROM billing WHERE consumption_id = v_reading.id;
+        RETURN jsonb_build_object(
+            'id', v_reading.id,
+            'consumer_id', v_reading.consumer_id,
+            'reading_date', v_reading.reading_date,
+            'previous_reading', v_reading.previous_reading,
+            'present_reading', v_reading.present_reading,
+            'consumption', v_reading.consumption,
+            'created_at', v_reading.created_at,
+            'billing', to_jsonb(v_billing)
+        );
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM consumption
+        WHERE consumer_id = p_consumer_id
+          AND EXTRACT(YEAR FROM reading_date) = EXTRACT(YEAR FROM v_reading_date)
+          AND EXTRACT(MONTH FROM reading_date) = EXTRACT(MONTH FROM v_reading_date)
+    ) THEN
+        RAISE EXCEPTION 'This consumer already has a consumption reading for the selected month.' USING ERRCODE = '23505';
+    END IF;
+
+    SELECT * INTO v_latest
+    FROM consumption
+    WHERE consumer_id = p_consumer_id
+    ORDER BY reading_date DESC, id DESC
+    LIMIT 1;
+
+    IF FOUND THEN
+        IF p_initial_previous_reading IS NOT NULL THEN
+            RAISE EXCEPTION 'An initial previous reading may only be supplied for a consumer with no previous record.';
+        END IF;
+        IF v_reading_date <= v_latest.reading_date THEN
+            RAISE EXCEPTION 'A reading has already been recorded for this consumer today or later.';
+        END IF;
+        v_previous := v_latest.present_reading;
+    ELSE
+        IF p_initial_previous_reading IS NULL THEN
+            RAISE EXCEPTION 'Enter the previous logbook reading for this consumer''s first digital record.';
+        END IF;
+        v_previous := p_initial_previous_reading;
+    END IF;
+
+    IF p_present_reading < v_previous THEN
+        RAISE EXCEPTION 'Present reading cannot be lower than the previous reading.';
+    END IF;
+
+    INSERT INTO consumption (consumer_id, reading_date, previous_reading, present_reading, idempotency_key)
+    VALUES (p_consumer_id, v_reading_date, v_previous, p_present_reading, p_idempotency_key)
+    RETURNING * INTO v_reading;
+
+    v_total := ROUND(v_reading.consumption * 15, 2);
+    INSERT INTO billing (
+        consumption_id, user_id, billing_date, due_date, total_bill,
+        remaining_balance, status
+    ) VALUES (
+        v_reading.id, p_consumer_id, v_reading_date, v_reading_date + 15,
+        v_total, v_total, 'Unpaid'
+    ) RETURNING * INTO v_billing;
+
+    RETURN jsonb_build_object(
+        'id', v_reading.id,
+        'consumer_id', v_reading.consumer_id,
+        'reading_date', v_reading.reading_date,
+        'previous_reading', v_reading.previous_reading,
+        'present_reading', v_reading.present_reading,
+        'consumption', v_reading.consumption,
+        'created_at', v_reading.created_at,
+        'billing', to_jsonb(v_billing)
+    );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION record_consumption_and_billing(INTEGER, NUMERIC, NUMERIC, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_consumption_and_billing(INTEGER, NUMERIC, NUMERIC, TEXT) FROM anon;
+REVOKE ALL ON FUNCTION record_consumption_and_billing(INTEGER, NUMERIC, NUMERIC, TEXT) FROM authenticated;
+GRANT EXECUTE ON FUNCTION record_consumption_and_billing(INTEGER, NUMERIC, NUMERIC, TEXT) TO service_role;
 
 -- Existing installations receive the resident contact field without invalidating
 -- legacy accounts. New accounts require it through backend validation.

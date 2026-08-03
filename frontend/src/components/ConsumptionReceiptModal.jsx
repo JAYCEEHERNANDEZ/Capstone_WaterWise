@@ -1,5 +1,6 @@
 import { FiDownload, FiPrinter } from "react-icons/fi";
 import { downloadReceiptImage } from "../utils/downloadReceiptImage";
+import LoadingSkeleton from "./LoadingSkeleton";
 import Modal from "./Modal";
 import { useToast } from "./Toast";
 
@@ -14,9 +15,25 @@ function ReceiptRow({ label, testId, value }) {
   );
 }
 
-export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
+export default function ConsumptionReceiptModal({ isOpen, loading = false, onClose, receiptData, residentName }) {
   const toast = useToast();
-  if (!isOpen || !receiptData) return null;
+  if (!isOpen) return null;
+  if (loading || !receiptData) {
+    return (
+      <Modal
+        closeLabel="Close consumption receipt"
+        description={residentName}
+        dismissible={false}
+        eyebrow="Sucol Water System"
+        isOpen={isOpen}
+        onClose={onClose}
+        size="md"
+        title="Consumption receipt"
+      >
+        <LoadingSkeleton className="p-5 sm:p-6" label="Loading consumption receipt" variant="card" />
+      </Modal>
+    );
+  }
 
   const {
     meterName,
@@ -35,8 +52,8 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
 
   const handleDownload = () => {
     downloadReceiptImage({
-      filename: `${meterName}-official-receipt.png`,
-      title: "Official Receipt",
+      filename: `${meterName}-consumption-receipt.png`,
+      title: "Consumption Receipt",
       lines: [
         ["Meter Name", meterName],
         ["Run Date", runDate],
@@ -50,7 +67,7 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
         ["Total Bill Sum", `₱${finalTotalBill.toFixed(2)}`],
       ],
     });
-    toast.success("Receipt downloaded", `${meterName}-official-receipt.png was saved.`);
+    toast.success("Receipt downloaded", `${meterName}-consumption-receipt.png was saved.`);
   };
 
   const handlePrint = () => {
@@ -61,7 +78,7 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
   return (
     <Modal
       closeButtonProps={{ "data-testid": "close-modal" }}
-      closeLabel="Close official receipt"
+      closeLabel="Close consumption receipt"
       eyebrow="Sucol Water System"
       headerActions={
         <>
@@ -83,7 +100,7 @@ export default function OfficialReceiptModal({ isOpen, receiptData, onClose }) {
       onClose={onClose}
       overlayProps={{ "data-print-document-overlay": true, "data-testid": "receipt-modal" }}
       panelProps={{ "data-printable-document": true }}
-      title="Official receipt"
+      title="Consumption receipt"
     >
       <>
         <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[0.8fr_1.2fr]">

@@ -10,7 +10,9 @@ import {
   getPurokYearlyHistory,
   getYearlyHistory,
   listAllConsumptionReadings,
+  listConsumptionRecordingContexts,
   listConsumerConsumption,
+  showConsumptionRecordingContext,
 } from "../controllers/consumptionControllers.js";
 import {
   authenticate,
@@ -25,6 +27,16 @@ router.get(
   "/admin/readings",
   authorizeRoles("admin"),
   listAllConsumptionReadings,
+);
+router.get(
+  "/readings/contexts",
+  authorizeRoles("meter-reader"),
+  listConsumptionRecordingContexts,
+);
+router.get(
+  "/readings/context/:consumerId",
+  authorizeRoles("meter-reader"),
+  showConsumptionRecordingContext,
 );
 router.get(
   "/readings",

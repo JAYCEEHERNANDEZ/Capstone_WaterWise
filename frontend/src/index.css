@@ -211,16 +211,32 @@
 @keyframes waterwise-toast-enter {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translate3d(0, -12px, 0) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 .ww-toast-enter {
-  animation: waterwise-toast-enter 180ms ease-out;
+  animation: waterwise-toast-enter 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes waterwise-toast-exit {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0) scale(0.98);
+  }
+}
+
+.ww-toast-exit {
+  animation: waterwise-toast-exit 240ms cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
 }
 
 @media (display-mode: standalone) {
