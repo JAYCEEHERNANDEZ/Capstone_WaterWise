@@ -1,14 +1,15 @@
 import { BarChart3, Droplets } from "lucide-react";
 import { useMemo } from "react";
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import ChartTooltip from "./ChartTooltip";
 
 const shortMonthFormatter = new Intl.DateTimeFormat("en-PH", {
   month: "short",
@@ -42,21 +43,19 @@ function normalizeTrendRecord(record) {
 }
 
 function UsageTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const record = payload[0].payload;
-
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-raised">
-      <p className="text-sm font-bold text-navy-900">{record.month}</p>
-      <p className="mt-1 font-mono text-sm font-bold text-water-700">
-        {record.consumption.toLocaleString("en-US", { maximumFractionDigits: 1 })} m³ used
-      </p>
-      {typeof record.previousReading === "number" && typeof record.currentReading === "number" && (
-        <p className="mt-1 text-xs text-slate-500">
-          Meter: {record.previousReading.toLocaleString()} to {record.currentReading.toLocaleString()} m³
-        </p>
-      )}
-    </div>
+    <ChartTooltip
+      active={active}
+      labelFormatter={(_, record) => record.month}
+      payload={payload}
+      supportingFormatter={(record) =>
+        typeof record.previousReading === "number" && typeof record.currentReading === "number"
+          ? `Meter: ${record.previousReading.toLocaleString()} to ${record.currentReading.toLocaleString()} m³`
+          : null
+      }
+      valueFormatter={(amount) => Number(amount).toLocaleString("en-PH", { maximumFractionDigits: 1 })}
+      valueLabel="used"
+    />
   );
 }
 
@@ -81,7 +80,7 @@ export default function ConsumptionTrendGraph({ periodLabel = "Selected period",
       <header className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Usage trend</p>
-          <h2 className="mt-1 text-xl font-extrabold tracking-tight text-navy-900 sm:text-2xl">Monthly consumption</h2>
+          <h2 className="mt-1 text-xl font-extrabold tracking-tight text-navy-900 sm:text-2xl">Monthly Consumption</h2>
           {!normalizedData.length && (
             <p className="mt-1.5 text-sm leading-6 text-slate-600">
               No meter readings are available for this period yet.
@@ -103,7 +102,13 @@ export default function ConsumptionTrendGraph({ periodLabel = "Selected period",
             role="img"
           >
             <ResponsiveContainer height="100%" width="100%">
-              <LineChart accessibilityLayer data={normalizedData} margin={{ bottom: 4, left: 0, right: 12, top: 12 }}>
+              <AreaChart accessibilityLayer data={normalizedData} margin={{ bottom: 4, left: 0, right: 12, top: 12 }}>
+                <defs>
+                  <linearGradient id="consumerUsageFill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#0284C7" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="#0284C7" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid stroke="#DCE5EA" strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="axisLabel"
@@ -119,18 +124,19 @@ export default function ConsumptionTrendGraph({ periodLabel = "Selected period",
                   tickLine={false}
                   width={42}
                 />
-                <Tooltip content={<UsageTooltip />} />
-                <Line
-                  activeDot={{ fill: "#07968F", r: 6, stroke: "#FFFFFF", strokeWidth: 2 }}
+                <Tooltip content={<UsageTooltip />} cursor={{ stroke: "#94A3B8", strokeWidth: 1 }} />
+                <Area
+                  activeDot={{ fill: "#0284C7", r: 6, stroke: "#FFFFFF", strokeWidth: 2 }}
                   dataKey="consumption"
-                  dot={{ fill: "#07968F", r: 3.5, stroke: "#FFFFFF", strokeWidth: 2 }}
+                  dot={{ fill: "#FFFFFF", r: 3.5, stroke: "#0284C7", strokeWidth: 2 }}
+                  fill="url(#consumerUsageFill)"
                   name="Water used"
                   isAnimationActive={false}
-                  stroke="#07968F"
-                  strokeWidth={3}
-                  type="monotone"
+                  stroke="#0284C7"
+                  strokeWidth={2.5}
+                  type="linear"
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
 

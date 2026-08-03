@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 import {
+  Area,
+  AreaChart,
   ResponsiveContainer,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -17,29 +18,12 @@ import {
   fetchOverallYearlyPrediction,
 } from "../services/consumptionAPI";
 import LoadingSkeleton from "./LoadingSkeleton";
+import ChartTooltip from "./ChartTooltip";
 
 const formatValue = (value) =>
   Number(value || 0).toLocaleString("en-PH", {
     maximumFractionDigits: 2,
   });
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-raised">
-      <p className="mb-2 text-sm font-bold text-slate-900">{label}</p>
-
-      {payload.map((entry) => (
-        <p key={entry.dataKey} className="text-sm font-medium text-slate-600">
-          {entry.name}: {formatValue(entry.value)} m³
-        </p>
-      ))}
-    </div>
-  );
-};
 
 function YearlyConsumptionTrend() {
   const [chartData, setChartData] = useState([]);
@@ -125,8 +109,13 @@ function YearlyConsumptionTrend() {
         ? predictionYear
         : latestHistoricalYear + 1;
 
+      const connectedHistory = lastFiveYears.map((record, index) => ({
+        ...record,
+        predicted: index === lastFiveYears.length - 1 ? record.consumption : null,
+      }));
+
       const finalData = [
-        ...lastFiveYears,
+        ...connectedHistory,
         {
           year: String(finalPredictionYear),
           consumption: null,
@@ -168,7 +157,7 @@ function YearlyConsumptionTrend() {
           </p>
 
           <h2 className="mt-1 text-xl font-extrabold tracking-tight text-navy-900">
-            Yearly consumption trend
+            Yearly Consumption Trend
           </h2>
 
           <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -205,7 +194,7 @@ function YearlyConsumptionTrend() {
       {!loading && !error && chartData.length > 0 && (
         <div className="h-72 w-full sm:h-80" aria-label="Yearly historical consumption and forecast chart" role="img">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <AreaChart
               data={chartData}
               margin={{
                 top: 10,
@@ -214,9 +203,15 @@ function YearlyConsumptionTrend() {
                 bottom: 0,
               }}
             >
+              <defs>
+                <linearGradient id="yearlyTrendFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#0284C7" stopOpacity={0.16} />
+                  <stop offset="100%" stopColor="#0284C7" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
               <CartesianGrid
-                stroke="#e2e8f0"
-                strokeDasharray="4 4"
+                stroke="#DCE5EA"
+                strokeDasharray="3 3"
                 vertical={false}
               />
 
@@ -243,7 +238,7 @@ function YearlyConsumptionTrend() {
                 width={60}
               />
 
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<ChartTooltip valueFormatter={formatValue} />} cursor={{ stroke: "#94A3B8", strokeWidth: 1 }} />
 
               <Legend
                 wrapperStyle={{
@@ -252,16 +247,17 @@ function YearlyConsumptionTrend() {
                 }}
               />
 
-              <Line
-                type="monotone"
+              <Area
+                type="linear"
                 dataKey="consumption"
                 name="Historical"
-                stroke="#07968F"
-                strokeWidth={3}
-                dot={false}
+                stroke="#0284C7"
+                strokeWidth={2.5}
+                fill="url(#yearlyTrendFill)"
+                dot={{ r: 3.5, fill: "#ffffff", stroke: "#0284C7", strokeWidth: 2 }}
                 activeDot={{
                   r: 7,
-                  fill: "#07968F",
+                  fill: "#0284C7",
                   stroke: "#ffffff",
                   strokeWidth: 3,
                 }}
@@ -269,11 +265,11 @@ function YearlyConsumptionTrend() {
               />
 
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="predicted"
                 name="Prediction"
                 stroke="#0B2B40"
-                strokeWidth={3}
+                strokeWidth={2.5}
                 strokeDasharray="8 6"
                 dot={{
                   r: 5,
@@ -289,7 +285,7 @@ function YearlyConsumptionTrend() {
                 }}
                 connectNulls={false}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
           <p className="sr-only">
             The solid teal line shows recorded yearly consumption. The dashed navy line shows the projected year.

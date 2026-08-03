@@ -14,6 +14,7 @@ import {
 } from "recharts";
 
 import { fetchAllPuroksMonthlyHistory } from "../services/consumptionAPI";
+import ChartTooltip from "./ChartTooltip";
 import LoadingSkeleton from "./LoadingSkeleton";
 
 const DEFAULT_PUROKS = [
@@ -41,12 +42,12 @@ const MONTHS = [
 ];
 
 const BAR_COLORS = [
-  "#07968F",
-  "#07968F",
-  "#07968F",
-  "#07968F",
-  "#07968F",
-  "#07968F",
+  "#0284C7",
+  "#0284C7",
+  "#0284C7",
+  "#0284C7",
+  "#0284C7",
+  "#0284C7",
 ];
 
 const formatValue = (value) =>
@@ -80,29 +81,20 @@ const formatMonth = (month) => {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  const record = payload[0]?.payload;
-
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-raised">
-      <p className="font-bold text-slate-900">{label}</p>
-
-      <p className="mt-1 text-sm text-slate-600">
-        {formatValue(record?.consumption)} m³
-      </p>
-
-      <p className="mt-1 text-xs text-slate-400">
-        {record?.month} {record?.year}
-      </p>
-    </div>
+    <ChartTooltip
+      active={active}
+      label={label}
+      payload={payload}
+      supportingFormatter={(record) => `${record.month} ${record.year}`}
+      valueFormatter={formatValue}
+      valueLabel="consumption"
+    />
   );
 };
 
 function PurokComparisonChart({
-  title = "Latest consumption by purok",
+  title = "Latest Consumption By Purok",
   graphTitle = "Recorded monthly consumption",
 }) {
   const [chartData, setChartData] = useState([]);
@@ -313,8 +305,8 @@ function PurokComparisonChart({
               }}
             >
               <CartesianGrid
-                stroke="#e2e8f0"
-                strokeDasharray="4 4"
+                stroke="#DCE5EA"
+                strokeDasharray="3 3"
                 vertical={false}
               />
 
@@ -343,15 +335,18 @@ function PurokComparisonChart({
               <Tooltip
                 content={<CustomTooltip />}
                 cursor={{
-                  fill: "#f1f5f9",
+                  fill: "#F0FAF8",
                 }}
               />
 
               <Bar
+                activeBar={{ fill: "#0369A1", stroke: "#FFFFFF", strokeWidth: 2 }}
+                background={{ fill: "#F1F5F9", radius: 8 }}
                 dataKey="consumption"
+                fill="#0284C7"
                 name="Consumption"
-                radius={[8, 8, 0, 0]}
-                maxBarSize={65}
+                radius={[8, 8, 8, 8]}
+                maxBarSize={48}
               >
                 {chartData.map((item, index) => (
                   <Cell
