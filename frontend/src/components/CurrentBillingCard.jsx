@@ -1,39 +1,57 @@
-import { FiCalendar, FiFileText } from "react-icons/fi";
+import { CalendarDays, CheckCircle2, Clock3, ReceiptText } from "lucide-react";
+
+const currency = (value) =>
+  new Intl.NumberFormat("en-PH", {
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    style: "currency",
+  }).format(Number(value ?? 0));
 
 export default function CurrentBillingCard({ outstandingBalance = 0, dueDate = "" }) {
+  const paymentNeeded = Number(outstandingBalance) > 0;
+  const StatusIcon = paymentNeeded ? Clock3 : CheckCircle2;
+
   return (
     <section
-      className="ww-page-header p-5 text-white sm:p-7"
+      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6"
       data-testid="current-billing-card"
     >
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <FiFileText aria-hidden="true" className="h-4 w-4 text-water-300" />
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-water-300">
-              Amount due
-            </span>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-700">
+            <ReceiptText aria-hidden="true" className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Current billing</p>
+            <h2 className="mt-0.5 text-base font-bold text-navy-900">Amount due</h2>
           </div>
-          <h2
-            className="ww-data-value mt-3 font-mono text-4xl font-bold tracking-[-0.04em] text-white sm:text-5xl"
-            data-testid="outstanding-balance"
-          >
-            ₱{outstandingBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-          </h2>
         </div>
+        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-bold ${
+          paymentNeeded
+            ? "border-amber-200 bg-amber-50 text-amber-800"
+            : "border-emerald-200 bg-emerald-50 text-emerald-700"
+        }`}>
+          <StatusIcon aria-hidden="true" className="h-3.5 w-3.5" />
+          {paymentNeeded ? "Payment needed" : "Up to date"}
+        </span>
+      </div>
 
-        <div className="rounded-2xl border border-slate-700 bg-navy-900 p-4 sm:min-w-60">
-          <div className="flex items-center gap-2">
-            <FiCalendar aria-hidden="true" className="h-4 w-4 text-water-300" />
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-300">
-              Due date
-            </span>
-          </div>
-          <p
-            className="mt-2 text-base font-bold tracking-[-0.02em] text-white"
-            data-testid="due-date"
-          >
+      <p
+        className="mt-5 font-mono text-3xl font-extrabold tracking-tight text-navy-900 tabular-nums sm:text-4xl"
+        data-testid="outstanding-balance"
+      >
+        {currency(outstandingBalance)}
+      </p>
+
+      <div className="mt-5 flex items-start gap-3 border-t border-slate-200 pt-4">
+        <CalendarDays aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-water-700" />
+        <div>
+          <p className="text-xs font-semibold text-slate-500">Due date</p>
+          <p className="mt-1 font-mono text-sm font-bold text-navy-900 sm:text-base" data-testid="due-date">
             {dueDate || "No pending due date"}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {paymentNeeded ? "Pay on or before this date to keep your account current." : "You have no outstanding water bill balance."}
           </p>
         </div>
       </div>

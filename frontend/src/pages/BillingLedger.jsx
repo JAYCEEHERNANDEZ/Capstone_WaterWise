@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import BillingHistoryTable from "../components/BillingHistoryTable";
 import ConsumptionReceiptModal from "../components/ConsumptionReceiptModal";
 import CurrentBillingCard from "../components/CurrentBillingCard";
+import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageHeader from "../components/PageHeader";
 import PaymentReceiptModal from "../components/PaymentReceiptModal";
@@ -55,6 +56,9 @@ export default function BillingLedger({
   const usesApi = historyDataProp === undefined;
   const [ledger, setLedger] = useState(null);
   const [error, setError] = useState("");
+  const [periodFilter, setPeriodFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [receiptError, setReceiptError] = useState("");
 
   useEffect(() => {
     if (!usesApi) return undefined;
@@ -76,9 +80,15 @@ export default function BillingLedger({
   const requestedView = searchParams.get("view");
   const selectedBill = historyData.find((record) => record.id === requestedBillingId);
   const selectedPayment = ledger?.payments?.find((record) => record.id === requestedPaymentId);
-  const displayedHistoryData = selectedBill
-    ? [selectedBill, ...historyData.filter((record) => record.id !== selectedBill.id)]
-    : historyData;
+  const periodOptions = [...new Set(historyData.map((record) => record.billingPeriod))];
+  const hasActiveFilters = periodFilter !== "all" || statusFilter !== "all";
+  const filteredHistoryData = historyData.filter((record) =>
+    (periodFilter === "all" || record.billingPeriod === periodFilter) &&
+    (statusFilter === "all" || record.status === statusFilter),
+  );
+  const displayedHistoryData = selectedBill && filteredHistoryData.includes(selectedBill)
+    ? [selectedBill, ...filteredHistoryData.filter((record) => record.id !== selectedBill.id)]
+    : filteredHistoryData;
   const selectedConsumptionReceipt = consumptionReceipt(
     selectedBill,
     ledgerAccount?.name,
@@ -99,6 +109,27 @@ export default function BillingLedger({
     nextParams.delete("view");
     nextParams.delete("paymentId");
     setSearchParams(nextParams, { replace: true });
+  };
+
+  const openReceipt = (bill) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("billingId", String(bill.id));
+    setReceiptError("");
+
+    if (bill.status === "Paid") {
+      const payment = ledger?.payments?.find((record) => record.billingId === bill.id);
+      if (!payment) {
+        setReceiptError("The payment receipt for this paid bill is unavailable.");
+        return;
+      }
+      nextParams.set("paymentId", String(payment.id));
+      nextParams.set("view", "payment-receipt");
+    } else {
+      nextParams.delete("paymentId");
+      nextParams.set("view", "consumption-receipt");
+    }
+
+    setSearchParams(nextParams);
   };
 
   if (error) {
@@ -128,8 +159,8 @@ export default function BillingLedger({
         outstandingBalance={ledgerAccount.outstandingBalance}
       />
 
-      <section className="ww-glass-strong rounded-2xl p-4 sm:p-6" id="consumer-billing-history">
-        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="space-y-4" id="consumer-billing-history">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
               Your records
@@ -137,12 +168,61 @@ export default function BillingLedger({
             <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900 sm:text-2xl">
               Bill history
             </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Showing {displayedHistoryData.length} of {historyData.length} bill{historyData.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
+            <Filter
+              ariaLabel="Filter bills by billing period"
+              className="w-full sm:w-52"
+              onValueChange={setPeriodFilter}
+              options={[
+                { label: "All billing periods", value: "all" },
+                ...periodOptions.map((period) => ({ label: period, value: period })),
+              ]}
+              value={periodFilter}
+            />
+            <Filter
+              ariaLabel="Filter bills by status"
+              className="w-full sm:w-48"
+              onValueChange={setStatusFilter}
+              options={[
+                { label: "All statuses", value: "all" },
+                { label: "Paid", value: "Paid" },
+                { label: "Partially paid", value: "Partially Paid" },
+                { label: "Unpaid", value: "Unpaid" },
+              ]}
+              value={statusFilter}
+            />
           </div>
         </div>
 
+        {hasActiveFilters && (
+          <button
+            className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-water-700 hover:bg-water-50"
+            onClick={() => {
+              setPeriodFilter("all");
+              setStatusFilter("all");
+            }}
+            type="button"
+          >
+            Clear filters
+          </button>
+        )}
+
+        {receiptError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">
+            {receiptError}
+          </div>
+        )}
+
         <BillingHistoryTable
+          emptyDescription={hasActiveFilters ? "Adjust or clear the billing period and status filters to see other records." : "Your billing records will appear here after a meter reading is recorded."}
+          emptyTitle={hasActiveFilters ? "No bills match these filters" : "No billing records"}
           historyData={displayedHistoryData}
           highlightedBillingId={requestedBillingId}
+          onViewReceipt={openReceipt}
           showConsumerDetails={false}
         />
       </section>

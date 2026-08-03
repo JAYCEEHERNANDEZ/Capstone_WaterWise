@@ -1,7 +1,7 @@
 import { apiRequest } from "./apiClient";
 import { getStoredAccount } from "./authToken";
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
+const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
   month: "long",
   timeZone: "UTC",
@@ -207,6 +207,9 @@ export async function fetchBillingLedger(options) {
     (total, record) => total + record.remainingBalance,
     0,
   );
+  const nextOutstandingBill = historyData
+    .filter((record) => record.remainingBalance > 0)
+    .sort((left, right) => String(left.dueDate).localeCompare(String(right.dueDate)))[0];
   const billsById = new Map(historyData.map((record) => [record.id, record]));
   const payments = (paymentPayload.data ?? []).map((record) => {
     const bill = billsById.get(record.billing_id);
@@ -233,9 +236,7 @@ export async function fetchBillingLedger(options) {
       accountId: `ACC-${profile.id}`,
       name: profile.full_name,
       outstandingBalance,
-      dueDate: formatDate(
-        historyData.find((record) => record.remainingBalance > 0)?.dueDate
-      ),
+      dueDate: formatDate(nextOutstandingBill?.dueDate),
     },
     officialReceipt: null,
     payments,

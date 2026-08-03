@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Clock3 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, ReceiptText } from "lucide-react";
 import Table from "./Table";
 
 function getStatusConfig(status) {
@@ -22,7 +22,14 @@ function getStatusConfig(status) {
   };
 }
 
-export default function BillingHistoryTable({ historyData = [], highlightedBillingId, showConsumerDetails = true }) {
+export default function BillingHistoryTable({
+  emptyDescription = "There are no billing records yet.",
+  emptyTitle = "No billing records",
+  highlightedBillingId,
+  historyData = [],
+  onViewReceipt,
+  showConsumerDetails = true,
+}) {
   return (
     <Table
       ariaLabel="Billing history"
@@ -40,11 +47,12 @@ export default function BillingHistoryTable({ historyData = [], highlightedBilli
         { key: "amount", label: "Total Bill", className: "text-right" },
         { key: "balance", label: "Balance", className: "text-right" },
         { key: "status", label: "Status" },
+        ...(onViewReceipt ? [{ key: "receipt", label: "Receipt", className: "text-right" }] : []),
       ]}
       data={historyData}
-      emptyDescription="There are no billing records yet."
+      emptyDescription={emptyDescription}
       emptyTestId="billing-history-empty-state"
-      emptyTitle="No billing records"
+      emptyTitle={emptyTitle}
       getRowKey={(row) => row.invoiceNumber}
       rowClassName={(row) => `grid grid-cols-2 gap-x-4 gap-y-3 p-4 text-navy-900 transition-colors md:table-row md:p-0 ${
         Number(row.id) === Number(highlightedBillingId)
@@ -52,7 +60,7 @@ export default function BillingHistoryTable({ historyData = [], highlightedBilli
           : "hover:bg-slate-50"
       }`}
       tableClassName={`block w-full text-left text-sm md:table ${
-        showConsumerDetails ? "md:min-w-[1120px]" : "md:min-w-[860px]"
+        showConsumerDetails ? "md:min-w-[1120px]" : onViewReceipt ? "md:min-w-[980px]" : "md:min-w-[860px]"
       }`}
       testId="billing-history-table"
       renderRow={(row) => {
@@ -120,6 +128,18 @@ export default function BillingHistoryTable({ historyData = [], highlightedBilli
                 {row.status}
               </span>
             </td>
+            {onViewReceipt && (
+              <td className="col-span-2 flex items-center justify-end md:table-cell md:px-4 md:py-4 md:text-right">
+                <button
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-water-700 hover:border-water-300 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 md:w-auto"
+                  onClick={() => onViewReceipt(row)}
+                  type="button"
+                >
+                  <ReceiptText aria-hidden="true" className="h-4 w-4" />
+                  View receipt
+                </button>
+              </td>
+            )}
           </>
         );
       }}

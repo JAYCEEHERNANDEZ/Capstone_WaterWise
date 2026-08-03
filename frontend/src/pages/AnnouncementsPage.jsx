@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import AnnouncementPage from "../components/AnnouncementPage";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageHeader from "../components/PageHeader";
@@ -6,6 +8,7 @@ import { isCanceledRequest } from "../services/apiClient";
 import { fetchConsumerAnnouncements } from "../services/consumerPortal.service";
 
 export default function AnnouncementsPage() {
+  const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,6 +28,14 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      <button
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-water-700 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+        onClick={() => navigate(-1)}
+        type="button"
+      >
+        <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+        Back
+      </button>
       <PageHeader
         description="Browse all official notices, service advisories, and community updates from WaterWise Administration."
         eyebrow="Community feed"

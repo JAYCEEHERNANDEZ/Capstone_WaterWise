@@ -135,10 +135,16 @@ function MetricsSkeleton() {
 function BillingSkeleton() {
   return (
     <>
-      <div className="rounded-2xl bg-navy-950 p-5 sm:p-6">
-        <SkeletonBlock className="h-3 w-36 opacity-20" />
-        <SkeletonBlock className="mt-4 h-11 w-48 opacity-20" />
-        <SkeletonBlock className="mt-6 h-16 w-full opacity-20 sm:ml-auto sm:w-60" />
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
+        <div className="flex items-center justify-between gap-4">
+          <SkeletonBlock className="h-10 w-40" />
+          <SkeletonBlock className="h-8 w-28 rounded-full" />
+        </div>
+        <SkeletonBlock className="mt-5 h-10 w-48" />
+        <div className="mt-5 border-t border-slate-200 pt-4">
+          <SkeletonBlock className="h-4 w-20" />
+          <SkeletonBlock className="mt-2 h-5 w-36" />
+        </div>
       </div>
       <TableSkeleton count={3} />
     </>
