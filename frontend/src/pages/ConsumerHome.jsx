@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AnnouncementPage from "../components/AnnouncementPage";
+import KPI from "../components/KPI";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageHeader from "../components/PageHeader";
 import { isCanceledRequest } from "../services/apiClient";
@@ -23,7 +24,7 @@ const currency = (value) =>
   }).format(Number(value ?? 0));
 
 const displayDate = (value) => value
-  ? new Intl.DateTimeFormat("en-PH", {
+  ? new Intl.DateTimeFormat("en-GB", {
       day: "numeric",
       month: "short",
       timeZone: "UTC",
@@ -38,28 +39,6 @@ const compactDate = (value) => value
       timeZone: "UTC",
     }).format(new Date(`${value}T00:00:00Z`))
   : "None";
-
-function HomeMetric({ Icon, label, meta, unit, value }) {
-  return (
-    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-5">
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-water-50 text-water-700 sm:h-10 sm:w-10 sm:rounded-xl">
-          <Icon aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
-        </span>
-        <h2 className="min-w-0 text-[11px] font-bold leading-4 text-slate-600 sm:text-sm">
-          {label}
-        </h2>
-      </div>
-      <p className="mt-3 min-w-0 font-mono text-xl font-extrabold tracking-tight text-navy-900 tabular-nums sm:mt-5 sm:text-3xl">
-        {value}
-        {unit && <span className="ml-1 text-[10px] font-bold text-slate-500 sm:text-sm">{unit}</span>}
-      </p>
-      <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500 sm:mt-2 sm:text-xs">
-        {meta}
-      </p>
-    </article>
-  );
-}
 
 function QuickLink({ description, Icon, label, to }) {
   return (
@@ -126,7 +105,7 @@ export default function ConsumerHome() {
     return (
       <div className="space-y-5 sm:space-y-6">
         {pageHeader}
-        <LoadingSkeleton label="Loading your home dashboard" variant="metrics" />
+        <LoadingSkeleton label="Loading your home dashboard" variant="home-metrics" />
         <LoadingSkeleton count={2} label="Loading community announcements" variant="list" />
       </div>
     );
@@ -142,29 +121,49 @@ export default function ConsumerHome() {
       {pageHeader}
 
       <section className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4" aria-label="Account summary">
-        <HomeMetric
-          Icon={WalletCards}
-          label="Outstanding balance"
-          meta={hasBalance ? `${home.billing.pendingCount} bill${home.billing.pendingCount === 1 ? "" : "s"} awaiting payment` : "No outstanding bills"}
+        <KPI
+          description={hasBalance ? "awaiting payment" : "account is clear"}
+          descriptionHighlight={hasBalance
+            ? `${home.billing.pendingCount} bill${home.billing.pendingCount === 1 ? "" : "s"}`
+            : "No unpaid bills"}
+          descriptionIcon={hasBalance ? ReceiptText : CheckCircle2}
+          descriptionTone={hasBalance ? "warning" : "positive"}
+          icon={WalletCards}
+          title="Outstanding balance"
           value={currency(home.billing.outstandingBalance)}
         />
-        <HomeMetric
-          Icon={Droplets}
-          label="Latest consumption"
-          meta={usageDifference == null ? "First recorded usage" : `${Math.abs(usageDifference).toFixed(1)} m³ ${usageDifference > 0 ? "higher" : usageDifference < 0 ? "lower" : "unchanged"} than last month`}
+        <KPI
+          description={usageDifference == null ? "no previous month" : usageDifference === 0 ? "from last month" : "than last month"}
+          descriptionHighlight={usageDifference == null ? "First reading" : undefined}
+          descriptionIcon={usageDifference == null ? Droplets : undefined}
+          icon={Droplets}
+          title="Latest consumption"
+          trend={usageDifference == null
+            ? undefined
+            : usageDifference === 0
+              ? "No change"
+              : `${Math.abs(usageDifference).toFixed(1)} m³ ${usageDifference > 0 ? "higher" : "lower"}`}
+          trendDirection={usageDifference > 0 ? "up" : usageDifference < 0 ? "down" : "neutral"}
+          trendTone={usageDifference > 0 ? "warning" : usageDifference < 0 ? "positive" : "neutral"}
           unit="m³"
           value={home.reading.latestUsage.toFixed(1)}
         />
-        <HomeMetric
-          Icon={CalendarClock}
-          label="Next due date"
-          meta={home.billing.nextDueDate ? `${String(home.billing.nextDueDate).slice(0, 4)} · Payment deadline` : "Account is currently clear"}
+        <KPI
+          description={home.billing.nextDueDate ? "payment deadline" : "account is clear"}
+          descriptionHighlight={home.billing.nextDueDate ? displayDate(home.billing.nextDueDate) : "No due date"}
+          descriptionIcon={home.billing.nextDueDate ? CalendarClock : CheckCircle2}
+          descriptionTone={home.billing.nextDueDate ? "warning" : "positive"}
+          icon={CalendarClock}
+          title="Next due date"
           value={compactDate(home.billing.nextDueDate)}
         />
-        <HomeMetric
-          Icon={Gauge}
-          label="Current meter reading"
-          meta={home.reading.latestDate ? `Recorded ${compactDate(home.reading.latestDate)}` : "No meter reading yet"}
+        <KPI
+          description={home.reading.latestDate ? "recorded" : undefined}
+          descriptionHighlight={home.reading.latestDate ? displayDate(home.reading.latestDate) : "No reading yet"}
+          descriptionIcon={home.reading.latestDate ? CalendarClock : Gauge}
+          descriptionTone={home.reading.latestDate ? "water" : "neutral"}
+          icon={Gauge}
+          title="Current meter reading"
           unit="m³"
           value={home.reading.currentReading.toFixed(1)}
         />

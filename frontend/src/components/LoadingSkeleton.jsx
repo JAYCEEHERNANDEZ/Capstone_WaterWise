@@ -150,6 +150,23 @@ function MetricsSkeleton() {
   );
 }
 
+function HomeMetricsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
+      {Array.from({ length: 4 }, (_, index) => (
+        <div className="flex min-h-36 flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:min-h-44 sm:p-5" key={index}>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <SkeletonBlock className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" />
+            <SkeletonBlock className="h-3 w-24 max-w-[60%]" />
+          </div>
+          <SkeletonBlock className="mt-5 h-8 w-28 max-w-full" />
+          <SkeletonBlock className="mt-auto h-6 w-36 max-w-full rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function BillingSkeleton() {
   return (
     <>
@@ -212,6 +229,7 @@ export default function LoadingSkeleton({ className = "", count = 3, label = "Lo
       {variant === "chart-panel" && <ChartSkeleton />}
       {variant === "inline" && <InlineSkeleton />}
       {variant === "list" && <ListSkeleton count={count} />}
+      {variant === "home-metrics" && <HomeMetricsSkeleton />}
       {variant === "notifications" && <ListSkeleton count={count} />}
       {variant === "profile" && <ProfileSkeleton />}
       {variant === "table" && <TableSkeleton count={count} />}

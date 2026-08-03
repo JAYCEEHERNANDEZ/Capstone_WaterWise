@@ -1,25 +1,8 @@
-import { Droplets, Gauge, Sigma, TrendingUp } from "lucide-react";
+import { CalendarDays, Droplets, Gauge, Sigma, TrendingUp } from "lucide-react";
+import KPI from "./KPI";
 
 const number = (value) =>
   Number(value ?? 0).toLocaleString("en-US", { maximumFractionDigits: 1 });
-
-function SummaryCard({ Icon, description, label, testId, unit = "m³", value }) {
-  return (
-    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-5">
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-700 sm:h-10 sm:w-10">
-          <Icon aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
-        </span>
-        <h2 className="min-w-0 text-xs font-bold leading-4 text-slate-600 sm:text-sm">{label}</h2>
-      </div>
-      <p className="mt-3 font-mono text-xl font-extrabold tracking-tight text-navy-900 tabular-nums sm:mt-5 sm:text-3xl" data-testid={testId}>
-        {value}
-        {unit && <span className="ml-1 text-[10px] font-bold text-slate-500 sm:text-sm">{unit}</span>}
-      </p>
-      <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500 sm:mt-2 sm:text-xs">{description}</p>
-    </article>
-  );
-}
 
 export default function AnalyticsSummaryGrid({ consumptionHistory = [] }) {
   const totalConsumption = consumptionHistory.reduce(
@@ -42,33 +25,43 @@ export default function AnalyticsSummaryGrid({ consumptionHistory = [] }) {
       className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4"
       data-testid={consumptionHistory.length ? "analytics-grid" : "analytics-empty"}
     >
-      <SummaryCard
-        Icon={Droplets}
-        description={latestRecord?.month ?? "No recorded month"}
-        label="Latest water use"
-        testId="stat-latest"
+      <KPI
+        description="latest recorded month"
+        descriptionHighlight={latestRecord?.month ?? "No recorded month"}
+        descriptionIcon={CalendarDays}
+        icon={Droplets}
+        title="Latest water use"
+        unit="m³"
         value={number(latestRecord?.volume)}
+        valueTestId="stat-latest"
       />
-      <SummaryCard
-        Icon={Gauge}
-        description="Typical use per recorded month"
-        label="Monthly average"
-        testId="stat-avg"
+      <KPI
+        description="used to calculate the average"
+        descriptionHighlight={`${consumptionHistory.length} recorded month${consumptionHistory.length === 1 ? "" : "s"}`}
+        icon={Gauge}
+        title="Monthly average"
+        unit="m³"
         value={number(averageUsage)}
+        valueTestId="stat-avg"
       />
-      <SummaryCard
-        Icon={Sigma}
-        description={`${consumptionHistory.length} recorded month${consumptionHistory.length === 1 ? "" : "s"}`}
-        label="Total for period"
-        testId="stat-total"
+      <KPI
+        description="included in this period"
+        descriptionHighlight={`${consumptionHistory.length} recorded month${consumptionHistory.length === 1 ? "" : "s"}`}
+        icon={Sigma}
+        title="Total for period"
+        unit="m³"
         value={number(totalConsumption)}
+        valueTestId="stat-total"
       />
-      <SummaryCard
-        Icon={TrendingUp}
-        description={highestRecord?.month ?? "No recorded month"}
-        label="Highest-use month"
-        testId="stat-highest"
-        value={number(highestRecord?.volume)}
+      <KPI
+        description="water used"
+        descriptionHighlight={`${number(highestRecord?.volume)} m³`}
+        descriptionIcon={Droplets}
+        descriptionTone="warning"
+        icon={TrendingUp}
+        title="Highest-use month"
+        value={highestRecord?.month ?? "No recorded month"}
+        valueTestId="stat-highest"
       />
     </section>
   );
