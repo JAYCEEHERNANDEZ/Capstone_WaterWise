@@ -295,12 +295,15 @@ export default function AppLayout({ children }) {
           content reserves space for the persistent bottom navigation. */}
       <div className="w-full lg:flex">
         <Sidebar
+          accountName={accountName || activeRoleConfig.userName}
           activeRoleLabel={activeRoleConfig.label}
           items={activeRoleConfig.links}
+          onLogout={handleLogout}
+          onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : undefined}
         />
 
         <main
-          className="ww-workspace min-w-0 flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+          className="ww-workspace min-w-0 flex-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-0"
           id="main-content"
         >
           <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8 lg:py-6">

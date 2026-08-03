@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, FileText } from "lucide-react";
+import { CalendarDays, CheckCircle2, FileText } from "lucide-react";
+import KPI from "./KPI";
 import LoadingSkeleton from "./LoadingSkeleton";
 import Modal from "./Modal";
 import { fetchReportDetails } from "../services/reportAPI";
@@ -51,16 +52,16 @@ export default function ReportDetailsModal({ onClose, reportId }) {
           {report && (
             <div className="space-y-6">
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-semibold text-slate-500">Period</p><p className="mt-1 font-mono text-sm font-bold tabular-nums text-navy-900">{report.start_date}<br />{report.end_date}</p></div>
-                <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-semibold text-slate-500">Records</p><p className="mt-1 font-mono text-xl font-extrabold tabular-nums text-navy-900">{report.record_count.toLocaleString()}</p></div>
-                <div className="rounded-xl bg-emerald-50 p-4"><p className="text-xs font-semibold text-emerald-700">Status</p><p className="mt-1 inline-flex items-center gap-1.5 font-bold text-emerald-800"><CheckCircle2 aria-hidden="true" className="h-4 w-4" />{report.status}</p></div>
+                <KPI className="shadow-none sm:p-4" description="report coverage" icon={CalendarDays} title="Period" value={`${report.start_date} – ${report.end_date}`} />
+                <KPI className="shadow-none sm:p-4" description="included source records" icon={FileText} title="Records" value={report.record_count.toLocaleString()} />
+                <KPI className="shadow-none sm:p-4" description="report generation status" icon={CheckCircle2} title="Status" value={report.status} />
               </div>
 
               <section>
                 <h3 className="font-extrabold text-navy-900">Included summary</h3>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   {Object.entries(report.report_data?.summary ?? {}).map(([key, value]) => (
-                    <div className="rounded-xl border border-slate-200 p-3" key={key}><p className="text-xs font-semibold text-slate-500">{metricLabel(key)}</p><p className="mt-1 font-mono text-lg font-extrabold tabular-nums text-navy-900">{metricValue(key, value)}</p></div>
+                    <KPI className="shadow-none sm:p-4" icon={FileText} key={key} title={metricLabel(key)} value={metricValue(key, value)} />
                   ))}
                 </div>
               </section>

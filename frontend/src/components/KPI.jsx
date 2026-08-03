@@ -57,11 +57,14 @@ function DescriptionText({ children }) {
 
 /** Shared responsive KPI card for summary grids across WaterWise. */
 export default function KPI({
+  cardTestId,
   className = "",
   description,
   descriptionHighlight,
+  descriptionHighlightTestId,
   descriptionIcon: DescriptionIcon,
   descriptionTone = "water",
+  headerAction,
   icon: Icon,
   menuLabel,
   onMenu,
@@ -87,7 +90,7 @@ export default function KPI({
       : trendTone;
 
   return (
-    <article className={`flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-5 ${className}`.trim()}>
+    <article className={`flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-5 ${className}`.trim()} data-testid={cardTestId}>
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         {Icon ? (
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-water-50 text-water-700 sm:h-10 sm:w-10 sm:rounded-xl">
@@ -97,6 +100,7 @@ export default function KPI({
         <h2 className="min-w-0 flex-1 text-[11px] font-bold leading-4 text-slate-600 sm:text-sm">
           {title}
         </h2>
+        {headerAction}
         {onMenu ? (
           <button
             aria-label={menuLabel ?? `More options for ${title}`}
@@ -119,7 +123,7 @@ export default function KPI({
           {supportingValue ? (
             <span className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-1 font-bold ring-1 ring-inset ${supportingToneStyles[resolvedTone] ?? supportingToneStyles.water}`}>
               {SupportingIcon ? <SupportingIcon aria-hidden="true" className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> : null}
-              <span className="truncate">{supportingValue}</span>
+              <span className="truncate" data-testid={descriptionHighlightTestId}>{supportingValue}</span>
             </span>
           ) : null}
           {description ? (

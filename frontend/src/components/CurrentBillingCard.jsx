@@ -37,7 +37,7 @@ export default function CurrentBillingCard({ outstandingBalance = 0, dueDate = "
       </div>
 
       <p
-        className="mt-5 font-mono text-3xl font-extrabold tracking-tight text-navy-900 tabular-nums sm:text-4xl"
+        className="mt-5 font-sans text-3xl font-extrabold tracking-tight text-navy-900 tabular-nums sm:text-4xl"
         data-testid="outstanding-balance"
       >
         {currency(outstandingBalance)}

@@ -1,37 +1,37 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, CalendarDays, Droplets } from "lucide-react";
 import { fetchMonthlyHistory, fetchYearlyHistory } from "../services/consumptionAPI";
+import KPI from "./KPI";
 import LoadingSkeleton from "./LoadingSkeleton";
 
 const unwrap = (response) => response?.data?.data ?? response?.data ?? response ?? [];
 const consumptionValue = (record) => Number(record?.consumption ?? record?.totalConsumption ?? record?.total_consumption ?? record?.value ?? 0);
 
-function HistoryKpi({ Icon, accent, label, records, periodKey, compact }) {
+function HistoryKpi({ Icon, label, records, periodKey, compact }) {
   const latest = records.at(-1);
   return (
-    <article className={`relative overflow-hidden rounded-2xl bg-navy-950 p-5 text-white shadow-card ${compact ? "h-48" : "h-56"}`}>
-      <div className="relative flex h-full flex-col">
-        <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${accent}`}><Icon className="h-6 w-6" /></span>
-        <p className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-water-300">{label}</p>
-        <div className="mt-2 flex items-end gap-1">
-          <strong className="text-3xl font-extrabold tracking-tight">{consumptionValue(latest).toLocaleString("en-PH", { maximumFractionDigits: 2 })}</strong>
-          <span className="mb-1 text-xs font-semibold text-slate-300">m³</span>
-        </div>
-        <p className="mt-2 text-xs leading-5 text-slate-300">Latest recorded period: {latest?.[periodKey] ?? "No records"}</p>
-      </div>
-    </article>
+    <KPI
+      className={compact ? "h-48" : "h-56"}
+      description="latest recorded period"
+      descriptionHighlight={latest?.[periodKey] ?? "No records"}
+      descriptionIcon={CalendarDays}
+      icon={Icon}
+      title={label}
+      unit="m³"
+      value={consumptionValue(latest).toLocaleString("en-PH", { maximumFractionDigits: 2 })}
+    />
   );
 }
 
 function HistoryKpiSkeleton({ Icon, label, compact }) {
   return (
-    <article className={`relative overflow-hidden rounded-2xl bg-navy-950 p-5 text-white shadow-card ${compact ? "h-48" : "h-56"}`}>
+    <article className={`relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-card ${compact ? "h-48" : "h-56"}`}>
       <div className="relative flex h-full flex-col">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-water-900 text-water-300">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-water-50 text-water-700">
           <Icon aria-hidden="true" className="h-6 w-6" />
         </span>
-        <p className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-water-300">{label}</p>
-        <LoadingSkeleton className="mt-3 opacity-30" label={`Loading ${label.toLowerCase()}`} variant="inline" />
+        <p className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-600">{label}</p>
+        <LoadingSkeleton className="mt-3" label={`Loading ${label.toLowerCase()}`} variant="inline" />
       </div>
     </article>
   );
@@ -74,8 +74,8 @@ export default function HistoricalConsumptionSummary({ className = "grid gap-5 m
 
   return (
     <div className={className}>
-      <HistoryKpi compact={compact} Icon={Droplets} accent="bg-water-900 text-water-300" label="Monthly consumption" periodKey="month" records={monthly} />
-      <HistoryKpi compact={compact} Icon={CalendarDays} accent="bg-water-900 text-water-300" label="Yearly consumption" periodKey="year" records={yearly} />
+      <HistoryKpi compact={compact} Icon={Droplets} label="Monthly consumption" periodKey="month" records={monthly} />
+      <HistoryKpi compact={compact} Icon={CalendarDays} label="Yearly consumption" periodKey="year" records={yearly} />
     </div>
   );
 }
