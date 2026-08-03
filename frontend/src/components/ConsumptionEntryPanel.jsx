@@ -80,7 +80,7 @@ export default function ConsumptionEntryPanel({ consumer, onCancel, onSave, savi
       <div className="flex items-start gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-100 text-water-700"><Gauge aria-hidden="true" className="h-5 w-5" /></span>
         <div>
-          <p className="ww-eyebrow !text-water-700">Step 2 of 2</p>
+          <p className="ww-eyebrow !text-water-700">{isReviewing ? "Step 3 of 3" : "Step 2 of 3"}</p>
           <h3 className="mt-1 text-xl font-extrabold text-navy-900">{isReviewing ? "Review before recording" : "Enter the cumulative reading"}</h3>
           <p className="mt-1 text-sm leading-6 text-slate-600">{isReviewing ? "Confirm the meter values below." : "Type the exact value displayed on the resident’s meter."}</p>
         </div>
@@ -119,7 +119,6 @@ export default function ConsumptionEntryPanel({ consumer, onCancel, onSave, savi
       ) : (
         <div className="mt-5">
           <dl className="grid gap-3 sm:grid-cols-3">{reviewItems.map(([label, value]) => <SummaryItem key={label} label={label} value={value} />)}</dl>
-          <div className="mt-4 flex items-start gap-3 rounded-xl border border-water-100 bg-water-50 p-4"><CalendarClock aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-water-700" /><p className="text-sm leading-6 text-slate-600"><strong className="text-navy-900">Timestamp:</strong> Automatically added when this reading is recorded.</p></div>
           {showsAnomaly && <label className="mt-4 flex cursor-pointer gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"><input checked={anomalyAcknowledged} className="mt-1 h-5 w-5 accent-water-600" onChange={(event) => setAnomalyAcknowledged(event.target.checked)} type="checkbox" /><span><span className="flex items-center gap-2 text-sm font-bold text-amber-700"><AlertTriangle aria-hidden="true" className="h-4 w-4" /> Unusual consumption</span><span className="mt-1 block text-sm leading-6 text-slate-600">This usage is much higher than the resident’s recent consumption. I checked the meter and confirm it is correct.</span></span></label>}
           {error && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700" role="alert">{error}</p>}
           <div className="mt-5 grid gap-2 border-t border-slate-200 pt-4 sm:grid-cols-[1fr_auto_auto] sm:items-center">

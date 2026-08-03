@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ConsumerSelectionList from "../components/ConsumerSelectionList";
 import ConsumptionEntryPanel from "../components/ConsumptionEntryPanel";
+import Filter from "../components/Filter";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import Modal from "../components/Modal";
 import ConsumptionReceiptModal from "../components/ConsumptionReceiptModal";
 import PageHeader from "../components/PageHeader";
+import Search from "../components/Search";
 import { useToast } from "../components/Toast";
 import { createMeterReading, fetchRecordingContext, fetchRecordingContexts } from "../services/meterReadingAPI";
 
@@ -52,6 +54,7 @@ export default function RecordConsumptionPage() {
   const [consumers, setConsumers] = useState([]);
   const [selectedConsumer, setSelectedConsumer] = useState(null);
   const [query, setQuery] = useState("");
+  const [purok, setPurok] = useState("all");
   const [loading, setLoading] = useState(true);
   const [selectingId, setSelectingId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -88,8 +91,20 @@ export default function RecordConsumptionPage() {
 
   const visibleConsumers = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return consumers.filter((consumer) => !term || [consumer.consumerName, consumer.consumerNo, consumer.purok].some((value) => String(value).toLowerCase().includes(term)));
-  }, [consumers, query]);
+    return consumers.filter((consumer) => {
+      const matchesSearch = !term || [consumer.consumerName, consumer.consumerNo, consumer.purok]
+        .some((value) => String(value).toLowerCase().includes(term));
+      const matchesPurok = purok === "all" || consumer.purok === purok;
+      return matchesSearch && matchesPurok;
+    });
+  }, [consumers, purok, query]);
+
+  const purokOptions = useMemo(() => [
+    { label: "All puroks", value: "all" },
+    ...[...new Set(consumers.map((consumer) => consumer.purok).filter((value) => value !== "Unassigned"))]
+      .sort((left, right) => Number(left.replace(/\D/g, "")) - Number(right.replace(/\D/g, "")))
+      .map((value) => ({ label: value, value })),
+  ], [consumers]);
 
   const selectConsumer = async (consumer) => {
     const expectsReceipt = consumer.hasReadingInSelectedMonth;
@@ -184,9 +199,13 @@ export default function RecordConsumptionPage() {
     <main className="space-y-6">
       <PageHeader description="Select a resident and type the cumulative meter value." eyebrow="Field workspace" title="Record a meter reading" />
       {loadError && <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><span>{loadError}</span><button className="font-bold underline" onClick={loadData} type="button">Try again</button></div>}
-      {loading ? <LoadingSkeleton label="Loading residents and reading status" variant="list" /> : <ConsumerSelectionList consumers={visibleConsumers} onSelect={selectConsumer} query={query} selectedId={selectedConsumer?.id} selectingId={selectingId} setQuery={setQuery} />}
+      <div aria-label="Resident directory controls" className="flex flex-col gap-3 sm:flex-row sm:items-center" role="search">
+        <Search ariaLabel="Search residents by name, account number, or purok" className="flex-1" onValueChange={setQuery} placeholder="Search name, account number, or purok" value={query} />
+        <Filter ariaLabel="Filter residents by purok" className="w-full sm:w-48" disabled={loading} onValueChange={setPurok} options={purokOptions} value={purok} />
+      </div>
+      {loading ? <LoadingSkeleton label="Loading residents and reading status" variant="list" /> : <ConsumerSelectionList consumers={visibleConsumers} emptyDescription={consumers.length ? "Try a different search or choose another purok." : undefined} emptyTitle={consumers.length ? "No matching residents" : undefined} onSelect={selectConsumer} selectedId={selectedConsumer?.id} selectingId={selectingId} />}
 
-      <Modal closeLabel="Close meter reading form" description={selectedConsumer ? `${selectedConsumer.consumerName} · ${selectedConsumer.purok}` : undefined} dismissible={!saving} eyebrow="Field operations" isOpen={Boolean(selectedConsumer)} onClose={closeEntry} showCloseButton size="md" title="Record meter reading">
+      <Modal closeLabel="Close meter reading form" description={selectedConsumer ? `${selectedConsumer.consumerName} · ${selectedConsumer.purok}` : undefined} dismissible={!saving} eyebrow="Field operations" isOpen={Boolean(selectedConsumer)} onClose={closeEntry} showCloseButton={false} size="md" title="Record meter reading">
         {saveError && <div className="mx-5 mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:mx-6" role="alert">{saveError}</div>}
         <ConsumptionEntryPanel consumer={selectedConsumer} key={`${selectedConsumer?.id}-${selectedConsumer?.latestReadingId ?? "new"}`} onCancel={closeEntry} onSave={saveReading} saving={saving} />
       </Modal>

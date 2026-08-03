@@ -313,6 +313,7 @@ const buildReadingContext = (consumer, records, billings, readingDate) => {
   const selectedMonthBilling = selectedMonthReading
     ? billingByConsumption.get(selectedMonthReading.id) ?? null
     : null;
+  const latestBilling = latest ? billingByConsumption.get(latest.id) ?? null : null;
   const arrears = calculateArrears(billings, selectedMonthBilling?.id, readingDate);
   const recentConsumptions = records
     .slice(0, 3)
@@ -347,7 +348,7 @@ const buildReadingContext = (consumer, records, billings, readingDate) => {
     has_previous_record: Boolean(latest),
     latest_reading_id: latest?.id ?? null,
     latest_reading_date: latest?.reading_date ?? null,
-    latest_created_at: latest?.created_at ?? null,
+    latest_created_at: latest?.created_at ?? latestBilling?.created_at ?? null,
     latest_previous_reading: latest ? Number(latest.previous_reading) : null,
     latest_present_reading: latest ? Number(latest.present_reading) : null,
     latest_consumption: latest ? Number(latest.consumption) : null,
@@ -360,7 +361,7 @@ const buildReadingContext = (consumer, records, billings, readingDate) => {
     current_month_receipt: selectedMonthReading ? {
       reading_id: selectedMonthReading.id,
       reading_date: selectedMonthReading.reading_date,
-      created_at: selectedMonthReading.created_at,
+      created_at: selectedMonthReading.created_at ?? selectedMonthBilling?.created_at ?? null,
       previous_reading: Number(selectedMonthReading.previous_reading),
       present_reading: Number(selectedMonthReading.present_reading),
       consumption: Number(selectedMonthReading.consumption),
@@ -391,7 +392,7 @@ export const getConsumptionRecordingContexts = async () => {
         .order("id", { ascending: false }),
       supabase
         .from("billing")
-        .select("id, consumption_id, user_id, total_bill, remaining_balance, status, due_date"),
+        .select("id, consumption_id, user_id, total_bill, remaining_balance, status, due_date, created_at"),
     ]);
 
   if (consumerError) {
@@ -452,7 +453,7 @@ export const getConsumptionRecordingContext = async (consumerId) => {
         .order("id", { ascending: false }),
       supabase
         .from("billing")
-        .select("id, consumption_id, user_id, total_bill, remaining_balance, status, due_date")
+        .select("id, consumption_id, user_id, total_bill, remaining_balance, status, due_date, created_at")
         .eq("user_id", parsedConsumerId),
     ]);
 
