@@ -74,6 +74,23 @@ function notificationActionPath(notification, notificationType, isBillingAlert) 
   return notification.action_path ?? (isBillingAlert ? "/consumer/billing-ledger" : undefined);
 }
 
+function normalizeConsumerAnnouncements(notifications) {
+  return (notifications ?? [])
+    .filter((notification) => {
+      const type = String(notification.notification_type ?? "announcement").toLowerCase();
+      return notification.consumer_id == null && ["announcement", "service_alert"].includes(type);
+    })
+    .map((notification) => ({
+      id: notification.id,
+      title: notification.title,
+      content: notification.message,
+      publicationDate: notification.announcement_date,
+      relatedEvent: notification.announcement_type,
+      priority: notification.priority ?? "normal",
+      createdAt: notification.created_at,
+    }));
+}
+
 export async function fetchConsumerProfile(options) {
   const account = await requireConsumerAccount();
   const [profilePayload, billingPayload, consumptionPayload] = await Promise.all([
@@ -109,6 +126,66 @@ export async function fetchConsumerProfile(options) {
     currentReading: Number(latestReading?.present_reading ?? 0),
     lastReadingDate: formatDate(latestReading?.reading_date) || "No reading recorded",
   };
+}
+
+export async function fetchConsumerHome(options) {
+  const account = await requireConsumerAccount();
+  const [profilePayload, billingPayload, consumptionPayload, notificationPayload] =
+    await Promise.all([
+      apiRequest(`/consumers/${account.id}`, options),
+      apiRequest(`/billing/consumer/${account.id}`, options),
+      apiRequest(`/consumption/consumer/${account.id}`, options),
+      apiRequest(`/notifications?consumerId=${encodeURIComponent(account.id)}`, options),
+    ]);
+
+  const profile = profilePayload.data;
+  const billings = billingPayload.data ?? [];
+  const readings = consumptionPayload.data ?? [];
+  const pendingBills = billings
+    .filter((record) => Number(record.remaining_balance ?? 0) > 0)
+    .sort((left, right) => String(left.due_date).localeCompare(String(right.due_date)));
+  const latestReading = readings.at(-1) ?? null;
+  const previousReading = readings.at(-2) ?? null;
+  const latestUsage = Number(latestReading?.consumption ?? 0);
+  const previousUsage = previousReading == null
+    ? null
+    : Number(previousReading.consumption ?? 0);
+  const announcements = normalizeConsumerAnnouncements(notificationPayload.data).slice(0, 5);
+
+  return {
+    account: {
+      id: profile.id,
+      name: profile.full_name ?? profile.username,
+      purok: profile.purok_no == null ? "Purok not assigned" : `Purok ${profile.purok_no}`,
+      status: profile.status ?? "active",
+    },
+    announcements,
+    billing: {
+      outstandingBalance: pendingBills.reduce(
+        (total, record) => total + Number(record.remaining_balance ?? 0),
+        0,
+      ),
+      pendingCount: pendingBills.length,
+      nextDueDate: pendingBills[0]?.due_date ?? null,
+      nextBillingId: pendingBills[0]?.id ?? null,
+    },
+    reading: {
+      currentReading: Number(latestReading?.present_reading ?? 0),
+      latestDate: latestReading?.reading_date ?? null,
+      latestUsage,
+      previousUsage,
+      recordedMonths: readings.length,
+    },
+  };
+}
+
+export async function fetchConsumerAnnouncements(options) {
+  const account = await requireConsumerAccount();
+  const payload = await apiRequest(
+    `/notifications?consumerId=${encodeURIComponent(account.id)}`,
+    options,
+  );
+  return normalizeConsumerAnnouncements(payload.data);
 }
 
 export async function fetchBillingLedger(options) {

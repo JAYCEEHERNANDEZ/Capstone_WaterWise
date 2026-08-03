@@ -60,7 +60,7 @@ export default function UsageMetrics({
   const latestUsage = displayedHistory.at(-1)?.volume ?? 0;
   const previousUsage = displayedHistory.at(-2)?.volume;
   const usageDifference = previousUsage === undefined ? null : latestUsage - previousUsage;
-  const pageHeader = <PageHeader description="Review your current balance, latest water use, and monthly consumption history." eyebrow="Resident portal" title="Water usage overview" />;
+  const pageHeader = <PageHeader description="Explore your monthly consumption patterns, comparisons, and long-term water-use trends." eyebrow="Resident analytics" title="Water analytics" />;
 
   if (isLoading) {
     return (

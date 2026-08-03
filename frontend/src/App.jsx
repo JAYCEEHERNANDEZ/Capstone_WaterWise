@@ -8,6 +8,8 @@ import {
 } from "./services/authToken";
 import BillingLedger from "./pages/BillingLedger";
 import ConsumerProfile from "./pages/ConsumerProfile";
+import ConsumerHome from "./pages/ConsumerHome";
+import AnnouncementsPage from "./pages/AnnouncementsPage";
 import Login from "./pages/Login";
 import UsageMetrics from "./pages/UsageMetrics";
 import AnalyticsDashboard from "./pages/analyticsDashboard";
@@ -32,7 +34,9 @@ const portalRoutes = [
   { label: "Record Consumption Entry", path: "/meter-reader/readings-entry" },
   { label: "Profile", path: "/consumer/profile-details" },
   { label: "Bills", path: "/consumer/billing-ledger" },
-  { label: "Home", path: "/consumer/usage-metrics" },
+  { label: "Home", path: "/consumer/home" },
+  { label: "Announcements", path: "/consumer/announcements" },
+  { label: "Analytics", path: "/consumer/analytics" },
   { label: "Analytics", path: "/admin/analytics" },
   { label: "Reports", path: "/admin/reports" },
 ];
@@ -63,12 +67,15 @@ const roleAccess = {
     ],
   },
   consumer: {
-    homePath: "/consumer/usage-metrics",
+    homePath: "/consumer/home",
     label: "Consumer",
     paths: [
       "/consumer",
+      "/consumer/home",
+      "/consumer/announcements",
       "/consumer/profile-details",
       "/consumer/billing-ledger",
+      "/consumer/analytics",
       "/consumer/usage-metrics",
     ],
   },
@@ -278,10 +285,30 @@ export function AppRoutes() {
       <Route
         element={
           <RoleRouteGuard requiredRole="consumer">
-            <Navigate replace to="/consumer/usage-metrics" />
+            <Navigate replace to="/consumer/home" />
           </RoleRouteGuard>
         }
         path="/consumer"
+      />
+      <Route
+        element={
+          <RoleRouteGuard requiredRole="consumer">
+            <AppLayout>
+              <ConsumerHome />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+        path="/consumer/home"
+      />
+      <Route
+        element={
+          <RoleRouteGuard requiredRole="consumer">
+            <AppLayout>
+              <AnnouncementsPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+        path="/consumer/announcements"
       />
       <Route
         element={
@@ -309,6 +336,14 @@ export function AppRoutes() {
             <AppLayout>
               <UsageMetrics />
             </AppLayout>
+          </RoleRouteGuard>
+        }
+        path="/consumer/analytics"
+      />
+      <Route
+        element={
+          <RoleRouteGuard requiredRole="consumer">
+            <Navigate replace to="/consumer/analytics" />
           </RoleRouteGuard>
         }
         path="/consumer/usage-metrics"

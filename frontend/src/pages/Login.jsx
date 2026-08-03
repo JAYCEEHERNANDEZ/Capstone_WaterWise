@@ -14,7 +14,7 @@ import { useToast } from "../components/Toast";
 const accountDestinations = {
   admin: "/admin/dashboard",
   "meter-reader": "/meter-reader/readings-entry",
-  consumer: "/consumer/usage-metrics",
+  consumer: "/consumer/home",
 };
 
 export default function Login() {
