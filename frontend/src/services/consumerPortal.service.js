@@ -191,9 +191,14 @@ export async function fetchBillingLedger(options) {
     .filter((record) => record.remainingBalance > 0)
     .sort((left, right) => String(left.dueDate).localeCompare(String(right.dueDate)))[0];
   const billsById = new Map(historyData.map((record) => [record.id, record]));
-  const payments = (paymentPayload.data ?? []).map((record) => {
+  const paymentRecords = [...(paymentPayload.data ?? [])].sort((left, right) => {
+    const createdComparison = String(right.created_at ?? "").localeCompare(String(left.created_at ?? ""));
+    return createdComparison || Number(right.id ?? 0) - Number(left.id ?? 0);
+  });
+  const payments = paymentRecords.map((record) => {
     const bill = billsById.get(record.billing_id);
     const remainingBalance = Number(record.remaining_balance ?? 0);
+    const statusAfterPayment = remainingBalance === 0 ? "Paid" : "Partially Paid";
     return {
       id: record.id,
       billingId: record.billing_id,
@@ -206,7 +211,12 @@ export async function fetchBillingLedger(options) {
       amountTendered: Number(record.amount_tendered ?? record.total_paid ?? 0),
       changeGiven: Number(record.change_given ?? 0),
       remainingBalance,
-      paymentStatus: remainingBalance === 0 ? "Paid" : "Partially Paid",
+      balanceAfterPayment: remainingBalance,
+      paymentStatus: statusAfterPayment,
+      statusAfterPayment,
+      currentBillStatus: bill?.status ?? statusAfterPayment,
+      currentBillRemainingBalance: Number(bill?.remainingBalance ?? remainingBalance),
+      createdAt: record.created_at,
     };
   });
 

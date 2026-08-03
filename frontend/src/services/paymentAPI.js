@@ -27,6 +27,7 @@ function formatPaymentDate(value) {
 
 export function normalizePaymentRecord(record) {
   const remainingBalance = Number(record.remaining_balance ?? 0);
+  const statusAfterPayment = remainingBalance === 0 ? "Paid" : "Partially Paid";
   return {
     id: record.id,
     billingId: record.billing_id,
@@ -38,7 +39,12 @@ export function normalizePaymentRecord(record) {
     amountTendered: Number(record.amount_tendered ?? record.total_paid ?? 0),
     changeGiven: Number(record.change_given ?? 0),
     remainingBalance,
-    paymentStatus: remainingBalance === 0 ? "Paid" : "Partially Paid",
+    balanceAfterPayment: remainingBalance,
+    paymentStatus: statusAfterPayment,
+    statusAfterPayment,
+    currentBillStatus: record.billing?.status ?? statusAfterPayment,
+    currentBillRemainingBalance: Number(record.billing?.remaining_balance ?? remainingBalance),
+    createdAt: record.created_at,
     raw: record,
   };
 }

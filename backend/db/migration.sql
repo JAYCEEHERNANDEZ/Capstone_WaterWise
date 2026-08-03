@@ -100,6 +100,36 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_idempotency_key
 ON payments (idempotency_key)
 WHERE idempotency_key IS NOT NULL;
 
+-- Payment receipts are immutable financial history. Once a bill has any
+-- payment, its source reading must be corrected through an audited adjustment
+-- instead of silently recalculating the bill and invalidating the receipt.
+CREATE OR REPLACE FUNCTION prevent_paid_consumption_mutation()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM billing
+        INNER JOIN payments ON payments.billing_id = billing.id
+        WHERE billing.consumption_id = OLD.id
+    ) THEN
+        RAISE EXCEPTION
+            'This meter reading cannot be changed because its bill already has a recorded payment.';
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_prevent_paid_consumption_mutation ON consumption;
+CREATE TRIGGER trg_prevent_paid_consumption_mutation
+BEFORE UPDATE OR DELETE ON consumption
+FOR EACH ROW
+EXECUTE FUNCTION prevent_paid_consumption_mutation();
+
 -- Persistent report metadata and immutable source-data snapshots.
 CREATE TABLE IF NOT EXISTS generated_reports (
     id BIGSERIAL PRIMARY KEY,

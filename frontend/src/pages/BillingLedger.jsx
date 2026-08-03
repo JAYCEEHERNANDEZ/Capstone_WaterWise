@@ -117,7 +117,9 @@ export default function BillingLedger({
     setReceiptError("");
 
     if (bill.status === "Paid") {
-      const payment = ledger?.payments?.find((record) => record.billingId === bill.id);
+      const billPayments = ledger?.payments?.filter((record) => record.billingId === bill.id) ?? [];
+      const payment = billPayments.find((record) => Number(record.balanceAfterPayment ?? record.remainingBalance) === 0)
+        ?? billPayments[0];
       if (!payment) {
         setReceiptError("The payment receipt for this paid bill is unavailable.");
         return;

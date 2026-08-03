@@ -30,9 +30,17 @@ export default function PaymentReceiptModal({ isOpen, receiptData, onClose }) {
   const changeGiven = Number(
     receiptData.changeGiven ?? Math.max(amountTendered - amountPaid, 0),
   );
-  const remainingBalance = Number(receiptData.remainingBalance ?? 0);
+  const remainingBalance = Number(receiptData.balanceAfterPayment ?? receiptData.remainingBalance ?? 0);
   const paymentMethod = receiptData.paymentMethod ?? "Cash";
-  const paymentStatus = receiptData.paymentStatus ?? (remainingBalance === 0 ? "Paid" : "Partially Paid");
+  const paymentStatus = receiptData.statusAfterPayment
+    ?? receiptData.paymentStatus
+    ?? (remainingBalance === 0 ? "Paid" : "Partially Paid");
+  const currentBillStatus = receiptData.currentBillStatus ?? paymentStatus;
+  const currentBillRemainingBalance = Number(
+    receiptData.currentBillRemainingBalance ?? remainingBalance,
+  );
+  const billStatusChanged = currentBillStatus !== paymentStatus
+    || currentBillRemainingBalance !== remainingBalance;
   const isCash = paymentMethod === "Cash";
   const paid = paymentStatus === "Paid";
   const StatusIcon = paid ? CheckCircle2 : Clock3;
@@ -54,8 +62,10 @@ export default function PaymentReceiptModal({ isOpen, receiptData, onClose }) {
             ["Change Given", currency(changeGiven)],
           ]
         : []),
-      ["Remaining Balance", currency(remainingBalance)],
-      ["Bill Status", paymentStatus],
+      ["Balance After Payment", currency(remainingBalance)],
+      ["Status After Payment", paymentStatus],
+      ["Current Bill Balance", currency(currentBillRemainingBalance)],
+      ["Current Bill Status", currentBillStatus],
       ["Amount Paid", currency(amountPaid)],
     ];
 
@@ -131,7 +141,7 @@ export default function PaymentReceiptModal({ isOpen, receiptData, onClose }) {
                 }`}
               >
                 <StatusIcon aria-hidden="true" className="h-4 w-4" />
-                Bill {paymentStatus.toLowerCase()}
+                {paymentStatus} after payment
               </span>
             </div>
           </section>
@@ -204,15 +214,24 @@ export default function PaymentReceiptModal({ isOpen, receiptData, onClose }) {
             </section>
           )}
 
-          <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4">
-            <div>
-              <p className="text-sm font-bold text-navy-900">Remaining bill balance</p>
-              <p className="mt-1 text-xs text-slate-500">Balance after this payment</p>
-            </div>
-            <p className="font-mono text-xl font-extrabold tabular-nums text-navy-900">
-              {currency(remainingBalance)}
-            </p>
-          </div>
+          <section className="mt-5 rounded-2xl border border-slate-200 p-4" aria-labelledby="receipt-balance-heading">
+            <h3 className="text-sm font-bold text-navy-900" id="receipt-balance-heading">Bill balance and status</h3>
+            <dl className="mt-2">
+              <ReceiptLine label="Balance after this payment" value={currency(remainingBalance)} />
+              <ReceiptLine label="Status after this payment" value={paymentStatus} />
+              {billStatusChanged && (
+                <>
+                  <ReceiptLine label="Current bill balance" value={currency(currentBillRemainingBalance)} />
+                  <ReceiptLine label="Current bill status" value={currentBillStatus} />
+                </>
+              )}
+            </dl>
+            {billStatusChanged && (
+              <p className="mt-3 rounded-xl bg-water-50 p-3 text-xs leading-5 text-water-800">
+                This bill changed after this payment was recorded. The values above preserve the transaction history while the current values show the latest bill state.
+              </p>
+            )}
+          </section>
 
           <p
             className="mt-5 text-center text-xs font-medium text-slate-400"
