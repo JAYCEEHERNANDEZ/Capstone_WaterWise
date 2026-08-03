@@ -421,7 +421,7 @@ export default function EventManagementPage() {
                 <h2 className="sr-only" id="calendar-heading">
                   {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </h2>
-                <div className="relative z-40 mt-2 flex gap-2">
+                <div className="mt-2 flex gap-2">
                   <Dropdown
                     ariaLabel="Select calendar month"
                     className="w-40"

@@ -165,8 +165,8 @@ export default function BillingLedger({
       />
 
       <section className="space-y-4" id="consumer-billing-history">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+        <div className="flex items-end justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
               Your records
             </p>
@@ -179,7 +179,7 @@ export default function BillingLedger({
           </div>
           <Filter
             ariaLabel="Filter billing history"
-            className="w-full sm:w-auto"
+            className="shrink-0"
             description="Choose a billing period or payment status to narrow your bill history."
             filters={[
               {

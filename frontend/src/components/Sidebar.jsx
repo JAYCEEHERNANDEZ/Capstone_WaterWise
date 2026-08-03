@@ -92,44 +92,44 @@ export default function Sidebar({
       {isMoreOpen && (
         <button
           aria-label="Close more navigation"
-          className="fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-950/5 lg:hidden"
           onClick={() => setIsMoreOpen(false)}
           type="button"
         />
       )}
 
-      <aside className={`fixed inset-x-3 bottom-3 z-40 rounded-full border border-white/50 bg-white/35 pb-[env(safe-area-inset-bottom)] shadow-raised backdrop-blur-xl lg:sticky lg:inset-auto lg:top-4 lg:ml-4 lg:mt-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:self-start lg:overflow-visible lg:rounded-3xl lg:border-slate-200 lg:bg-white lg:pb-0 lg:shadow-card lg:backdrop-blur-none lg:transition-[width] lg:duration-300 lg:ease-out ${isCollapsed ? "lg:w-20" : "lg:w-64"}`}>
-        {additionalMobileItems.length > 0 && (
-          <div
-            aria-hidden={!isMoreOpen}
-            aria-label="More navigation tools"
-            aria-modal="true"
-            className={`absolute inset-x-0 bottom-[calc(100%+0.75rem)] grid max-h-[min(65vh,32rem)] gap-1 overflow-y-auto rounded-2xl border border-white/70 bg-white/90 p-3 shadow-modal backdrop-blur-xl transition-all duration-200 lg:hidden ${isMoreOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"}`}
-            id="mobile-more-navigation"
-            inert={!isMoreOpen}
-            role="dialog"
-          >
-            <div className="mb-1 flex items-center justify-between px-2 py-1">
-              <div>
-                <p className="text-sm font-extrabold text-navy-900">More tools</p>
-                <p className="text-xs text-slate-500">{activeRoleLabel} workspace</p>
-              </div>
-              <button
-                aria-label="Close more tools"
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-                onClick={() => setIsMoreOpen(false)}
-                ref={closeButtonRef}
-                type="button"
-              >
-                <FiX aria-hidden="true" className="h-5 w-5" />
-              </button>
+      {additionalMobileItems.length > 0 && (
+        <div
+          aria-hidden={!isMoreOpen}
+          aria-label="More navigation tools"
+          aria-modal="true"
+          className={`fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-40 grid max-h-[min(65vh,32rem)] gap-1 overflow-y-auto rounded-2xl border border-white/80 bg-white/80 p-3 shadow-modal backdrop-blur-2xl transition-all duration-200 lg:hidden ${isMoreOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"}`}
+          id="mobile-more-navigation"
+          inert={!isMoreOpen}
+          role="dialog"
+        >
+          <div className="mb-1 flex items-center justify-between px-2 py-1">
+            <div>
+              <p className="text-sm font-extrabold text-navy-900">More tools</p>
+              <p className="text-xs text-slate-500">{activeRoleLabel} workspace</p>
             </div>
-            {additionalMobileItems.map((item) => (
-              <NavigationLink item={item} key={getItemLabel(item)} onNavigate={() => setIsMoreOpen(false)} />
-            ))}
+            <button
+              aria-label="Close more tools"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+              onClick={() => setIsMoreOpen(false)}
+              ref={closeButtonRef}
+              type="button"
+            >
+              <FiX aria-hidden="true" className="h-5 w-5" />
+            </button>
           </div>
-        )}
+          {additionalMobileItems.map((item) => (
+            <NavigationLink item={item} key={getItemLabel(item)} onNavigate={() => setIsMoreOpen(false)} />
+          ))}
+        </div>
+      )}
 
+      <aside className={`fixed inset-x-3 bottom-3 z-40 rounded-full border border-white/50 bg-white/35 pb-[env(safe-area-inset-bottom)] shadow-raised backdrop-blur-xl lg:sticky lg:inset-auto lg:top-4 lg:ml-4 lg:mt-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:self-start lg:overflow-visible lg:rounded-3xl lg:border-slate-200 lg:bg-white lg:pb-0 lg:shadow-card lg:backdrop-blur-none lg:transition-[width] lg:duration-300 lg:ease-out ${isCollapsed ? "lg:w-20" : "lg:w-64"}`}>
         <div className="flex h-full items-center gap-1 p-1.5 lg:flex-col lg:items-stretch lg:gap-0 lg:p-3">
           <div className={`hidden min-h-14 items-center lg:flex ${isCollapsed ? "justify-center" : "gap-3 px-1"}`}>
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-600 text-white shadow-sm">
@@ -198,7 +198,14 @@ export default function Sidebar({
           </div>
 
           <nav className="flex min-w-0 flex-1 lg:hidden" aria-label={`${activeRoleLabel ?? "WaterWise"} mobile navigation`}>
-            {primaryMobileItems.map((item) => <NavigationLink item={item} key={getItemLabel(item)} mobile />)}
+            {primaryMobileItems.map((item) => (
+              <NavigationLink
+                item={item}
+                key={getItemLabel(item)}
+                mobile
+                onNavigate={() => setIsMoreOpen(false)}
+              />
+            ))}
             {additionalMobileItems.length > 0 && (
               <button
                 aria-controls="mobile-more-navigation"
