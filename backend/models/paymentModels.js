@@ -116,7 +116,8 @@ export async function getPayments() {
   const { data, error } = await supabase
     .from("payments")
     .select(PAYMENT_FIELDS)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (error) {
     throw createError(`Failed to retrieve payments: ${error.message}`, 500);
@@ -147,7 +148,8 @@ export async function getPaymentsByBilling(billingId) {
     .from("payments")
     .select(PAYMENT_FIELDS)
     .eq("billing_id", normalizedBillingId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (error) {
     throw createError(`Failed to retrieve billing payments: ${error.message}`, 500);
@@ -176,7 +178,8 @@ export async function getPaymentsByConsumer(consumerId) {
     .from("payments")
     .select(PAYMENT_FIELDS)
     .in("billing_id", billingIds)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (error) {
     throw createError(`Failed to retrieve consumer payments: ${error.message}`, 500);

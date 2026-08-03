@@ -205,8 +205,8 @@ export default function PaymentProcessingPage() {
         </button>
       </div>
 
-      <section aria-label="Payment summary" className="grid gap-3 sm:grid-cols-3">
-        <KPI description="Across recorded transactions" icon={Banknote} title="All-time collected" value={`₱${totalCollected.toLocaleString("en-US", { minimumFractionDigits: 2 })}`} />
+      <section aria-label="Payment summary" className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+        <KPI className="col-span-2 sm:col-span-1" description="Across recorded transactions" icon={Banknote} title="All-time collected" value={`₱${totalCollected.toLocaleString("en-US", { minimumFractionDigits: 2 })}`} />
         <KPI description="Completed payment records" icon={ReceiptText} title="All transactions" value={payments.length} />
         <KPI description="Transactions with no balance" icon={CheckCircle2} title="Bills fully paid" value={fullyPaid} />
       </section>
@@ -328,7 +328,7 @@ export default function PaymentProcessingPage() {
 
       <button
         aria-label="Record a new payment"
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-water-600 px-5 font-bold text-white shadow-modal transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:bg-water-300 lg:hidden"
+        className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-water-600 px-5 font-bold text-white shadow-modal transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:bg-water-300 lg:hidden"
         disabled={loading}
         onClick={openPaymentModal}
         type="button"

@@ -3,8 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 import {
+  Area,
+  AreaChart,
   ResponsiveContainer,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -19,6 +20,7 @@ import {
   fetchAllPuroksYearlyHistory,
   fetchAllPuroksYearlyPrediction,
 } from "../services/consumptionAPI";
+import ChartTooltip from "./ChartTooltip";
 import LoadingSkeleton from "./LoadingSkeleton";
 
 const DEFAULT_PUROKS = [
@@ -84,61 +86,6 @@ const normalizeMonth = (month) => {
 
 const extractResponseData = (response) =>
   response?.data?.data ?? response?.data ?? response ?? [];
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  const validPayload = payload.filter(
-    (entry) => entry.value !== null && entry.value !== undefined,
-  );
-
-  if (!validPayload.length) {
-    return null;
-  }
-
-  return (
-    <div
-      className="
-rounded-xl
-border
-border-slate-200
-bg-white
-px-4
-py-3
-shadow-raised
-"
-    >
-      <p
-        className="
-mb-2
-text-sm
-font-bold
-text-slate-900
-"
-      >
-        {label}
-      </p>
-
-      {validPayload.map((entry) => (
-        <p
-          key={entry.dataKey}
-          className="
-text-sm
-font-medium
-"
-          style={{
-            color: entry.color,
-          }}
-        >
-          {entry.name}: {formatConsumption(entry.value)}
-          m³
-        </p>
-      ))}
-    </div>
-  );
-};
 
 function PerPurokConsumptionTrend() {
   const [period, setPeriod] = useState("Monthly");
@@ -606,7 +553,7 @@ h-60
                 >
                   {chartData.length > 0 && (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
+                      <AreaChart
                         data={chartData}
                         margin={{
                           top: 10,
@@ -615,6 +562,12 @@ h-60
                           bottom: 0,
                         }}
                       >
+                        <defs>
+                          <linearGradient id="perPurokTrendFill" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="#0284C7" stopOpacity={0.16} />
+                            <stop offset="100%" stopColor="#0284C7" stopOpacity={0.02} />
+                          </linearGradient>
+                        </defs>
                         <CartesianGrid stroke="#DCE5EA" strokeDasharray="3 3" vertical={false} />
 
                         <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#52697A", fontSize: 11 }} />
@@ -626,27 +579,32 @@ h-60
                           tickFormatter={(value) => formatConsumption(value)}
                         />
 
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={<ChartTooltip valueFormatter={formatConsumption} />} cursor={{ stroke: "#94A3B8", strokeWidth: 1 }} />
 
                         <Legend />
 
-                        <Line
-                          type="monotone"
+                        <Area
+                          type="linear"
                           dataKey="consumption"
                           name="Historical"
-                          stroke="#07968F"
-                          strokeWidth={3}
+                          stroke="#0284C7"
+                          strokeWidth={2.5}
+                          fill="url(#perPurokTrendFill)"
+                          dot={{ r: 3.5, fill: "#ffffff", stroke: "#0284C7", strokeWidth: 2 }}
+                          activeDot={{ r: 6, fill: "#0284C7", stroke: "#ffffff", strokeWidth: 2 }}
                         />
 
                         <Line
-                          type="monotone"
+                          type="linear"
                           dataKey="predicted"
                           name="Prediction"
                           stroke="#0B2B40"
-                          strokeWidth={3}
+                          strokeWidth={2.5}
                           strokeDasharray="8 5"
+                          dot={{ r: 4, fill: "#ffffff", stroke: "#0B2B40", strokeWidth: 2 }}
+                          activeDot={{ r: 6, fill: "#0B2B40", stroke: "#ffffff", strokeWidth: 2 }}
                         />
-                      </LineChart>
+                      </AreaChart>
                     </ResponsiveContainer>
                   )}
                   {chartData.length === 0 && (

@@ -1,30 +1,31 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  FiDroplet,
-  FiFileText,
-  FiHome,
-  FiMail,
-  FiPhone,
-  FiShield,
-} from "react-icons/fi";
-import ConsumerInfoGrid from "../components/ConsumerInfoGrid";
-import CurrentBalanceCard from "../components/CurrentBalanceCard";
-import MonthlyConsumptionWidget from "../components/MonthlyConsumptionWidget";
+  AtSign,
+  CalendarDays,
+  CheckCircle2,
+  CircleSlash2,
+  Hash,
+  Info,
+  Mail,
+  MapPin,
+  Phone,
+  UserRound,
+} from "lucide-react";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageHeader from "../components/PageHeader";
-import { fetchConsumerProfile } from "../services/consumerPortal.service";
 import { isCanceledRequest } from "../services/apiClient";
+import { fetchConsumerProfile } from "../services/consumerPortal.service";
+
+const hasValue = (value) => value !== null && value !== undefined && value !== "";
 
 function DetailItem({ Icon, label, value }) {
   return (
-    <div className="flex gap-3 rounded-2xl bg-slate-50 p-4 transition-colors hover:bg-water-50">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-water-600 shadow-sm">
+    <div className="flex min-w-0 items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-700">
         <Icon aria-hidden="true" className="h-5 w-5" />
       </span>
       <div className="min-w-0">
-        <dt className="text-xs font-semibold text-slate-500">
-          {label}
-        </dt>
+        <dt className="text-xs font-semibold text-slate-500">{label}</dt>
         <dd className="mt-1 break-words text-sm font-bold text-navy-900 sm:text-base">
           {value}
         </dd>
@@ -33,10 +34,32 @@ function DetailItem({ Icon, label, value }) {
   );
 }
 
+function DetailSection({ description, eyebrow, items, title }) {
+  if (!items.length) return null;
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">{eyebrow}</p>
+      <h2 className="mt-1 text-xl font-extrabold tracking-tight text-navy-900">{title}</h2>
+      <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+      <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+        {items.map((item) => <DetailItem {...item} key={item.label} />)}
+      </dl>
+    </section>
+  );
+}
+
 export default function ConsumerProfile({ consumer: consumerProp }) {
   const usesApi = consumerProp === undefined;
   const [loadedConsumer, setLoadedConsumer] = useState(null);
   const [error, setError] = useState("");
+  const [requestVersion, setRequestVersion] = useState(0);
+
+  const retry = useCallback(() => {
+    setLoadedConsumer(null);
+    setError("");
+    setRequestVersion((version) => version + 1);
+  }, []);
 
   useEffect(() => {
     if (!usesApi) return undefined;
@@ -49,129 +72,108 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
       });
 
     return () => controller.abort();
-  }, [usesApi]);
+  }, [requestVersion, usesApi]);
 
   const consumer = usesApi ? loadedConsumer : consumerProp;
-  const pageHeader = <PageHeader description="Review your account holder, service address, meter information, and latest reading." eyebrow="Resident portal" title="Household profile" />;
+  const pageHeader = (
+    <PageHeader
+      description="Review the personal, contact, and service information registered to your household account."
+      eyebrow="Resident portal"
+      title="Household profile"
+    />
+  );
 
   if (error) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-5 sm:space-y-6">
         {pageHeader}
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">{error}</div>
+        <div className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between" role="alert">
+          <span>{error}</span>
+          <button className="min-h-11 rounded-xl bg-red-700 px-4 font-bold text-white hover:bg-red-800" onClick={retry} type="button">
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!consumer) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-5 sm:space-y-6">
         {pageHeader}
         <LoadingSkeleton label="Loading consumer profile" variant="profile" />
       </div>
     );
   }
 
-  const consumptionDifference = Number(
-    (consumer.currentReading - consumer.previousReading).toFixed(1),
-  );
-
+  const isActive = String(consumer.status ?? "").toLowerCase() === "active";
+  const StatusIcon = isActive ? CheckCircle2 : CircleSlash2;
+  const statusLabel = String(consumer.status ?? "")
+    .toLowerCase()
+    .replace(/^./, (character) => character.toUpperCase());
+  const accountItems = [
+    { Icon: Hash, label: "Account ID", value: consumer.accountId },
+    { Icon: AtSign, label: "Username", value: consumer.username },
+    { Icon: CalendarDays, label: "Member since", value: consumer.accountCreatedDate },
+  ].filter((item) => hasValue(item.value));
+  const contactItems = [
+    { Icon: Mail, label: "Email address", value: consumer.email },
+    { Icon: Phone, label: "Contact number", value: consumer.contactNumber },
+    { Icon: MapPin, label: "Service area", value: consumer.purok },
+  ].filter((item) => hasValue(item.value));
   return (
     <div className="space-y-5 sm:space-y-6">
       {pageHeader}
-      
-      <section className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-        <ConsumerInfoGrid
-          houseNumber={consumer.houseNumber}
-          name={consumer.name}
-          purok={consumer.purok}
-        />
-        <CurrentBalanceCard amountDue={consumer.activeAmountDue} />
-        <MonthlyConsumptionWidget
-          month={consumer.latestMonth}
-          usage={consumer.volumetricUsage}
-        />
-      </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <div className="ww-glass-strong rounded-2xl p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
-            Household account
-          </p>
-          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900">
-            Contact and location
-          </h3>
-
-          <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-            <DetailItem Icon={FiMail} label="Email address" value={consumer.email} />
-            <DetailItem Icon={FiPhone} label="Contact number" value={consumer.contactNumber} />
-            <DetailItem Icon={FiHome} label="House number" value={consumer.houseNumber} />
-            <DetailItem Icon={FiDroplet} label="Meter number" value={consumer.meterNumber} />
-          </dl>
-        </div>
-
-        <div className="ww-glass-strong rounded-2xl p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">
-            Latest reading
-          </p>
-          <h3 className="mt-1.5 text-xl font-extrabold tracking-[-0.03em] text-navy-900">
-            Meter snapshot
-          </h3>
-
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                Previous
-              </p>
-              <p className="mt-2 font-mono text-xl font-bold text-navy-900">
-                {consumer.previousReading.toFixed(1)} m³
-              </p>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                Current
-              </p>
-              <p className="mt-2 font-mono text-xl font-bold text-navy-900">
-                {consumer.currentReading.toFixed(1)} m³
-              </p>
-            </div>
-            <div className="col-span-2 rounded-2xl bg-water-50 p-4 sm:col-span-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-water-600">
-                Consumed
-              </p>
-              <p className="mt-2 font-mono text-xl font-bold text-water-600">
-                {consumptionDifference.toFixed(1)} m³
-              </p>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-6" aria-labelledby="profile-name">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-water-50 text-water-700 sm:h-16 sm:w-16">
+              <UserRound aria-hidden="true" className="h-7 w-7 sm:h-8 sm:w-8" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Account holder</p>
+              <h2 className="mt-1 break-words text-2xl font-extrabold tracking-tight text-navy-900" id="profile-name">
+                {consumer.name}
+              </h2>
+              {hasValue(consumer.purok) && <p className="mt-1 text-sm font-semibold text-slate-600">{consumer.purok}</p>}
             </div>
           </div>
-
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="flex gap-3">
-              <FiFileText aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-water-600" />
-              <div>
-                <p className="text-sm font-bold text-navy-900">
-                  Last reading date
-                </p>
-                <p className="mt-1 font-mono text-sm text-slate-600">
-                  {consumer.lastReadingDate}
-                </p>
-              </div>
-            </div>
-          </div>
+          {hasValue(consumer.status) && (
+            <span className={`inline-flex min-h-8 w-fit items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${
+              isActive
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-slate-300 bg-slate-100 text-slate-700"
+            }`}>
+              <StatusIcon aria-hidden="true" className="h-3.5 w-3.5" />
+              {statusLabel} account
+            </span>
+          )}
         </div>
       </section>
 
-      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <DetailSection
+          description="Identifiers stored with your resident account."
+          eyebrow="Account"
+          items={accountItems}
+          title="Account information"
+        />
+        <DetailSection
+          description="Contact details and the service area registered by the barangay office."
+          eyebrow="Household"
+          items={contactItems}
+          title="Contact and location"
+        />
+      </div>
+
+      <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-5" aria-labelledby="profile-correction-heading">
         <div className="flex gap-3">
-          <FiShield aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+          <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
           <div>
-            <p className="text-sm font-bold text-navy-900">
-              Need to correct your details?
-            </p>
+            <h2 className="text-sm font-bold text-navy-900" id="profile-correction-heading">Need to correct your details?</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Your account details are read-only for your protection. Contact
-              the barangay office if your name, contact information, service
-              address, or meter details need to be corrected.
+              These details are read-only. Contact the barangay office if your name, contact information, or service area needs to be updated.
             </p>
           </div>
         </div>

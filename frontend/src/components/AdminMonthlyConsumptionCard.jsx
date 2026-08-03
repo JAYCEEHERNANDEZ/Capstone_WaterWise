@@ -52,7 +52,6 @@ export default function AdminMonthlyConsumptionCard() {
       loading={loading}
       onRefresh={loadPrediction}
       testId="monthly-consumption-card"
-      tone="dark"
       value={Number(prediction ?? 0).toLocaleString("en-PH", { maximumFractionDigits: 2 })}
     />
   );

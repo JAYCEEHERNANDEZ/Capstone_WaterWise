@@ -3,6 +3,7 @@ import {
   FiDroplet,
   FiEye,
   FiEyeOff,
+  FiLoader,
   FiLock,
   FiMail,
 } from "react-icons/fi";
@@ -13,7 +14,7 @@ import { useToast } from "../components/Toast";
 const accountDestinations = {
   admin: "/admin/dashboard",
   "meter-reader": "/meter-reader/readings-entry",
-  consumer: "/consumer/usage-metrics",
+  consumer: "/consumer/home",
 };
 
 export default function Login() {
@@ -31,6 +32,7 @@ export default function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isSubmitting) return;
 
     const trimmedIdentifier = identifier.trim();
     const nextIdentifierError = !trimmedIdentifier
@@ -60,6 +62,8 @@ export default function Login() {
 
     setIsSubmitting(true);
     setMessage("");
+    setIdentifierError("");
+    setPasswordError("");
 
     try {
       const result = await login({ email: trimmedIdentifier, password });
@@ -141,7 +145,7 @@ export default function Login() {
                 </p>
               </div>
 
-              <form className="space-y-5" onSubmit={handleSubmit}>
+              <form aria-busy={isSubmitting} className="space-y-5" onSubmit={handleSubmit}>
                 <div>
                   <label
                     className="text-sm font-semibold text-slate-900"
@@ -156,6 +160,7 @@ export default function Login() {
                       aria-invalid={Boolean(identifierError)}
                       autoComplete="username"
                       className="ww-field py-3 pl-12 pr-4 text-base"
+                      disabled={isSubmitting}
                       id="login-identifier"
                       onChange={(event) => {
                         setIdentifier(event.target.value);
@@ -189,6 +194,7 @@ export default function Login() {
                       aria-invalid={Boolean(passwordError)}
                       autoComplete="current-password"
                       className="ww-field py-3 pl-12 pr-12 text-base"
+                      disabled={isSubmitting}
                       id="login-password"
                       onChange={(event) => {
                         setPassword(event.target.value);
@@ -204,6 +210,7 @@ export default function Login() {
                       aria-label={showPassword ? "Hide password" : "Show password"}
                       aria-pressed={showPassword}
                       className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-water-600"
+                      disabled={isSubmitting}
                       onClick={() => setShowPassword((visible) => !visible)}
                       type="button"
                     >
@@ -222,12 +229,18 @@ export default function Login() {
                 </div>
 
                 <button
-                  className="ww-primary-button min-h-12 w-full px-5 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2"
+                  className="ww-primary-button flex min-h-12 w-full items-center justify-center gap-2 px-5 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-water-500 disabled:opacity-90"
                   disabled={isSubmitting}
+                  style={{ cursor: isSubmitting ? "default" : undefined }}
                   type="submit"
                 >
+                  {isSubmitting && <FiLoader aria-hidden="true" className="h-5 w-5 animate-spin" />}
                   {isSubmitting ? "Signing in…" : "Sign in"}
                 </button>
+
+                <span aria-live="polite" className="sr-only" role="status">
+                  {isSubmitting ? "Signing in. Please wait." : ""}
+                </span>
 
                 {message && (
                   <p

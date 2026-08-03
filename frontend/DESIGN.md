@@ -29,7 +29,7 @@ The design takes inspiration from the reference dashboard's strongest characteri
 - Small status badges that combine color, icon, and text
 - Clean charts with muted gridlines and one highlighted data series
 
-WaterWise adapts these qualities with a water-oriented teal-blue accent, civic-service language, consumption units, billing states, and role-specific workflows.
+WaterWise adapts these qualities with a water-oriented blue accent, civic-service language, consumption units, billing states, and role-specific workflows.
 
 ### 1.2 Experience attributes
 
@@ -159,11 +159,11 @@ Tokens are the source of truth. Components must not introduce arbitrary colors, 
 | `--slate-500` | `#6B7F8E` | Metadata and placeholders |
 | `--border` | `#DCE5EA` | Standard borders and dividers |
 | `--border-strong` | `#C5D2D9` | Inputs and emphasized separation |
-| `--water-700` | `#067A75` | Pressed primary actions |
-| `--water-600` | `#07968F` | Primary actions, links, active indicators |
-| `--water-500` | `#13AAA2` | Chart highlights and icon accents |
-| `--water-100` | `#DDF4F1` | Selected navigation and informational backgrounds |
-| `--water-50` | `#F0FAF8` | Subtle accent surfaces |
+| `--water-700` | `#0369A1` | Pressed primary actions |
+| `--water-600` | `#0284C7` | Primary actions, links, active indicators |
+| `--water-500` | `#0EA5E9` | Chart highlights and icon accents |
+| `--water-100` | `#E0F2FE` | Selected navigation and informational backgrounds |
+| `--water-50` | `#F0F9FF` | Subtle accent surfaces |
 
 #### Semantic colors
 
@@ -279,7 +279,7 @@ The desktop shell consists of a compact sticky header, a persistent left sidebar
 - Solid white background with a right border.
 - Navigation groups use small uppercase labels only when grouping improves scanning.
 - Items are `44px–48px` high.
-- Active item uses a pale water-teal background, strong text, icon, and a left indicator.
+- Active item uses a pale water-blue background, strong text, icon, and a left indicator.
 - Hover uses a subtle neutral or teal tint without movement.
 - Logout remains inside the account menu rather than the primary navigation.
 
@@ -583,7 +583,7 @@ Target WCAG 2.2 Level AA.
 - Normal text contrast: at least `4.5:1`.
 - Large text and essential UI graphics: at least `3:1`.
 - Touch targets: at least `44 × 44px`; field workflows prefer `48px`.
-- Visible focus: `2px` water-teal ring with `2px` offset.
+- Visible focus: `2px` water-blue ring with `2px` offset.
 - Logical keyboard order and correct landmarks.
 - Icon-only buttons require accessible names.
 - Dialogs trap focus, close with `Escape`, and restore focus to their trigger.

@@ -5,7 +5,7 @@
 export default function PageHeader({ eyebrow, title, description, className = "" }) {
   return (
     <header
-      className={`rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-card sm:px-6 ${className}`.trim()}
+      className={`bg-transparent pr-0 lg:pr-16 ${className}`.trim()}
     >
       {eyebrow ? (
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">

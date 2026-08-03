@@ -3,7 +3,7 @@ import { supabase } from "../config/supabase.js";
 const columns =
   "id, consumer_id, reading_date, previous_reading, present_reading, consumption, created_at, consumers(full_name, purok_no)";
 
-export const WATER_RATE_PER_CUBIC_METER = 17;
+export const WATER_RATE_PER_CUBIC_METER = 15;
 
 function unwrap({ data, error }) {
   if (error) {
@@ -49,6 +49,34 @@ function addDays(date, days) {
   return value
     .toISOString()
     .slice(0, 10);
+}
+
+async function assertReadingHasNoPayments(readingId) {
+  const billing = unwrap(
+    await supabase
+      .from("billing")
+      .select("id")
+      .eq("consumption_id", readingId)
+      .maybeSingle()
+  );
+
+  if (!billing) return;
+
+  const payments = unwrap(
+    await supabase
+      .from("payments")
+      .select("id")
+      .eq("billing_id", billing.id)
+      .limit(1)
+  ) ?? [];
+
+  if (payments.length > 0) {
+    const error = new Error(
+      "This meter reading cannot be changed because its bill already has a recorded payment. Use an audited billing adjustment instead."
+    );
+    error.status = 409;
+    throw error;
+  }
 }
 
 async function syncBilling(record) {
@@ -186,6 +214,8 @@ export async function updateMeterReading(
   id,
   reading
 ) {
+  await assertReadingHasNoPayments(id);
+
   const record = unwrap(
     await supabase
       .from("consumption")
@@ -212,6 +242,8 @@ export async function updateMeterReading(
 }
 
 export async function deleteMeterReading(id) {
+  await assertReadingHasNoPayments(id);
+
   const { error } = await supabase
     .from("consumption")
     .delete()

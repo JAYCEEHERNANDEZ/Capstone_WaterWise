@@ -1,10 +1,20 @@
-function BillingSummaryCard({ billingData = [] }) {
+import { Banknote, CheckCircle2, Clock3, ReceiptText, WalletCards } from "lucide-react";
+import KPI from "./KPI";
+
+const currency = (value) =>
+  `₱${Number(value ?? 0).toLocaleString("en-US", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  })}`;
+
+export default function BillingSummaryCard({ billingData = [] }) {
   const totalBills = billingData.length;
   const paidBills = billingData.filter((bill) => bill.status === "Paid").length;
   const partiallyPaidBills = billingData.filter(
     (bill) => bill.status === "Partially Paid",
   ).length;
   const unpaidBills = billingData.filter((bill) => bill.status === "Unpaid").length;
+  const openBills = partiallyPaidBills + unpaidBills;
   const totalBilling = billingData.reduce(
     (total, bill) => total + Number(bill.amountDue ?? 0),
     0,
@@ -14,59 +24,51 @@ function BillingSummaryCard({ billingData = [] }) {
     0,
   );
 
-  const currency = (value) =>
-    `₱${value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-
-  const summaryCards = [
-    {
-      title: "Total billed",
-      value: currency(totalBilling),
-      detail: `${totalBills} billing ${totalBills === 1 ? "record" : "records"}`,
-      testId: "total-billing-value",
-    },
-    {
-      title: "Outstanding balance",
-      value: currency(outstanding),
-      detail: "Remaining amount to collect",
-      testId: "outstanding-billing-value",
-    },
-    {
-      title: "Paid bills",
-      value: paidBills,
-      detail: "Fully settled accounts",
-      testId: "paid-bills-value",
-    },
-    {
-      title: "Open bills",
-      value: partiallyPaidBills + unpaidBills,
-      detail: `${unpaidBills} unpaid · ${partiallyPaidBills} partially paid`,
-      testId: "open-bills-value",
-    },
-  ];
-
   return (
-    <section aria-label="Billing summary" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {summaryCards.map((card) => (
-        <article
-          key={card.title}
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5"
-          data-testid={card.testId.replace("-value", "-card")}
-        >
-          <h2 className="text-sm font-semibold text-slate-500">{card.title}</h2>
-          <p
-            className="mt-2 font-mono text-2xl font-extrabold tabular-nums text-navy-900 sm:text-3xl"
-            data-testid={card.testId}
-          >
-            {card.value}
-          </p>
-          <p className="mt-1 text-xs font-medium text-slate-500">{card.detail}</p>
-        </article>
-      ))}
+    <section aria-label="Billing summary" className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
+      <KPI
+        cardTestId="total-billing-card"
+        description="included in the total"
+        descriptionHighlight={`${totalBills} billing ${totalBills === 1 ? "record" : "records"}`}
+        descriptionIcon={ReceiptText}
+        icon={Banknote}
+        title="Total billed"
+        value={currency(totalBilling)}
+        valueTestId="total-billing-value"
+      />
+      <KPI
+        cardTestId="outstanding-billing-card"
+        description={openBills ? "remaining to collect" : "nothing left to collect"}
+        descriptionHighlight={openBills ? `${openBills} open bill${openBills === 1 ? "" : "s"}` : "No open bills"}
+        descriptionIcon={openBills ? Clock3 : CheckCircle2}
+        descriptionTone={openBills ? "warning" : "positive"}
+        icon={WalletCards}
+        title="Outstanding balance"
+        value={currency(outstanding)}
+        valueTestId="outstanding-billing-value"
+      />
+      <KPI
+        cardTestId="paid-bills-card"
+        description="fully settled"
+        descriptionHighlight={`${paidBills} bill${paidBills === 1 ? "" : "s"}`}
+        descriptionIcon={CheckCircle2}
+        descriptionTone="positive"
+        icon={CheckCircle2}
+        title="Paid bills"
+        value={paidBills}
+        valueTestId="paid-bills-value"
+      />
+      <KPI
+        cardTestId="open-bills-card"
+        description={openBills ? `${partiallyPaidBills} partially paid` : "all bills are settled"}
+        descriptionHighlight={openBills ? `${unpaidBills} unpaid` : "No open bills"}
+        descriptionIcon={openBills ? Clock3 : CheckCircle2}
+        descriptionTone={openBills ? "warning" : "positive"}
+        icon={openBills ? Clock3 : CheckCircle2}
+        title="Open bills"
+        value={openBills}
+        valueTestId="open-bills-value"
+      />
     </section>
   );
 }
-
-export default BillingSummaryCard;

@@ -14,6 +14,8 @@ function normalizeAnnouncement(notification) {
     content: notification.message,
     publicationDate: notification.announcement_date,
     relatedEvent: notification.announcement_type,
+    notificationType: notification.notification_type,
+    priority: notification.priority ?? "normal",
     consumerId: notification.consumer_id,
     createdAt: notification.created_at,
   };
@@ -30,11 +32,21 @@ export async function fetchAnnouncements(options = {}) {
 }
 
 export async function createAnnouncement(payload) {
+  const category = payload.relatedEvent || "General Announcement";
+  const priority = payload.priority ?? (
+    category === "Emergency Notice"
+      ? "critical"
+      : ["Water Interruption", "Service Restoration", "Billing Notice"].includes(category)
+        ? "high"
+        : "normal"
+  );
   const response = await apiRequest("/notifications", {
     method: "POST",
     body: JSON.stringify({
       consumerId: payload.consumerId ?? null,
-      announcementType: payload.relatedEvent || "General Announcement",
+      announcementType: category,
+      notificationType: priority === "normal" ? "announcement" : "service_alert",
+      priority,
       title: payload.title,
       announcementDate: currentLocalDate(),
       message: payload.content,

@@ -3,7 +3,7 @@ import { Database } from "lucide-react";
 import { fetchOverallConsumptionHistory } from "../services/consumptionAPI";
 import AnalyticsMetricCard from "./AnalyticsMetricCard";
 
-export default function AdminOverallConsumptionCard() {
+export default function AdminOverallConsumptionCard({ compact = false }) {
   const [consumption, setConsumption] = useState(null);
   const [recordCount, setRecordCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -86,6 +86,7 @@ export default function AdminOverallConsumptionCard() {
 
   return (
     <AnalyticsMetricCard
+      compact={compact}
       description={
         recordCount > 0
           ? `Baseline calculated from ${recordCount} historical ${recordCount === 1 ? "record" : "records"}`

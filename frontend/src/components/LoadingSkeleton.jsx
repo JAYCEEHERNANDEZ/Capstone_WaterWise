@@ -118,12 +118,30 @@ function CalendarSkeleton() {
 function MetricsSkeleton() {
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+        <div className="flex items-start gap-3">
+          <SkeletonBlock className="h-10 w-10 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <SkeletonBlock className="h-3 w-24" />
+            <SkeletonBlock className="mt-3 h-5 w-64 max-w-full" />
+            <SkeletonBlock className="mt-2 h-3 w-80 max-w-full" />
+          </div>
+          <SkeletonBlock className="hidden h-8 w-32 rounded-full sm:block" />
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-slate-200 pt-4">
+          <SkeletonBlock className="h-3 w-32" />
+          <SkeletonBlock className="h-11 w-48" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
-          <div className={`rounded-2xl border border-slate-200 p-4 shadow-card sm:p-5 ${index === 0 ? "bg-navy-950" : "bg-white"}`} key={index}>
-            <SkeletonBlock className={`h-3 w-24 ${index === 0 ? "opacity-20" : ""}`} />
-            <SkeletonBlock className={`mt-7 h-8 w-28 ${index === 0 ? "opacity-20" : ""}`} />
-            <SkeletonBlock className={`mt-3 h-3 w-20 ${index === 0 ? "opacity-20" : ""}`} />
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-5" key={index}>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <SkeletonBlock className="h-9 w-9 shrink-0" />
+              <SkeletonBlock className="h-3 w-20" />
+            </div>
+            <SkeletonBlock className="mt-4 h-7 w-24 sm:mt-5" />
+            <SkeletonBlock className="mt-2 h-3 w-28 max-w-full" />
           </div>
         ))}
       </div>
@@ -132,13 +150,52 @@ function MetricsSkeleton() {
   );
 }
 
+function HomeMetricsSkeleton() {
+  return (
+    <>
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <SkeletonBlock className="h-11 w-11 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1">
+              <SkeletonBlock className="h-3 w-24" />
+              <SkeletonBlock className="mt-2 h-5 w-36 max-w-full" />
+              <SkeletonBlock className="mt-2 h-4 w-72 max-w-full" />
+            </div>
+          </div>
+          <SkeletonBlock className="h-11 w-full shrink-0 sm:w-28" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div className="flex min-h-36 flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:min-h-44 sm:p-5" key={index}>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <SkeletonBlock className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" />
+              <SkeletonBlock className="h-3 w-24 max-w-[60%]" />
+            </div>
+            <SkeletonBlock className="mt-5 h-8 w-28 max-w-full" />
+            <SkeletonBlock className="mt-auto h-6 w-36 max-w-full rounded-full" />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function BillingSkeleton() {
   return (
     <>
-      <div className="rounded-2xl bg-navy-950 p-5 sm:p-6">
-        <SkeletonBlock className="h-3 w-36 opacity-20" />
-        <SkeletonBlock className="mt-4 h-11 w-48 opacity-20" />
-        <SkeletonBlock className="mt-6 h-16 w-full opacity-20 sm:ml-auto sm:w-60" />
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
+        <div className="flex items-center justify-between gap-4">
+          <SkeletonBlock className="h-10 w-40" />
+          <SkeletonBlock className="h-8 w-28 rounded-full" />
+        </div>
+        <SkeletonBlock className="mt-5 h-10 w-48" />
+        <div className="mt-5 border-t border-slate-200 pt-4">
+          <SkeletonBlock className="h-4 w-20" />
+          <SkeletonBlock className="mt-2 h-5 w-36" />
+        </div>
       </div>
       <TableSkeleton count={3} />
     </>
@@ -148,20 +205,28 @@ function BillingSkeleton() {
 function ProfileSkeleton() {
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 3 }, (_, index) => (
-          <div className={`rounded-2xl p-5 ${index === 1 ? "bg-navy-950" : "border border-slate-200 bg-white"}`} key={index}>
-            <SkeletonBlock className={`h-3 w-28 ${index === 1 ? "opacity-20" : ""}`} />
-            <SkeletonBlock className={`mt-6 h-8 w-40 ${index === 1 ? "opacity-20" : ""}`} />
-            <SkeletonBlock className={`mt-4 h-12 w-full ${index === 1 ? "opacity-20" : ""}`} />
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-6">
+        <div className="flex items-center gap-4">
+          <SkeletonBlock className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
+          <div className="min-w-0 flex-1">
+            <SkeletonBlock className="h-3 w-24" />
+            <SkeletonBlock className="mt-3 h-7 w-52 max-w-full" />
+            <SkeletonBlock className="mt-2 h-3 w-20" />
           </div>
-        ))}
+          <SkeletonBlock className="hidden h-8 w-28 rounded-full sm:block" />
+        </div>
       </div>
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid items-start gap-4 xl:grid-cols-2">
         {Array.from({ length: 2 }, (_, index) => (
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6" key={index}>
-            <SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="mt-3 h-7 w-48" />
-            <div className="mt-6 grid grid-cols-2 gap-3">{Array.from({ length: 4 }, (_, itemIndex) => <SkeletonBlock className="h-20 w-full" key={itemIndex} />)}</div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-6" key={index}>
+            <SkeletonBlock className="h-3 w-20" />
+            <SkeletonBlock className="mt-3 h-6 w-48 max-w-full" />
+            <SkeletonBlock className="mt-2 h-3 w-64 max-w-full" />
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {Array.from({ length: index === 0 ? 3 : 2 }, (_, itemIndex) => (
+                <SkeletonBlock className="h-[4.625rem] w-full" key={itemIndex} />
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -180,6 +245,7 @@ export default function LoadingSkeleton({ className = "", count = 3, label = "Lo
       {variant === "chart-panel" && <ChartSkeleton />}
       {variant === "inline" && <InlineSkeleton />}
       {variant === "list" && <ListSkeleton count={count} />}
+      {variant === "home-metrics" && <HomeMetricsSkeleton />}
       {variant === "notifications" && <ListSkeleton count={count} />}
       {variant === "profile" && <ProfileSkeleton />}
       {variant === "table" && <TableSkeleton count={count} />}

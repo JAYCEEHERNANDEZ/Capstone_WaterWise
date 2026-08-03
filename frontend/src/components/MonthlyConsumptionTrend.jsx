@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 import {
+  Area,
+  AreaChart,
   ResponsiveContainer,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -17,6 +18,7 @@ import {
   fetchOverallMonthlyPrediction,
 } from "../services/consumptionAPI";
 import LoadingSkeleton from "./LoadingSkeleton";
+import ChartTooltip from "./ChartTooltip";
 
 const MONTH_ORDER = [
   "january",
@@ -126,8 +128,13 @@ function MonthlyConsumptionTrend() {
         predictionData?.period ??
         "Next Month";
 
+      const connectedHistory = lastFiveMonths.map((record, index) => ({
+        ...record,
+        predicted: index === lastFiveMonths.length - 1 ? record.consumption : null,
+      }));
+
       const finalData = [
-        ...lastFiveMonths,
+        ...connectedHistory,
         {
           month: formatMonthLabel(predictionMonth),
           consumption: null,
@@ -169,7 +176,7 @@ function MonthlyConsumptionTrend() {
           </p>
 
           <h2 className="mt-1 text-xl font-extrabold text-navy-900">
-            Monthly consumption trend
+            Monthly Consumption Trend
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
@@ -206,7 +213,7 @@ function MonthlyConsumptionTrend() {
       {!loading && !error && chartData.length > 0 && (
         <div className="h-72 sm:h-80" aria-label="Monthly historical consumption and forecast chart" role="img">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <AreaChart
               data={chartData}
               margin={{
                 top: 10,
@@ -215,7 +222,13 @@ function MonthlyConsumptionTrend() {
                 bottom: 5,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <defs>
+                <linearGradient id="monthlyTrendFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#0284C7" stopOpacity={0.16} />
+                  <stop offset="100%" stopColor="#0284C7" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#DCE5EA" vertical={false} />
 
               <XAxis
                 dataKey="month"
@@ -242,46 +255,34 @@ function MonthlyConsumptionTrend() {
                 unit=" m³"
               />
 
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid #DCE5EA",
-                  borderRadius: "12px",
-                  boxShadow: "0 10px 30px rgba(15,43,64,.10)",
-                }}
-                formatter={(value, name) => [
-                  `${Number(value).toLocaleString("en-PH", {
-                    maximumFractionDigits: 2,
-                  })} m³`,
-                  name,
-                ]}
-              />
+              <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#94A3B8", strokeWidth: 1 }} />
 
               <Legend />
 
-              <Line
-                type="monotone"
+              <Area
+                type="linear"
                 dataKey="consumption"
                 name="Historical"
-                stroke="#07968F"
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 6, fill: "#07968F", stroke: "#ffffff", strokeWidth: 2 }}
+                stroke="#0284C7"
+                strokeWidth={2.5}
+                fill="url(#monthlyTrendFill)"
+                dot={{ r: 3.5, fill: "#ffffff", stroke: "#0284C7", strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: "#0284C7", stroke: "#ffffff", strokeWidth: 2 }}
                 connectNulls={false}
               />
 
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="predicted"
                 name="Prediction"
                 stroke="#0B2B40"
-                strokeWidth={3}
+                strokeWidth={2.5}
                 strokeDasharray="8 5"
                 dot={{ r: 4, fill: "#ffffff", stroke: "#0B2B40", strokeWidth: 2 }}
                 activeDot={{ r: 6, fill: "#0B2B40", stroke: "#ffffff", strokeWidth: 2 }}
                 connectNulls={false}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
           <p className="sr-only">
             The solid teal line shows recorded monthly consumption. The dashed navy line shows the predicted month.

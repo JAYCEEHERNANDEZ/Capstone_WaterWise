@@ -4,6 +4,7 @@ import {
   fetchAllPuroksMonthlyPrediction,
   fetchAllPuroksYearlyPrediction,
 } from "../services/consumptionAPI";
+import KPI from "./KPI";
 import LoadingSkeleton from "./LoadingSkeleton";
 
 const DEFAULT_PUROKS = Array.from({ length: 6 }, (_, index) => `Purok ${index + 1}`);
@@ -134,13 +135,13 @@ export default function AdminPerPurokConsumptionCard() {
         <>
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
             {forecastRecords.map((record) => (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4" key={record.purok}>
-                <p className="text-xs font-bold text-slate-500">{record.purok}</p>
-                <p className="mt-2 font-mono text-xl font-extrabold tabular-nums text-navy-900">
-                  {record.value.toLocaleString("en-PH", { maximumFractionDigits: 2 })}
-                  <span className="ml-1 text-xs font-bold text-slate-500">m³</span>
-                </p>
-              </div>
+              <KPI
+                className="shadow-none sm:p-4"
+                key={record.purok}
+                title={record.purok}
+                unit="m³"
+                value={record.value.toLocaleString("en-PH", { maximumFractionDigits: 2 })}
+              />
             ))}
           </div>
           {hasForecast ? (

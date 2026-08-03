@@ -112,6 +112,12 @@ export async function updateMeterReading(
 
   } catch (error) {
 
+    if (error.status === 409) {
+      return res.status(409).json({
+        message: error.message,
+      });
+    }
+
     if (
       error.status === 400
     ) {
@@ -156,6 +162,12 @@ export async function deleteMeterReading(
     res.status(200).json(result);
 
   } catch (error) {
+
+    if (error.status === 409) {
+      return res.status(409).json({
+        message: error.message,
+      });
+    }
 
     if (
       error.message ===

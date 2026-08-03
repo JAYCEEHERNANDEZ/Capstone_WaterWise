@@ -1,56 +1,86 @@
 import { useEffect, useRef, useState } from "react";
-import { FiMoreHorizontal, FiX } from "react-icons/fi";
+import {
+  FiChevronLeft,
+  FiChevronRight,
+  FiDroplet,
+  FiLogOut,
+  FiMoreHorizontal,
+  FiUser,
+  FiX,
+} from "react-icons/fi";
 import { NavLink } from "react-router";
 
 function getItemLabel(item) {
   return typeof item === "string" ? item : item.label;
 }
 
-function NavigationLink({ item, mobile = false, onNavigate }) {
+function NavigationLink({ collapsed = false, item, mobile = false, onNavigate }) {
   const label = getItemLabel(item);
   const Icon = typeof item === "string" ? null : item.Icon;
   const baseClass = mobile
-    ? "relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 text-center text-[11px] font-bold transition-colors duration-150"
-    : "relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-bold transition-colors duration-150";
+    ? "relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-1 text-center text-[11px] font-bold transition-all duration-200"
+    : `group relative flex min-h-11 items-center rounded-xl py-2 text-left text-sm font-bold transition-all duration-200 ${collapsed ? "justify-center px-2" : "gap-3 px-3"}`;
+
+  const content = (
+    <>
+      {Icon && <Icon aria-hidden="true" className={mobile ? "h-5 w-5 shrink-0" : "h-5 w-5 shrink-0"} />}
+      <span className={collapsed && !mobile ? "sr-only" : `truncate ${mobile ? "" : "ww-popover-enter"}`}>{label}</span>
+      {collapsed && !mobile && (
+        <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">
+          {label}
+        </span>
+      )}
+    </>
+  );
 
   if (typeof item === "string" || !item.path) {
-    return (
-      <span className={`${baseClass} text-slate-500`}>
-        {Icon && <Icon aria-hidden="true" className={mobile ? "h-5 w-5" : "h-4 w-4 shrink-0 text-water-600"} />}
-        <span className="truncate">{label}</span>
-      </span>
-    );
+    return <span className={`${baseClass} text-slate-500`}>{content}</span>;
   }
 
   return (
     <NavLink
+      aria-label={collapsed && !mobile ? label : undefined}
       className={({ isActive }) => [
         baseClass,
         isActive
           ? mobile
-            ? "bg-water-50 text-water-700 after:absolute after:-top-2 after:h-1 after:w-8 after:rounded-full after:bg-water-600"
-            : "bg-water-50 text-water-800 before:absolute before:left-0 before:h-6 before:w-1 before:rounded-r-full before:bg-water-600"
-          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+            ? "bg-water-50/90 text-water-700"
+            : "bg-water-50 text-water-800"
+          : "text-slate-500 hover:bg-slate-50 hover:text-navy-900",
       ].join(" ")}
       onClick={onNavigate}
       to={item.path}
     >
-      {Icon && <Icon aria-hidden="true" className={mobile ? "h-5 w-5 shrink-0" : "h-4 w-4 shrink-0"} />}
-      <span className="truncate">{label}</span>
+      {content}
     </NavLink>
   );
 }
 
-export default function Sidebar({ activeRoleLabel, items = [] }) {
+export default function Sidebar({
+  accountName = "WaterWise User",
+  activeRoleLabel,
+  items = [],
+  onLogout,
+  onProfile,
+  subtitle = "Sucol Water System",
+  title = "WaterWise",
+}) {
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const closeButtonRef = useRef(null);
   const moreTriggerRef = useRef(null);
   const primaryMobileItems = items.length > 4 ? items.slice(0, 3) : items;
   const additionalMobileItems = items.length > 4 ? items.slice(3) : [];
+  const AccountContainer = onProfile ? "button" : "div";
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const openTimer = window.setTimeout(() => setIsCollapsed(false), reduceMotion ? 0 : 180);
+    return () => window.clearTimeout(openTimer);
+  }, []);
 
   useEffect(() => {
     if (!isMoreOpen) return undefined;
-
     const moreTrigger = moreTriggerRef.current;
     closeButtonRef.current?.focus();
     const closeOnEscape = (event) => {
@@ -68,72 +98,126 @@ export default function Sidebar({ activeRoleLabel, items = [] }) {
       {isMoreOpen && (
         <button
           aria-label="Close more navigation"
-          className="fixed inset-0 z-30 bg-slate-950/45 lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-950/5 lg:hidden"
           onClick={() => setIsMoreOpen(false)}
           type="button"
         />
       )}
 
-      {/* Desktop sidebar becomes a solid mobile bottom dock below lg. */}
-      <aside className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(15,23,42,0.08)] lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] lg:w-64 lg:shrink-0 lg:self-start lg:border-r lg:border-t-0 lg:shadow-none">
-        {additionalMobileItems.length > 0 && (
-          <div
-            aria-hidden={!isMoreOpen}
-            aria-label="More navigation tools"
-            aria-modal="true"
-            className={[
-              "absolute inset-x-3 bottom-[calc(100%+0.75rem)] grid max-h-[min(65vh,32rem)] gap-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-modal transition duration-200 lg:hidden",
-              isMoreOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",
-            ].join(" ")}
-            id="mobile-more-navigation"
-            inert={!isMoreOpen}
-            role="dialog"
-          >
-            <div className="mb-1 flex items-center justify-between px-2 py-1">
-              <div>
-                <p className="text-sm font-extrabold text-slate-900">More tools</p>
-                <p className="text-xs text-slate-500">{activeRoleLabel} workspace</p>
+      {additionalMobileItems.length > 0 && (
+        <div
+          aria-hidden={!isMoreOpen}
+          aria-label="More navigation tools"
+          aria-modal="true"
+          className={`fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-40 grid max-h-[min(65vh,32rem)] gap-1 overflow-y-auto rounded-2xl border border-white/80 bg-white/80 p-3 shadow-modal backdrop-blur-2xl transition-all duration-200 lg:hidden ${isMoreOpen ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"}`}
+          id="mobile-more-navigation"
+          inert={!isMoreOpen}
+          role="dialog"
+        >
+          <div className="mb-1 flex items-center justify-between px-2 py-1">
+            <div>
+              <p className="text-sm font-extrabold text-navy-900">More tools</p>
+              <p className="text-xs text-slate-500">{activeRoleLabel} workspace</p>
+            </div>
+            <button
+              aria-label="Close more tools"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+              onClick={() => setIsMoreOpen(false)}
+              ref={closeButtonRef}
+              type="button"
+            >
+              <FiX aria-hidden="true" className="h-5 w-5" />
+            </button>
+          </div>
+          {additionalMobileItems.map((item) => (
+            <NavigationLink item={item} key={getItemLabel(item)} onNavigate={() => setIsMoreOpen(false)} />
+          ))}
+        </div>
+      )}
+
+      <aside className={`fixed inset-x-3 bottom-3 z-40 rounded-full border border-white/50 bg-white/35 pb-[env(safe-area-inset-bottom)] shadow-raised backdrop-blur-xl lg:sticky lg:inset-auto lg:top-4 lg:ml-4 lg:mt-4 lg:h-[calc(100vh-2rem)] lg:shrink-0 lg:self-start lg:overflow-visible lg:rounded-3xl lg:border-slate-200 lg:bg-white lg:pb-0 lg:shadow-card lg:backdrop-blur-none lg:transition-[width] lg:duration-500 lg:ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:lg:duration-0 ${isCollapsed ? "lg:w-20" : "lg:w-64"}`}>
+        <div className="flex h-full items-center gap-1 p-1.5 lg:flex-col lg:items-stretch lg:gap-0 lg:p-3">
+          <div className={`hidden min-h-14 items-center lg:flex ${isCollapsed ? "justify-center" : "gap-3 px-1"}`}>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-600 text-white shadow-sm">
+              <FiDroplet aria-hidden="true" className="h-5 w-5" />
+            </span>
+            {!isCollapsed && (
+              <div className="ww-popover-enter min-w-0 flex-1">
+                <p className="truncate text-base font-extrabold tracking-tight text-navy-900">{title}</p>
+                <p className="truncate text-[11px] font-medium text-slate-500">{subtitle}</p>
               </div>
+            )}
+            {!isCollapsed && (
               <button
-                aria-label="Close more tools"
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition-colors duration-150 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
-                onClick={() => setIsMoreOpen(false)}
-                ref={closeButtonRef}
+                aria-label="Collapse sidebar"
+                className="ww-popover-enter flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-navy-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600"
+                onClick={() => setIsCollapsed(true)}
                 type="button"
               >
-                <FiX aria-hidden="true" className="h-5 w-5" />
+                <FiChevronLeft aria-hidden="true" className="h-5 w-5" />
               </button>
-            </div>
-            {additionalMobileItems.map((item) => (
-              <NavigationLink item={item} key={getItemLabel(item)} onNavigate={() => setIsMoreOpen(false)} />
-            ))}
+            )}
           </div>
-        )}
 
-        <div className="flex h-full items-center gap-2 px-2 py-2 lg:flex-col lg:items-stretch lg:px-4 lg:py-5">
-          <nav className="hidden min-w-0 flex-1 overflow-y-auto lg:block" aria-label={`${activeRoleLabel ?? "WaterWise"} navigation`}>
-            <p className="mb-3 px-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
-              Workspace
-            </p>
+          {isCollapsed && (
+            <button
+              aria-label="Expand sidebar"
+              className="group relative mt-2 hidden h-11 w-full items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-navy-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 lg:flex"
+              onClick={() => setIsCollapsed(false)}
+              type="button"
+            >
+              <FiChevronRight aria-hidden="true" className="h-5 w-5" />
+              <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">Expand sidebar</span>
+            </button>
+          )}
+
+          <nav className="mt-5 hidden min-h-0 flex-1 overflow-y-auto overflow-x-visible lg:block" aria-label={`${activeRoleLabel ?? "WaterWise"} navigation`}>
+            {!isCollapsed && <p className="ww-popover-enter mb-2 px-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">Workspace</p>}
             <ul className="grid min-w-0 gap-1">
               {items.map((item) => (
-                <li key={getItemLabel(item)}>
-                  <NavigationLink item={item} />
-                </li>
+                <li key={getItemLabel(item)}><NavigationLink collapsed={isCollapsed} item={item} /></li>
               ))}
             </ul>
           </nav>
 
+          <div className={`mt-auto hidden border-t border-slate-100 pt-3 lg:block ${isCollapsed ? "px-0" : "px-1"}`}>
+            <AccountContainer
+              aria-label={onProfile && isCollapsed ? `Open profile for ${accountName}` : undefined}
+              className={`group relative flex min-h-14 w-full items-center rounded-xl text-left ${onProfile ? "transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600" : ""} ${isCollapsed ? "justify-center px-2" : "gap-3 px-2"}`}
+              onClick={onProfile}
+              type={onProfile ? "button" : undefined}
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-water-50 text-water-700"><FiUser aria-hidden="true" className="h-5 w-5" /></span>
+              {!isCollapsed && <span className="ww-popover-enter min-w-0"><span className="block truncate text-sm font-bold text-navy-900">{accountName}</span><span className="mt-0.5 block truncate text-xs font-medium text-slate-500">{activeRoleLabel}</span></span>}
+              {isCollapsed && <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">{accountName} · {activeRoleLabel}</span>}
+            </AccountContainer>
+            <button
+              aria-label={isCollapsed ? "Log out" : undefined}
+              className={`group relative mt-2 flex min-h-11 w-full items-center rounded-xl bg-red-50 font-bold text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-3 text-sm"}`}
+              onClick={onLogout}
+              type="button"
+            >
+              <FiLogOut aria-hidden="true" className="h-5 w-5 shrink-0" />
+              {!isCollapsed && <span>Log out</span>}
+              {isCollapsed && <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">Log out</span>}
+            </button>
+          </div>
+
           <nav className="flex min-w-0 flex-1 lg:hidden" aria-label={`${activeRoleLabel ?? "WaterWise"} mobile navigation`}>
             {primaryMobileItems.map((item) => (
-              <NavigationLink item={item} key={getItemLabel(item)} mobile />
+              <NavigationLink
+                item={item}
+                key={getItemLabel(item)}
+                mobile
+                onNavigate={() => setIsMoreOpen(false)}
+              />
             ))}
             {additionalMobileItems.length > 0 && (
               <button
                 aria-controls="mobile-more-navigation"
                 aria-expanded={isMoreOpen}
                 aria-haspopup="dialog"
-                className={`relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 text-center text-[11px] font-bold transition-colors duration-150 ${isMoreOpen ? "bg-water-50 text-water-700" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}
+                className={`relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-1 text-center text-[11px] font-bold transition-all duration-200 ${isMoreOpen ? "bg-water-50/90 text-water-700" : "text-slate-500 hover:bg-white/70 hover:text-navy-900"}`}
                 onClick={() => setIsMoreOpen((isOpen) => !isOpen)}
                 ref={moreTriggerRef}
                 type="button"

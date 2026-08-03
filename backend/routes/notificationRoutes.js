@@ -3,6 +3,7 @@ import {
   addNotification,
   listNotifications,
   markNotificationRead,
+  runNotificationReminders,
   showNotification,
 } from "../controllers/notificationControllers.js";
 import {
@@ -15,6 +16,11 @@ const router = express.Router();
 
 router.use(authenticate);
 router.get("/", authorizeConsumerQueryOrRoles("admin"), listNotifications);
+router.post(
+  "/process-reminders",
+  authorizeRoles("admin"),
+  runNotificationReminders,
+);
 router.put("/:id/read", authorizeRoles("consumer"), markNotificationRead);
 router.get("/:id", authorizeRoles("admin"), showNotification);
 router.post("/", authorizeRoles("admin"), addNotification);

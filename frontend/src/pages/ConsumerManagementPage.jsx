@@ -158,7 +158,7 @@ function ConsumerManagementPage() {
         </button>
       </div>
 
-      <section aria-label="Resident summary" className="grid gap-3 sm:grid-cols-2">
+      <section aria-label="Resident summary" className="grid grid-cols-2 gap-2 sm:gap-3">
         <KPI description="Registered community accounts" icon={FiUsers} title="Total residents" value={consumers.length} />
         <KPI description="Accounts ready for service" icon={FiCheckCircle} title="Active accounts" value={consumers.filter((item) => item.status?.toLowerCase() === "active").length} />
       </section>
@@ -210,7 +210,7 @@ function ConsumerManagementPage() {
 
       <button
         aria-label="Add resident"
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-water-600 px-5 font-bold text-white shadow-modal transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 lg:hidden"
+        className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-water-600 px-5 font-bold text-white shadow-modal transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 lg:hidden"
         onClick={() => {
           setSelectedConsumer(null);
           setFormMode("add");

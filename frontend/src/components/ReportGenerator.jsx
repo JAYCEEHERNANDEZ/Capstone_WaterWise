@@ -8,6 +8,7 @@ import {
   Printer,
 } from "lucide-react";
 import Dropdown from "./Dropdown";
+import KPI from "./KPI";
 import { useToast } from "./Toast";
 import {
   downloadReportPDF,
@@ -296,10 +297,13 @@ export default function ReportGenerator({ onGenerated }) {
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {Object.entries(preview.summary).map(([key, value]) => (
-              <div className="rounded-xl border border-water-100 bg-white p-3" key={key}>
-                <p className="text-xs font-semibold text-slate-500">{formatMetricLabel(key)}</p>
-                <p className="mt-1 font-mono text-lg font-extrabold tabular-nums text-navy-900">{formatMetricValue(key, value)}</p>
-              </div>
+              <KPI
+                className="shadow-none sm:p-4"
+                icon={FileText}
+                key={key}
+                title={formatMetricLabel(key)}
+                value={formatMetricValue(key, value)}
+              />
             ))}
           </div>
         </section>

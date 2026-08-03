@@ -1,53 +1,68 @@
-import CurrentBalanceCard from "./CurrentBalanceCard";
+import { CalendarDays, Droplets, Gauge, Sigma, TrendingUp } from "lucide-react";
+import KPI from "./KPI";
 
-const summaryCards = [
-  { key: "total", label: "Water used in this view", testId: "stat-total" },
-  { key: "average", label: "Average monthly use", testId: "stat-avg" },
-  { key: "highest", label: "Highest-use month", testId: "stat-highest" },
-];
+const number = (value) =>
+  Number(value ?? 0).toLocaleString("en-US", { maximumFractionDigits: 1 });
 
-export default function AnalyticsSummaryGrid({ amountDue = 0, consumptionHistory = [] }) {
-  const totalConsumption = consumptionHistory.reduce((acc, curr) => acc + curr.volume, 0);
-  const averageUsage = consumptionHistory.length > 0
+export default function AnalyticsSummaryGrid({ consumptionHistory = [] }) {
+  const totalConsumption = consumptionHistory.reduce(
+    (total, record) => total + Number(record.volume ?? 0),
+    0,
+  );
+  const averageUsage = consumptionHistory.length
     ? totalConsumption / consumptionHistory.length
     : 0;
-  const highestRecord = consumptionHistory.length > 0
-    ? consumptionHistory.reduce((max, current) => current.volume > max.volume ? current : max)
+  const latestRecord = consumptionHistory.at(-1) ?? null;
+  const highestRecord = consumptionHistory.length
+    ? consumptionHistory.reduce((highest, record) =>
+        Number(record.volume) > Number(highest.volume) ? record : highest,
+      )
     : null;
 
-  const values = {
-    total: `${totalConsumption.toLocaleString("en-US", { maximumFractionDigits: 1 })} m³`,
-    average: `${averageUsage.toLocaleString("en-US", { maximumFractionDigits: 1 })} m³`,
-    highest: highestRecord?.month ?? "No readings yet",
-  };
-
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4" data-testid={consumptionHistory.length ? "analytics-grid" : "analytics-empty"}>
-      <CurrentBalanceCard amountDue={amountDue} />
-      {summaryCards.map((card) => (
-        <SummaryCard
-          key={card.key}
-          label={card.label}
-          testId={card.testId}
-          value={values[card.key]}
-        />
-      ))}
-    </div>
-  );
-}
-
-function SummaryCard({ label, testId, value }) {
-  return (
-    <section className="ww-glass min-h-36 rounded-2xl p-4 sm:min-h-44 sm:p-5">
-      <span className="text-[11px] font-bold leading-4 text-water-700 sm:text-xs">
-        {label}
-      </span>
-      <h3
-        className="ww-data-value mt-4 font-mono text-xl font-bold tracking-[-0.03em] text-slate-900 sm:text-2xl"
-        data-testid={testId}
-      >
-        {value}
-      </h3>
+    <section
+      aria-label="Consumption summary"
+      className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4"
+      data-testid={consumptionHistory.length ? "analytics-grid" : "analytics-empty"}
+    >
+      <KPI
+        description="latest recorded month"
+        descriptionHighlight={latestRecord?.month ?? "No recorded month"}
+        descriptionIcon={CalendarDays}
+        icon={Droplets}
+        title="Latest water use"
+        unit="m³"
+        value={number(latestRecord?.volume)}
+        valueTestId="stat-latest"
+      />
+      <KPI
+        description="used to calculate the average"
+        descriptionHighlight={`${consumptionHistory.length} recorded month${consumptionHistory.length === 1 ? "" : "s"}`}
+        icon={Gauge}
+        title="Monthly average"
+        unit="m³"
+        value={number(averageUsage)}
+        valueTestId="stat-avg"
+      />
+      <KPI
+        description="included in this period"
+        descriptionHighlight={`${consumptionHistory.length} recorded month${consumptionHistory.length === 1 ? "" : "s"}`}
+        icon={Sigma}
+        title="Total for period"
+        unit="m³"
+        value={number(totalConsumption)}
+        valueTestId="stat-total"
+      />
+      <KPI
+        description="water used"
+        descriptionHighlight={`${number(highestRecord?.volume)} m³`}
+        descriptionIcon={Droplets}
+        descriptionTone="warning"
+        icon={TrendingUp}
+        title="Highest-use month"
+        value={highestRecord?.month ?? "No recorded month"}
+        valueTestId="stat-highest"
+      />
     </section>
   );
 }
