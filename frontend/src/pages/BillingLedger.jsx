@@ -177,44 +177,41 @@ export default function BillingLedger({
               Showing {displayedHistoryData.length} of {historyData.length} bill{historyData.length === 1 ? "" : "s"}
             </p>
           </div>
-          <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
-            <Filter
-              ariaLabel="Filter bills by billing period"
-              className="w-full sm:w-52"
-              onValueChange={setPeriodFilter}
-              options={[
-                { label: "All billing periods", value: "all" },
-                ...periodOptions.map((period) => ({ label: period, value: period })),
-              ]}
-              value={periodFilter}
-            />
-            <Filter
-              ariaLabel="Filter bills by status"
-              className="w-full sm:w-48"
-              onValueChange={setStatusFilter}
-              options={[
-                { label: "All statuses", value: "all" },
-                { label: "Paid", value: "Paid" },
-                { label: "Partially paid", value: "Partially Paid" },
-                { label: "Unpaid", value: "Unpaid" },
-              ]}
-              value={statusFilter}
-            />
-          </div>
+          <Filter
+            ariaLabel="Filter billing history"
+            className="w-full sm:w-auto"
+            description="Choose a billing period or payment status to narrow your bill history."
+            filters={[
+              {
+                ariaLabel: "Filter bills by billing period",
+                className: "w-52",
+                id: "billing-period-filter",
+                label: "Billing period",
+                onValueChange: setPeriodFilter,
+                options: [
+                  { label: "All billing periods", value: "all" },
+                  ...periodOptions.map((period) => ({ label: period, value: period })),
+                ],
+                value: periodFilter,
+              },
+              {
+                ariaLabel: "Filter bills by status",
+                className: "w-48",
+                id: "billing-status-filter",
+                label: "Status",
+                onValueChange: setStatusFilter,
+                options: [
+                  { label: "All statuses", value: "all" },
+                  { label: "Paid", value: "Paid" },
+                  { label: "Partially paid", value: "Partially Paid" },
+                  { label: "Unpaid", value: "Unpaid" },
+                ],
+                value: statusFilter,
+              },
+            ]}
+            title="Bill filters"
+          />
         </div>
-
-        {hasActiveFilters && (
-          <button
-            className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-water-700 hover:bg-water-50"
-            onClick={() => {
-              setPeriodFilter("all");
-              setStatusFilter("all");
-            }}
-            type="button"
-          >
-            Clear filters
-          </button>
-        )}
 
         <BillingHistoryTable
           emptyDescription={hasActiveFilters ? "Adjust or clear the billing period and status filters to see other records." : "Your billing records will appear here after a meter reading is recorded."}
