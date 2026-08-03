@@ -328,7 +328,7 @@ export default function PaymentProcessingPage() {
 
       <button
         aria-label="Record a new payment"
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-water-600 px-5 font-bold text-white shadow-modal transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:bg-water-300 lg:hidden"
+        className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-water-600 px-5 font-bold text-white shadow-modal transition-colors hover:bg-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:bg-water-300 lg:hidden"
         disabled={loading}
         onClick={openPaymentModal}
         type="button"
