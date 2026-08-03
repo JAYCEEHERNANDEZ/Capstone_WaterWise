@@ -118,12 +118,30 @@ function CalendarSkeleton() {
 function MetricsSkeleton() {
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+        <div className="flex items-start gap-3">
+          <SkeletonBlock className="h-10 w-10 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <SkeletonBlock className="h-3 w-24" />
+            <SkeletonBlock className="mt-3 h-5 w-64 max-w-full" />
+            <SkeletonBlock className="mt-2 h-3 w-80 max-w-full" />
+          </div>
+          <SkeletonBlock className="hidden h-8 w-32 rounded-full sm:block" />
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-slate-200 pt-4">
+          <SkeletonBlock className="h-3 w-32" />
+          <SkeletonBlock className="h-11 w-48" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
-          <div className={`rounded-2xl border border-slate-200 p-4 shadow-card sm:p-5 ${index === 0 ? "bg-navy-950" : "bg-white"}`} key={index}>
-            <SkeletonBlock className={`h-3 w-24 ${index === 0 ? "opacity-20" : ""}`} />
-            <SkeletonBlock className={`mt-7 h-8 w-28 ${index === 0 ? "opacity-20" : ""}`} />
-            <SkeletonBlock className={`mt-3 h-3 w-20 ${index === 0 ? "opacity-20" : ""}`} />
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-5" key={index}>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <SkeletonBlock className="h-9 w-9 shrink-0" />
+              <SkeletonBlock className="h-3 w-20" />
+            </div>
+            <SkeletonBlock className="mt-4 h-7 w-24 sm:mt-5" />
+            <SkeletonBlock className="mt-2 h-3 w-28 max-w-full" />
           </div>
         ))}
       </div>
