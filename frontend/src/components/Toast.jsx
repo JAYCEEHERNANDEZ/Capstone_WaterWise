@@ -112,7 +112,7 @@ export function ToastProvider({ children }) {
       {typeof document !== "undefined" && createPortal(
         <div
           aria-label="System notifications"
-          className="pointer-events-none fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.5rem)] z-[100] flex flex-col items-center gap-3 sm:inset-x-auto sm:right-6 sm:top-20 sm:w-[25rem] sm:items-stretch"
+          className="pointer-events-none fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4rem)] z-[100] flex flex-col items-center gap-3 sm:inset-x-auto sm:right-6 sm:top-[4.5rem] sm:w-[25rem] sm:items-stretch lg:right-20 lg:top-6"
         >
           {toasts.map((item) => {
             const { badge, border, icon, Icon, label } = toastStyles[item.type];
