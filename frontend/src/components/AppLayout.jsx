@@ -22,6 +22,7 @@ import {
 } from "../services/consumerPortal.service";
 import NotificationPage from "../pages/NotificationPage";
 import Header from "./Header";
+import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import NotificationBadgeTrigger from "./NotificationBadgeTrigger";
 import Modal from "./Modal";
 import Sidebar from "./Sidebar";
@@ -93,6 +94,8 @@ export default function AppLayout({ children }) {
   const pathRole = getRoleFromPath(location.pathname);
   const [account, setAccount] = useState(getStoredAccount);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [isNotificationLoading, setIsNotificationLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [selectedNotification, setSelectedNotification] = useState(null);
@@ -197,6 +200,7 @@ export default function AppLayout({ children }) {
   }, [isNotificationOpen]);
 
   const handleLogout = async () => {
+    setIsSigningOut(true);
     try {
       await logout();
       toast.success("Signed out", "You have securely signed out of WaterWise.");
@@ -205,6 +209,8 @@ export default function AppLayout({ children }) {
     } finally {
       setAccount(null);
       setIsNotificationOpen(false);
+      setIsLogoutConfirmOpen(false);
+      setIsSigningOut(false);
       navigate("/login");
     }
   };
@@ -276,7 +282,7 @@ export default function AppLayout({ children }) {
             </div>
           ) : null
         }
-        onLogout={handleLogout}
+        onLogout={() => setIsLogoutConfirmOpen(true)}
         onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : undefined}
         title="WaterWise"
       />
@@ -298,7 +304,7 @@ export default function AppLayout({ children }) {
           accountName={accountName || activeRoleConfig.userName}
           activeRoleLabel={activeRoleConfig.label}
           items={activeRoleConfig.links}
-          onLogout={handleLogout}
+          onLogout={() => setIsLogoutConfirmOpen(true)}
           onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : undefined}
         />
 
@@ -311,6 +317,13 @@ export default function AppLayout({ children }) {
           </div>
         </main>
       </div>
+
+      <LogoutConfirmationModal
+        isOpen={isLogoutConfirmOpen}
+        isSigningOut={isSigningOut}
+        onCancel={() => setIsLogoutConfirmOpen(false)}
+        onConfirm={handleLogout}
+      />
 
       <Modal
         description={selectedNotificationPresentation.label}
