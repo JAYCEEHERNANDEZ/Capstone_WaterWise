@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Award, Medal, RefreshCw, Trophy } from "lucide-react";
-
+import { AlertCircle, BarChart3, RefreshCw, Trophy } from "lucide-react";
 import { fetchConsumptionRanking } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
 
-function ConsumptionRankingSection() {
+export default function ConsumptionRankingSection() {
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -12,24 +12,16 @@ function ConsumptionRankingSection() {
     try {
       setLoading(true);
       setError("");
-
       const response = await fetchConsumptionRanking();
-
       const responseData = response?.data ?? response;
-
-      const rankingData =
-        responseData?.ranking ?? responseData?.data ?? responseData ?? [];
-
+      const rankingData = responseData?.ranking ?? responseData?.data ?? responseData ?? [];
       setRanking(Array.isArray(rankingData) ? rankingData : []);
-    } catch (err) {
-      console.error(err);
-
+    } catch (requestError) {
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load consumption ranking.",
+        requestError?.response?.data?.message ??
+          requestError?.message ??
+          "Unable to load consumption priorities.",
       );
-
       setRanking([]);
     } finally {
       setLoading(false);
@@ -37,133 +29,93 @@ function ConsumptionRankingSection() {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      await loadRanking();
-    };
-
-    fetchData();
+    queueMicrotask(loadRanking);
   }, [loadRanking]);
 
-  const getRankIcon = (rank) => {
-    switch (rank) {
-      case 0:
-        return <Trophy className="h-5 w-5 text-amber-500" />;
-
-      case 1:
-        return <Medal className="h-5 w-5 text-slate-400" />;
-
-      case 2:
-        return <Award className="h-5 w-5 text-orange-500" />;
-
-      default:
-        return (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
-            {rank + 1}
-          </span>
-        );
-    }
-  };
-
   return (
-    <section data-testid="consumption-ranking-section"
-    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+    <section
+      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6"
+      data-testid="consumption-ranking-section"
+    >
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
-            Analytics
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">
+            Priority overview
           </p>
-
-          <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
-            Consumption Ranking
+          <h2 className="mt-1 text-xl font-extrabold text-navy-900">
+            Highest-consuming puroks
           </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Water consumption ranking by purok.
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Ranked recorded consumption for prioritizing review—not proof of waste or leakage.
           </p>
         </div>
-
         <button
-          type="button"
-          onClick={loadRanking}
+          aria-label="Refresh consumption ranking"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-water-300 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 disabled:opacity-50"
           disabled={loading}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={loadRanking}
+          title="Refresh consumption ranking"
+          type="button"
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw aria-hidden="true" className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div className="space-y-3">
-          {[...Array(5)].map((_, index) => (
-            <div
-              key={index}
-              className="h-20 animate-pulse rounded-2xl bg-slate-200"
-            />
-          ))}
+      {loading ? (
+        <LoadingSkeleton className="mt-5" count={5} label="Loading consumption ranking" variant="list" />
+      ) : error ? (
+        <div className="mt-5 flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
+          <span className="flex items-start gap-2 font-semibold">
+            <AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+            {error}
+          </span>
+          <button className="min-h-11 rounded-xl bg-white px-3 font-bold hover:bg-red-100" onClick={loadRanking} type="button">
+            Try again
+          </button>
         </div>
-      )}
-
-      {/* Error */}
-      {!loading && error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-red-600">
-          <AlertCircle className="h-5 w-5" />
-
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Ranking */}
-      {!loading && !error && ranking.length > 0 && (
-        <div className="space-y-3">
-          {ranking.map((item, index) => (
-            <div
-              key={item.purok}
-              data-testid="ranking-row"
-              className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 transition hover:border-sky-200 hover:bg-sky-50"
-            >
-              <div className="flex items-center gap-4">
-                {getRankIcon(index)}
-
-                <div>
-                  <h3 className="font-semibold text-slate-900">{item.purok}</h3>
-
-                  <p className="text-sm text-slate-500">Rank #{index + 1}</p>
+      ) : ranking.length ? (
+        <div className="mt-5 divide-y divide-slate-100 border-y border-slate-100">
+          {ranking.map((item, index) => {
+            const value = Number(item?.consumption ?? item?.value ?? 0);
+            const first = index === 0;
+            return (
+              <div
+                className={`flex items-center justify-between gap-4 px-1 py-4 ${first ? "bg-water-50/70" : ""}`}
+                data-testid="ranking-row"
+                key={item.purok ?? index}
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-mono text-sm font-extrabold tabular-nums ${
+                      first ? "bg-water-600 text-white" : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {first ? <Trophy aria-hidden="true" className="h-5 w-5" /> : index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="truncate font-bold text-navy-900">{item.purok}</h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {first ? "Highest recorded consumption" : `Priority rank ${index + 1}`}
+                    </p>
+                  </div>
                 </div>
+                <p className="shrink-0 text-right font-mono text-lg font-extrabold tabular-nums text-navy-900">
+                  {Number.isFinite(value)
+                    ? value.toLocaleString("en-PH", { maximumFractionDigits: 2 })
+                    : "0"}
+                  <span className="ml-1 text-xs text-slate-500">m³</span>
+                </p>
               </div>
-
-              <div className="text-right">
-                <h3 className="text-xl font-extrabold text-slate-900">
-                  {Number(item?.consumption ?? item?.value ?? 0).toLocaleString(
-                    "en-PH",
-                    {
-                      maximumFractionDigits: 2,
-                    },
-                  )}
-                </h3>
-
-                <p className="text-sm text-slate-500">m³</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      )}
-
-      {/* Empty */}
-      {!loading && !error && ranking.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-12 text-center">
-          <h3 className="text-lg font-semibold text-slate-700">
-            No Ranking Available
-          </h3>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Consumption ranking will appear once data is available.
-          </p>
+      ) : (
+        <div className="mt-5 flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+          <BarChart3 aria-hidden="true" className="h-6 w-6 text-slate-400" />
+          <h3 className="mt-3 font-bold text-navy-900">No ranking available</h3>
+          <p className="mt-1 text-sm text-slate-500">Rankings will appear after consumption records are available.</p>
         </div>
       )}
     </section>
   );
 }
-
-export default ConsumptionRankingSection;

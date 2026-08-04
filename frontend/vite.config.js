@@ -14,14 +14,14 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeManifestIcons: false,
       manifest: {
-        name: 'WaterWise Consumer Portal',
+        name: 'WaterWise',
         short_name: 'WaterWise',
-        description: 'Water consumption, billing, profile, and notification portal.',
+        description: 'Barangay water readings, billing, payments, analytics, and resident services.',
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        background_color: '#0f172a',
-        theme_color: '#0f172a',
+        background_color: '#f4fafb',
+        theme_color: '#0b2b40',
         icons: [
           {
             src: '/pwa-icon-192.svg',
@@ -50,25 +50,6 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/[^/]+\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            method: 'GET',
-            options: {
-              cacheName: 'waterwise-supabase-api',
-              networkTimeoutSeconds: 5,
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24,
-                purgeOnQuotaError: true,
-              },
-            },
-          },
-        ],
       },
     }),
   ],

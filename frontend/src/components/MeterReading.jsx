@@ -2,8 +2,10 @@ import { useState } from "react";
 import MeterReadingForm from "./MeterReadingForm";
 import MeterReadingTable from "./MeterReadingTable";
 import meterReadingData from "../data/meterReadingData";
+import { useToast } from "./Toast";
 
 const MeterReading = () => {
+  const toast = useToast();
   const [readings, setReadings] =
     useState(meterReadingData);
 
@@ -24,6 +26,7 @@ const MeterReading = () => {
       );
 
       setSelectedReading(null);
+      toast.success("Reading updated", "The meter reading changes were saved.");
       return;
     }
 
@@ -36,6 +39,7 @@ const MeterReading = () => {
       ...prev,
       newReading,
     ]);
+    toast.success("Reading added", "The meter reading was added to the records.");
   };
 
   const handleEdit = (reading) => {
@@ -66,6 +70,7 @@ const MeterReading = () => {
     ) {
       setSelectedReading(null);
     }
+    toast.success("Reading deleted", "The meter reading was removed from the records.");
   };
 
   const handleCancel = () => {
@@ -73,18 +78,17 @@ const MeterReading = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="mx-auto max-w-7xl">
+    <section className="space-y-6">
+      <div className="mx-auto max-w-5xl">
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">
-            Meter Reading Management
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-600">Field operations</p>
+          <h1 className="mt-2 text-2xl font-extrabold text-navy-900 sm:text-3xl">
+            Meter reading management
           </h1>
 
-          <p className="mt-2 text-gray-600">
-            Create, update, and manage
-            consumer meter reading
-            records.
+          <p className="mt-2 text-slate-600">
+            Create, update, and review resident meter readings.
           </p>
         </div>
 
@@ -101,7 +105,7 @@ const MeterReading = () => {
         />
 
       </div>
-    </div>
+    </section>
   );
 };
 

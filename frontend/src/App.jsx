@@ -8,6 +8,8 @@ import {
 } from "./services/authToken";
 import BillingLedger from "./pages/BillingLedger";
 import ConsumerProfile from "./pages/ConsumerProfile";
+import ConsumerHome from "./pages/ConsumerHome";
+import AnnouncementsPage from "./pages/AnnouncementsPage";
 import Login from "./pages/Login";
 import UsageMetrics from "./pages/UsageMetrics";
 import AnalyticsDashboard from "./pages/analyticsDashboard";
@@ -23,16 +25,18 @@ import RecordConsumptionPage from "./pages/RecordConsumptionPage";
 
 const portalRoutes = [
   { label: "Dashboard", path: "/admin/dashboard" },
-  { label: "Consumers", path: "/admin/consumers" },
+  { label: "Residents", path: "/admin/consumers" },
   { label: "Readings", path: "/admin/readings" },
-  { label: "Billings", path: "/admin/billings" },
+  { label: "Billing", path: "/admin/billings" },
   { label: "Payments", path: "/admin/payments" },
   { label: "Events", path: "/admin/events" },
   { label: "Announcements", path: "/admin/announcements" },
   { label: "Record Consumption Entry", path: "/meter-reader/readings-entry" },
-  { label: "Profile Details", path: "/consumer/profile-details" },
-  { label: "Billing Ledger", path: "/consumer/billing-ledger" },
-  { label: "Usage Metrics", path: "/consumer/usage-metrics" },
+  { label: "Profile", path: "/consumer/profile-details" },
+  { label: "Bills", path: "/consumer/billing-ledger" },
+  { label: "Home", path: "/consumer/home" },
+  { label: "Announcements", path: "/consumer/announcements" },
+  { label: "Analytics", path: "/consumer/analytics" },
   { label: "Analytics", path: "/admin/analytics" },
   { label: "Reports", path: "/admin/reports" },
 ];
@@ -63,12 +67,15 @@ const roleAccess = {
     ],
   },
   consumer: {
-    homePath: "/consumer/usage-metrics",
+    homePath: "/consumer/home",
     label: "Consumer",
     paths: [
       "/consumer",
+      "/consumer/home",
+      "/consumer/announcements",
       "/consumer/profile-details",
       "/consumer/billing-ledger",
+      "/consumer/analytics",
       "/consumer/usage-metrics",
     ],
   },
@@ -84,11 +91,11 @@ function MockPortalPage() {
 
   return (
     <AppLayout>
-      <section className="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_18px_56px_rgba(15,23,42,0.06)] sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#0284C7]">
+      <section className="ww-glass-strong rounded-2xl p-6 sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-water-600">
           Mock workspace
         </p>
-        <h2 className="mt-3 text-2xl font-bold leading-tight tracking-[-0.02em] text-[#0F172A]">
+        <h2 className="mt-3 text-2xl font-bold leading-tight tracking-[-0.02em] text-navy-900">
           {pageTitle}
         </h2>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
@@ -278,10 +285,30 @@ export function AppRoutes() {
       <Route
         element={
           <RoleRouteGuard requiredRole="consumer">
-            <Navigate replace to="/consumer/usage-metrics" />
+            <Navigate replace to="/consumer/home" />
           </RoleRouteGuard>
         }
         path="/consumer"
+      />
+      <Route
+        element={
+          <RoleRouteGuard requiredRole="consumer">
+            <AppLayout>
+              <ConsumerHome />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+        path="/consumer/home"
+      />
+      <Route
+        element={
+          <RoleRouteGuard requiredRole="consumer">
+            <AppLayout>
+              <AnnouncementsPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+        path="/consumer/announcements"
       />
       <Route
         element={
@@ -309,6 +336,14 @@ export function AppRoutes() {
             <AppLayout>
               <UsageMetrics />
             </AppLayout>
+          </RoleRouteGuard>
+        }
+        path="/consumer/analytics"
+      />
+      <Route
+        element={
+          <RoleRouteGuard requiredRole="consumer">
+            <Navigate replace to="/consumer/analytics" />
           </RoleRouteGuard>
         }
         path="/consumer/usage-metrics"

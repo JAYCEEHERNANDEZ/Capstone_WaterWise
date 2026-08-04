@@ -3,8 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 import {
+  Area,
+  AreaChart,
   ResponsiveContainer,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -19,6 +20,8 @@ import {
   fetchAllPuroksYearlyHistory,
   fetchAllPuroksYearlyPrediction,
 } from "../services/consumptionAPI";
+import ChartTooltip from "./ChartTooltip";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const DEFAULT_PUROKS = [
   "Purok 1",
@@ -83,61 +86,6 @@ const normalizeMonth = (month) => {
 
 const extractResponseData = (response) =>
   response?.data?.data ?? response?.data ?? response ?? [];
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  const validPayload = payload.filter(
-    (entry) => entry.value !== null && entry.value !== undefined,
-  );
-
-  if (!validPayload.length) {
-    return null;
-  }
-
-  return (
-    <div
-      className="
-rounded-xl
-border
-border-slate-200
-bg-white
-px-4
-py-3
-shadow-lg
-"
-    >
-      <p
-        className="
-mb-2
-text-sm
-font-bold
-text-slate-900
-"
-      >
-        {label}
-      </p>
-
-      {validPayload.map((entry) => (
-        <p
-          key={entry.dataKey}
-          className="
-text-sm
-font-medium
-"
-          style={{
-            color: entry.color,
-          }}
-        >
-          {entry.name}: {formatConsumption(entry.value)}
-          m³
-        </p>
-      ))}
-    </div>
-  );
-};
 
 function PerPurokConsumptionTrend() {
   const [period, setPeriod] = useState("Monthly");
@@ -326,12 +274,13 @@ function PerPurokConsumptionTrend() {
     <section
     data-testid="purok-consumption-trend"
       className="
-rounded-3xl
+rounded-2xl
 border
 border-slate-200
 bg-white
-p-6
-shadow-sm
+p-5
+shadow-card
+sm:p-6
 "
     >
       {/* HEADER */}
@@ -351,8 +300,8 @@ gap-4
 text-xs
 font-bold
 uppercase
-tracking-[0.18em]
-text-sky-600
+tracking-[0.14em]
+text-water-700
 "
           >
             Consumption Trend
@@ -361,9 +310,9 @@ text-sky-600
           <h2
             className="
 mt-2
-text-2xl
+text-xl
 font-extrabold
-text-slate-900
+text-navy-900
 "
           >
             Per Purok Consumption Trend
@@ -392,14 +341,14 @@ gap-2
               onClick={() => setPeriod("Monthly")}
               className={`
 
-rounded-lg
+rounded-xl
 px-4
-py-2
+min-h-11
 text-xs
 font-semibold
 
 ${
-  period === "Monthly" ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700"
+  period === "Monthly" ? "bg-water-600 text-white" : "bg-slate-100 text-slate-700"
 }
 
 `}
@@ -411,13 +360,13 @@ ${
               onClick={() => setPeriod("Yearly")}
               className={`
 
-rounded-lg
+rounded-xl
 px-4
-py-2
+min-h-11
 text-xs
 font-semibold
 
-${period === "Yearly" ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700"}
+${period === "Yearly" ? "bg-water-600 text-white" : "bg-slate-100 text-slate-700"}
 
 `}
             >
@@ -432,8 +381,8 @@ ${period === "Yearly" ? "bg-sky-600 text-white" : "bg-slate-100 text-slate-700"}
           disabled={loading}
           className="
 flex
-h-10
-w-10
+h-11
+w-11
 items-center
 justify-center
 rounded-xl
@@ -444,6 +393,7 @@ hover:bg-slate-200
 disabled:opacity-50
 "
         >
+          <span className="sr-only">Refresh per-purok trends</span>
           <RefreshCw
             className={`
 
@@ -460,26 +410,8 @@ ${loading ? "animate-spin" : ""}
       {/* LOADING */}
 
       {loading && (
-        <div
-          className="
-grid
-grid-cols-1
-gap-6
-md:grid-cols-2
-xl:grid-cols-3
-"
-        >
-          {DEFAULT_PUROKS.map((purok) => (
-            <div
-              key={purok}
-              className="
-h-80
-animate-pulse
-rounded-2xl
-bg-slate-100
-"
-            />
-          ))}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {DEFAULT_PUROKS.map((purok) => <LoadingSkeleton key={purok} label={`Loading ${purok} trend`} variant="card" />)}
         </div>
       )}
 
@@ -513,7 +445,12 @@ w-5
 "
             />
 
-            <p className="text-sm">{error}</p>
+            <div>
+              <p className="text-sm font-semibold">{error}</p>
+              <button className="mt-3 min-h-11 rounded-xl bg-white px-4 text-sm font-bold text-red-700 hover:bg-red-100" onClick={loadPerPurokTrend} type="button">
+                Try again
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -593,8 +530,10 @@ text-slate-500
 
                       <p
                         className="
+font-mono
 font-extrabold
-text-amber-600
+tabular-nums
+text-water-700
 "
                       >
                         {formatConsumption(records.predictedConsumption)}
@@ -605,14 +544,16 @@ text-amber-600
                 </div>
 
                 <div
+                  aria-label={`${purok} historical consumption and forecast chart`}
                   className="
 mt-4
 h-60
 "
+                  role="img"
                 >
                   {chartData.length > 0 && (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
+                      <AreaChart
                         data={chartData}
                         margin={{
                           top: 10,
@@ -621,38 +562,62 @@ h-60
                           bottom: 0,
                         }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <defs>
+                          <linearGradient id="perPurokTrendFill" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="#0284C7" stopOpacity={0.16} />
+                            <stop offset="100%" stopColor="#0284C7" stopOpacity={0.02} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid stroke="#DCE5EA" strokeDasharray="3 3" vertical={false} />
 
-                        <XAxis dataKey="label" />
+                        <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#52697A", fontSize: 11 }} />
 
                         <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#52697A", fontSize: 11 }}
                           tickFormatter={(value) => formatConsumption(value)}
                         />
 
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={<ChartTooltip valueFormatter={formatConsumption} />} cursor={{ stroke: "#94A3B8", strokeWidth: 1 }} />
 
                         <Legend />
 
-                        <Line
-                          type="monotone"
+                        <Area
+                          type="linear"
                           dataKey="consumption"
                           name="Historical"
-                          stroke="#0284c7"
-                          strokeWidth={3}
+                          stroke="#0284C7"
+                          strokeWidth={2.5}
+                          fill="url(#perPurokTrendFill)"
+                          dot={{ r: 3.5, fill: "#ffffff", stroke: "#0284C7", strokeWidth: 2 }}
+                          activeDot={{ r: 6, fill: "#0284C7", stroke: "#ffffff", strokeWidth: 2 }}
                         />
 
                         <Line
-                          type="monotone"
+                          type="linear"
                           dataKey="predicted"
                           name="Prediction"
-                          stroke="#f59e0b"
-                          strokeWidth={3}
+                          stroke="#0B2B40"
+                          strokeWidth={2.5}
                           strokeDasharray="8 5"
+                          dot={{ r: 4, fill: "#ffffff", stroke: "#0B2B40", strokeWidth: 2 }}
+                          activeDot={{ r: 6, fill: "#0B2B40", stroke: "#ffffff", strokeWidth: 2 }}
                         />
-                      </LineChart>
+                      </AreaChart>
                     </ResponsiveContainer>
                   )}
+                  {chartData.length === 0 && (
+                    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-4 text-center">
+                      <p className="text-sm text-slate-500">No consumption history is available for {purok}.</p>
+                    </div>
+                  )}
                 </div>
+                {chartData.length > 0 && (
+                  <p className="sr-only">
+                    {purok} chart showing recorded consumption as a solid teal line and prediction as a dashed navy line.
+                  </p>
+                )}
               </article>
             );
           })}

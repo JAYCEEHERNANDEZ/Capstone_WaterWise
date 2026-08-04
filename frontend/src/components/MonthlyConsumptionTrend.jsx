@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 import {
+  Area,
+  AreaChart,
   ResponsiveContainer,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -16,6 +17,8 @@ import {
   fetchMonthlyHistory,
   fetchOverallMonthlyPrediction,
 } from "../services/consumptionAPI";
+import LoadingSkeleton from "./LoadingSkeleton";
+import ChartTooltip from "./ChartTooltip";
 
 const MONTH_ORDER = [
   "january",
@@ -125,8 +128,13 @@ function MonthlyConsumptionTrend() {
         predictionData?.period ??
         "Next Month";
 
+      const connectedHistory = lastFiveMonths.map((record, index) => ({
+        ...record,
+        predicted: index === lastFiveMonths.length - 1 ? record.consumption : null,
+      }));
+
       const finalData = [
-        ...lastFiveMonths,
+        ...connectedHistory,
         {
           month: formatMonthLabel(predictionMonth),
           consumption: null,
@@ -160,14 +168,14 @@ function MonthlyConsumptionTrend() {
 
   return (
     <section data-testid="monthly-consumption-trend"
-    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
-            Consumption Trend
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">
+            Monthly outlook
           </p>
 
-          <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
+          <h2 className="mt-1 text-xl font-extrabold text-navy-900">
             Monthly Consumption Trend
           </h2>
 
@@ -182,30 +190,30 @@ function MonthlyConsumptionTrend() {
           disabled={loading}
           aria-label="Refresh monthly trend"
           title="Refresh monthly trend"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-water-300 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {loading && (
-        <div className="h-96 animate-pulse rounded-2xl bg-slate-100" />
+        <LoadingSkeleton label="Loading monthly consumption trend" variant="chart" />
       )}
 
       {!loading && error && (
-        <div className="flex h-96 items-center justify-center rounded-2xl border border-red-200 bg-red-50">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="h-5 w-5" />
-
-            <span className="text-sm">{error}</span>
+        <div className="flex min-h-72 items-center justify-center rounded-xl border border-red-200 bg-red-50 p-5">
+          <div className="text-center text-red-700" role="alert">
+            <AlertCircle aria-hidden="true" className="mx-auto h-5 w-5" />
+            <p className="mt-2 text-sm font-semibold">{error}</p>
+            <button className="mt-4 min-h-11 rounded-xl bg-white px-4 text-sm font-bold hover:bg-red-100" onClick={loadMonthlyTrend} type="button">Try again</button>
           </div>
         </div>
       )}
 
       {!loading && !error && chartData.length > 0 && (
-        <div className="h-96">
+        <div className="h-72 sm:h-80" aria-label="Monthly historical consumption and forecast chart" role="img">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <AreaChart
               data={chartData}
               margin={{
                 top: 10,
@@ -214,7 +222,13 @@ function MonthlyConsumptionTrend() {
                 bottom: 5,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <defs>
+                <linearGradient id="monthlyTrendFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#0284C7" stopOpacity={0.16} />
+                  <stop offset="100%" stopColor="#0284C7" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#DCE5EA" vertical={false} />
 
               <XAxis
                 dataKey="month"
@@ -241,49 +255,46 @@ function MonthlyConsumptionTrend() {
                 unit=" m³"
               />
 
-              <Tooltip
-                formatter={(value, name) => [
-                  `${Number(value).toLocaleString("en-PH", {
-                    maximumFractionDigits: 2,
-                  })} m³`,
-                  name,
-                ]}
-              />
+              <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#94A3B8", strokeWidth: 1 }} />
 
               <Legend />
 
-              <Line
-                type="monotone"
+              <Area
+                type="linear"
                 dataKey="consumption"
                 name="Historical"
-                stroke="#0284c7"
-                strokeWidth={3}
-                dot={{ r: 5 }}
-                activeDot={{ r: 7 }}
+                stroke="#0284C7"
+                strokeWidth={2.5}
+                fill="url(#monthlyTrendFill)"
+                dot={{ r: 3.5, fill: "#ffffff", stroke: "#0284C7", strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: "#0284C7", stroke: "#ffffff", strokeWidth: 2 }}
                 connectNulls={false}
               />
 
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="predicted"
                 name="Prediction"
-                stroke="#f59e0b"
-                strokeWidth={3}
+                stroke="#0B2B40"
+                strokeWidth={2.5}
                 strokeDasharray="8 5"
-                dot={{ r: 5 }}
-                activeDot={{ r: 7 }}
+                dot={{ r: 4, fill: "#ffffff", stroke: "#0B2B40", strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: "#0B2B40", stroke: "#ffffff", strokeWidth: 2 }}
                 connectNulls={false}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
+          <p className="sr-only">
+            The solid teal line shows recorded monthly consumption. The dashed navy line shows the predicted month.
+          </p>
         </div>
       )}
 
       {!loading && !error && chartData.length === 0 && (
-        <div className="flex h-96 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50">
+        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6">
           <div className="text-center">
             <h3 className="font-semibold text-slate-700">
-              No Monthly Data Available
+              No monthly data available
             </h3>
 
             <p className="mt-2 text-sm text-slate-500">

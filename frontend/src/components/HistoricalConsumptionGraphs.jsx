@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fetchMonthlyHistory, fetchYearlyHistory } from "../services/consumptionAPI";
+import ChartTooltip from "./ChartTooltip";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const unwrap = (response) => response?.data?.data ?? response?.data ?? response ?? [];
 const value = (record) => Number(record?.consumption ?? record?.totalConsumption ?? record?.total_consumption ?? record?.value ?? 0);
@@ -11,13 +13,14 @@ function HistoryGraph({ data, dataKey, title }) {
       <h3 className="text-lg font-extrabold text-slate-900">{title}</h3>
       <div className="mt-5 h-72">
         <ResponsiveContainer height="100%" width="100%">
-          <LineChart data={data} margin={{ left: 4, right: 16, top: 8 }}>
-            <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
-            <XAxis dataKey={dataKey} tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} unit=" m³" width={72} />
-            <Tooltip formatter={(amount) => [`${Number(amount).toLocaleString("en-PH")} m³`, "Consumption"]} />
-            <Line dataKey="consumption" dot={{ r: 4 }} name="Historical consumption" stroke="#0284c7" strokeWidth={3} type="monotone" />
-          </LineChart>
+          <AreaChart data={data} margin={{ left: 4, right: 16, top: 8 }}>
+            <defs><linearGradient id="historyFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#0284C7" stopOpacity={0.16} /><stop offset="100%" stopColor="#0284C7" stopOpacity={0.02} /></linearGradient></defs>
+            <CartesianGrid stroke="#DCE5EA" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey={dataKey} tick={{ fill: "#52697A", fontSize: 12, fontWeight: 600 }} tickLine={false} />
+            <YAxis tick={{ fill: "#52697A", fontSize: 11, fontWeight: 600 }} tickLine={false} width={64} />
+            <Tooltip content={<ChartTooltip valueLabel="consumption" />} cursor={{ stroke: "#94A3B8", strokeWidth: 1 }} />
+            <Area activeDot={{ fill: "#0284C7", r: 6, stroke: "#FFFFFF", strokeWidth: 2 }} dataKey="consumption" dot={{ fill: "#FFFFFF", r: 3.5, stroke: "#0284C7", strokeWidth: 2 }} fill="url(#historyFill)" name="Historical consumption" stroke="#0284C7" strokeWidth={2.5} type="linear" />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </article>
@@ -27,6 +30,7 @@ function HistoryGraph({ data, dataKey, title }) {
 export default function HistoricalConsumptionGraphs() {
   const [monthly, setMonthly] = useState([]);
   const [yearly, setYearly] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -36,14 +40,19 @@ export default function HistoricalConsumptionGraphs() {
       setYearly((Array.isArray(unwrap(yearlyResponse)) ? unwrap(yearlyResponse) : []).map((record) => ({ ...record, consumption: value(record) })));
     }).catch(() => {
       if (active) { setMonthly([]); setYearly([]); }
+    }).finally(() => {
+      if (active) setLoading(false);
     });
     return () => { active = false; };
   }, []);
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
-      <HistoryGraph data={monthly} dataKey="month" title="Monthly historical consumption" />
-      <HistoryGraph data={yearly} dataKey="year" title="Yearly historical consumption" />
+      {loading ? (
+        <><LoadingSkeleton label="Loading monthly historical consumption" variant="chart-panel" /><LoadingSkeleton label="Loading yearly historical consumption" variant="chart-panel" /></>
+      ) : (
+        <><HistoryGraph data={monthly} dataKey="month" title="Monthly Historical Consumption" /><HistoryGraph data={yearly} dataKey="year" title="Yearly Historical Consumption" /></>
+      )}
     </div>
   );
 }

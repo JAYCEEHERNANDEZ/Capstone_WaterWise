@@ -1,19 +1,20 @@
-import MeterReadingForm from "../../components/meter-reading/MeterReadingForm";
+import MeterReadingForm from "./MeterReadingForm";
 
 function AddMeterReadingPage() {
   return (
     <main className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold">
-          Add Meter Reading
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-600">Field operations</p>
+        <h1 className="mt-2 text-2xl font-extrabold text-navy-900 sm:text-3xl">
+          Add meter reading
         </h1>
 
-        <p className="text-sm text-gray-500">
-          Submit a new meter reading for a consumer account.
+        <p className="text-sm text-slate-500">
+          Record a new meter value for a resident account.
         </p>
       </header>
 
-      <MeterReadingForm />
+      <MeterReadingForm onSave={() => {}} />
     </main>
   );
 }

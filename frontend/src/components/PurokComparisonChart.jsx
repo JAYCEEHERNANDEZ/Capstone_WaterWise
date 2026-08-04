@@ -14,6 +14,8 @@ import {
 } from "recharts";
 
 import { fetchAllPuroksMonthlyHistory } from "../services/consumptionAPI";
+import ChartTooltip from "./ChartTooltip";
+import LoadingSkeleton from "./LoadingSkeleton";
 
 const DEFAULT_PUROKS = [
   "Purok 1",
@@ -40,12 +42,12 @@ const MONTHS = [
 ];
 
 const BAR_COLORS = [
-  "#0284c7",
-  "#0ea5e9",
-  "#38bdf8",
-  "#0369a1",
-  "#075985",
-  "#0c4a6e",
+  "#0284C7",
+  "#0284C7",
+  "#0284C7",
+  "#0284C7",
+  "#0284C7",
+  "#0284C7",
 ];
 
 const formatValue = (value) =>
@@ -79,30 +81,21 @@ const formatMonth = (month) => {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  const record = payload[0]?.payload;
-
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg">
-      <p className="font-bold text-slate-900">{label}</p>
-
-      <p className="mt-1 text-sm text-slate-600">
-        {formatValue(record?.consumption)} m³
-      </p>
-
-      <p className="mt-1 text-xs text-slate-400">
-        {record?.month} {record?.year}
-      </p>
-    </div>
+    <ChartTooltip
+      active={active}
+      label={label}
+      payload={payload}
+      supportingFormatter={(record) => `${record.month} ${record.year}`}
+      valueFormatter={formatValue}
+      valueLabel="consumption"
+    />
   );
 };
 
 function PurokComparisonChart({
-  title = "Purok Comparison Chart",
-  graphTitle = "Latest Monthly Consumption",
+  title = "Latest Consumption By Purok",
+  graphTitle = "Recorded monthly consumption",
 }) {
   const [chartData, setChartData] = useState([]);
 
@@ -248,17 +241,22 @@ function PurokComparisonChart({
   }, [loadComparison]);
 
   const hasConsumption = chartData.some((item) => Number(item.consumption) > 0);
+  const highestPurok = chartData.reduce(
+    (highest, item) =>
+      Number(item.consumption) > Number(highest?.consumption ?? -1) ? item : highest,
+    null,
+  );
 
   return (
     <section data-testid="purok-comparison-chart"
-    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
-            Purok Analytics
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">
+            Purok analytics
           </p>
 
-          <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
+          <h2 className="mt-1 text-xl font-extrabold text-navy-900">
             {title}
           </h2>
 
@@ -274,28 +272,28 @@ function PurokComparisonChart({
           disabled={loading}
           aria-label="Refresh purok comparison"
           title="Refresh"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-water-300 hover:bg-water-50 hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {loading && (
-        <div className="h-96 animate-pulse rounded-2xl bg-slate-100" />
+        <LoadingSkeleton label="Loading purok comparison" variant="chart" />
       )}
 
       {!loading && error && (
-        <div className="flex h-96 items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-
-            <p className="text-sm">{error}</p>
+        <div className="flex min-h-72 items-center justify-center rounded-xl border border-red-200 bg-red-50 p-5">
+          <div className="text-center text-red-700" role="alert">
+            <AlertCircle aria-hidden="true" className="mx-auto h-5 w-5" />
+            <p className="mt-2 text-sm font-semibold">{error}</p>
+            <button className="mt-4 min-h-11 rounded-xl bg-white px-4 text-sm font-bold hover:bg-red-100" onClick={loadComparison} type="button">Try again</button>
           </div>
         </div>
       )}
 
       {!loading && !error && hasConsumption && (
-        <div className="h-96 w-full">
+        <div className="h-72 w-full sm:h-80" aria-label="Latest consumption comparison across puroks" role="img">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
@@ -307,8 +305,8 @@ function PurokComparisonChart({
               }}
             >
               <CartesianGrid
-                stroke="#e2e8f0"
-                strokeDasharray="4 4"
+                stroke="#DCE5EA"
+                strokeDasharray="3 3"
                 vertical={false}
               />
 
@@ -337,15 +335,18 @@ function PurokComparisonChart({
               <Tooltip
                 content={<CustomTooltip />}
                 cursor={{
-                  fill: "#f1f5f9",
+                  fill: "#F0FAF8",
                 }}
               />
 
               <Bar
+                activeBar={{ fill: "#0369A1", stroke: "#FFFFFF", strokeWidth: 2 }}
+                background={{ fill: "#F1F5F9", radius: 8 }}
                 dataKey="consumption"
+                fill="#0284C7"
                 name="Consumption"
-                radius={[8, 8, 0, 0]}
-                maxBarSize={65}
+                radius={[8, 8, 8, 8]}
+                maxBarSize={48}
               >
                 {chartData.map((item, index) => (
                   <Cell
@@ -356,14 +357,27 @@ function PurokComparisonChart({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          <p className="sr-only">
+            Bar chart comparing the latest recorded water consumption for Purok 1 through Purok 6.
+          </p>
         </div>
       )}
 
+      {!loading && !error && hasConsumption && highestPurok && (
+        <p className="mt-4 rounded-xl border border-water-200 bg-water-50 p-4 text-sm leading-6 text-water-900">
+          <strong>{highestPurok.purok}</strong> recorded the highest consumption for this comparison at{" "}
+          <strong className="font-mono tabular-nums">
+            {formatValue(highestPurok.consumption)} m³
+          </strong>
+          . Review the underlying readings before deciding on an intervention.
+        </p>
+      )}
+
       {!loading && !error && !hasConsumption && (
-        <div className="flex h-96 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50">
+        <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6">
           <div className="text-center">
             <h3 className="font-semibold text-slate-700">
-              No Comparison Data Available
+              No comparison data available
             </h3>
 
             <p className="mt-2 text-sm text-slate-500">

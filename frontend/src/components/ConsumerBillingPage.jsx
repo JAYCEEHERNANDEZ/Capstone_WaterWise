@@ -12,7 +12,7 @@ function ConsumerBillingPage() {
           Consumer Billing
         </h1>
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-slate-500">
           View the consumer's current bill, balance, and billing history.
         </p>
       </header>
