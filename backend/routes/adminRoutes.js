@@ -6,6 +6,7 @@ import {
   removeAdmin,
   showAdmin,
 } from "../controllers/adminControllers.js";
+import { authorizeStaffAction } from "../controllers/authControllers.js";
 import {
   authenticate,
   authorizeRoles,
@@ -13,11 +14,11 @@ import {
 
 const router = express.Router();
 
-router.use(authenticate, authorizeRoles("admin"));
+router.use(authenticate, authorizeRoles("super-admin"));
 router.get("/", listAdmins);
 router.get("/:id", showAdmin);
-router.post("/", registerAdmin);
-router.patch("/:id", editAdmin);
+router.post("/", authorizeStaffAction("create-admin"), registerAdmin);
+router.patch("/:id", authorizeStaffAction("update-admin"), editAdmin);
 router.delete("/:id", removeAdmin);
 
 export default router;

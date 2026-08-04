@@ -31,9 +31,11 @@ export const registerMeterReader = async (req, res) => {
 
 export const listMeterReaders = async (req, res) => {
   try {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(25, Math.max(1, Number.parseInt(req.query.pageSize, 10) || 5));
     return res.status(200).json({
       success: true,
-      data: await getMeterReaders(),
+      data: await getMeterReaders({ page, pageSize }),
     });
   } catch (error) {
     return sendError(res, error, "Failed to retrieve meter readers.");

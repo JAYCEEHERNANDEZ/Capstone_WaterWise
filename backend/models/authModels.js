@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { timingSafeEqual } from "node:crypto";
+import validator from "validator";
 import { supabase } from "../config/supabase.js";
 
 const ACCOUNT_SOURCES = [
@@ -8,8 +9,27 @@ const ACCOUNT_SOURCES = [
   { role: "consumer", table: "consumers" },
 ];
 
+const getAccountSource = (role) => ACCOUNT_SOURCES.find((item) =>
+  item.role === role || (role === "super-admin" && item.role === "admin")
+);
+
+const createLockoutError = (lockedUntil) => {
+  const retryAfterSeconds = Math.max(
+    1,
+    Math.ceil((new Date(lockedUntil).getTime() - Date.now()) / 1000),
+  );
+  const error = new Error(
+    `Too many incorrect attempts. Try again in ${Math.ceil(retryAfterSeconds / 60)} minute(s).`,
+  );
+  error.statusCode = 429;
+  error.retryAfterSeconds = retryAfterSeconds;
+  return error;
+};
+
 const findAccount = async (table, identifier) => {
-  const fields = "id, username, email, password, status";
+  const fields = table === "admins"
+    ? "id, username, email, password, status, role, failed_login_attempts, locked_until"
+    : "id, username, email, password, status, failed_login_attempts, locked_until";
   const emailResult = await supabase
     .from(table)
     .select(fields)
@@ -31,6 +51,41 @@ const findAccount = async (table, identifier) => {
     throw new Error(`Failed to check account: ${usernameResult.error.message}`);
   }
   return usernameResult.data;
+};
+
+const recordFailedLogin = async (source, account) => {
+  const { data, error } = await supabase.rpc("record_failed_login", {
+    p_account_type: source.role,
+    p_account_id: account.id,
+  });
+
+  if (error) {
+    throw new Error(`Failed to record login attempt: ${error.message}`);
+  }
+
+  if (data?.locked_until) {
+    throw createLockoutError(data.locked_until);
+  }
+
+  return {
+    failedAttempts: Number(data?.failed_attempts ?? 0),
+    remainingAttempts: Math.max(0, 5 - Number(data?.failed_attempts ?? 0)),
+  };
+};
+
+const resetLoginFailures = async (table, accountId) => {
+  const { error } = await supabase
+    .from(table)
+    .update({
+      failed_login_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", accountId);
+
+  if (error) {
+    throw new Error(`Failed to reset login attempts: ${error.message}`);
+  }
 };
 
 const verifyAndUpgradePassword = async (table, account, password) => {
@@ -83,6 +138,7 @@ export async function authenticateAccount(identifier, password) {
   }
 
   let identifierMatched = false;
+  let loginAttemptStatus = null;
 
   for (const source of ACCOUNT_SOURCES) {
     const account = await findAccount(source.table, normalizedIdentifier);
@@ -92,7 +148,12 @@ export async function authenticateAccount(identifier, password) {
 
     identifierMatched = true;
 
+    if (account.locked_until && new Date(account.locked_until).getTime() > Date.now()) {
+      throw createLockoutError(account.locked_until);
+    }
+
     if (!(await verifyAndUpgradePassword(source.table, account, password))) {
+      loginAttemptStatus = await recordFailedLogin(source, account);
       continue;
     }
 
@@ -102,12 +163,16 @@ export async function authenticateAccount(identifier, password) {
       throw error;
     }
 
+    if (account.failed_login_attempts || account.locked_until) {
+      await resetLoginFailures(source.table, account.id);
+    }
+
     return {
       id: account.id,
       username: account.username,
       email: account.email,
       name: account.username,
-      role: source.role,
+      role: source.role === "admin" && account.role === "super-admin" ? "super-admin" : source.role,
     };
   }
 
@@ -118,5 +183,121 @@ export async function authenticateAccount(identifier, password) {
   );
   error.statusCode = 401;
   error.field = identifierMatched ? "password" : "identifier";
+  if (identifierMatched && loginAttemptStatus) {
+    error.failedAttempts = loginAttemptStatus.failedAttempts;
+    error.remainingAttempts = loginAttemptStatus.remainingAttempts;
+  }
   throw error;
+}
+
+export async function findPasswordResetAccount(email) {
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+  if (!validator.isEmail(normalizedEmail)) {
+    const error = new Error("Enter a valid email address.");
+    error.statusCode = 400;
+    error.field = "email";
+    throw error;
+  }
+
+  for (const source of ACCOUNT_SOURCES) {
+    const account = await findAccount(source.table, normalizedEmail);
+    if (account && account.email?.toLowerCase() === normalizedEmail) {
+      return { ...account, role: source.role, table: source.table };
+    }
+  }
+  return null;
+}
+
+export async function resetAccountPassword({ accountId, password, role }) {
+  const source = getAccountSource(role);
+  if (!source) return false;
+
+  if (
+    typeof password !== "string" ||
+    password.length < 8 ||
+    !/[a-z]/.test(password) ||
+    !/[A-Z]/.test(password) ||
+    !/\d/.test(password) ||
+    !/[^A-Za-z0-9]/.test(password)
+  ) {
+    const error = new Error(
+      "Use at least 8 characters with uppercase, lowercase, a number, and a symbol.",
+    );
+    error.statusCode = 400;
+    error.field = "password";
+    throw error;
+  }
+
+  const { data: account, error: findError } = await supabase
+    .from(source.table)
+    .select("id, password")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (findError) throw new Error(`Failed to check account: ${findError.message}`);
+  if (!account) return false;
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const { error } = await supabase
+    .from(source.table)
+    .update({
+      password: hashedPassword,
+      failed_login_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", accountId);
+  if (error) throw new Error(`Failed to reset password: ${error.message}`);
+  return { previousPassword: String(account.password ?? "") };
+}
+
+export async function getPasswordHash(accountId, role) {
+  const source = getAccountSource(role);
+  if (!source) return null;
+  const { data, error } = await supabase
+    .from(source.table)
+    .select("password")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to check password reset session: ${error.message}`);
+  return data?.password ?? null;
+}
+
+export async function getPasswordResetAccountById(accountId, role) {
+  const source = getAccountSource(role);
+  if (!source) return null;
+  const { data, error } = await supabase
+    .from(source.table)
+    .select(source.table === "admins" ? "id, username, email, password, status, role" : "id, username, email, password, status")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to check account: ${error.message}`);
+  return data ? { ...data, role: source.role === "admin" && data.role === "super-admin" ? "super-admin" : source.role, table: source.table } : null;
+}
+
+export async function changePasswordWithCurrent({ accountId, role, currentPassword, newPassword }) {
+  const account = await getPasswordResetAccountById(accountId, role);
+  if (!account) {
+    const error = new Error("Account not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (typeof currentPassword !== "string" || !currentPassword) {
+    const error = new Error("Enter your current password.");
+    error.statusCode = 400;
+    error.field = "currentPassword";
+    throw error;
+  }
+  if (!(await verifyAndUpgradePassword(account.table, account, currentPassword))) {
+    const error = new Error("Your current password is incorrect.");
+    error.statusCode = 400;
+    error.field = "currentPassword";
+    throw error;
+  }
+  if (currentPassword === newPassword) {
+    const error = new Error("Your new password must be different from your current password.");
+    error.statusCode = 400;
+    error.field = "newPassword";
+    throw error;
+  }
+  return resetAccountPassword({ accountId, role, password: newPassword });
 }

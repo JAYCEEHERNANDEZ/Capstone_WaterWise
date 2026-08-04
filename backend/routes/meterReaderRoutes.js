@@ -6,6 +6,7 @@ import {
   removeMeterReader,
   showMeterReader,
 } from "../controllers/meterReaderControllers.js";
+import { authorizeStaffAction } from "../controllers/authControllers.js";
 import {
   authenticate,
   authorizeOwnerOrRoles,
@@ -15,14 +16,14 @@ import {
 const router = express.Router();
 
 router.use(authenticate);
-router.get("/", authorizeRoles("admin"), listMeterReaders);
+router.get("/", authorizeRoles("super-admin"), listMeterReaders);
 router.get(
   "/:id",
   authorizeOwnerOrRoles("id", "meter-reader", "admin"),
   showMeterReader
 );
-router.post("/", authorizeRoles("admin"), registerMeterReader);
-router.patch("/:id", authorizeRoles("admin"), editMeterReader);
-router.delete("/:id", authorizeRoles("admin"), removeMeterReader);
+router.post("/", authorizeRoles("super-admin"), authorizeStaffAction("create-meter-reader"), registerMeterReader);
+router.patch("/:id", authorizeRoles("super-admin"), authorizeStaffAction("update-meter-reader"), editMeterReader);
+router.delete("/:id", authorizeRoles("super-admin"), removeMeterReader);
 
 export default router;

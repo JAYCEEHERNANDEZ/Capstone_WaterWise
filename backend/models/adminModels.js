@@ -70,8 +70,9 @@ export const createAdmin = async (username, password, email) => {
       username: normalizedUsername,
       email: normalizedEmail,
       password: hashedPassword,
+      role: "admin",
     })
-    .select("id, username, email, status, created_at")
+    .select("id, username, email, role, status, created_at")
     .single();
 
   if (error) {
@@ -84,7 +85,7 @@ export const createAdmin = async (username, password, email) => {
   return data;
 };
 
-const ADMIN_FIELDS = "id, username, email, status, created_at, updated_at";
+const ADMIN_FIELDS = "id, username, email, role, status, created_at, updated_at";
 
 const parseId = (id) => {
   const parsedId = Number(id);
@@ -94,17 +95,20 @@ const parseId = (id) => {
   return parsedId;
 };
 
-export const getAdmins = async () => {
-  const { data, error } = await supabase
+export const getAdmins = async ({ page = 1, pageSize = 5 } = {}) => {
+  const from = (page - 1) * pageSize;
+  const { data, error, count } = await supabase
     .from("admins")
-    .select(ADMIN_FIELDS)
-    .order("created_at", { ascending: false });
+    .select(ADMIN_FIELDS, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
 
   if (error) {
     throw createError(`Failed to retrieve admins: ${error.message}`, 500);
   }
 
-  return data ?? [];
+  const total = count ?? 0;
+  return { items: data ?? [], page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
 };
 
 export const getAdminById = async (id) => {

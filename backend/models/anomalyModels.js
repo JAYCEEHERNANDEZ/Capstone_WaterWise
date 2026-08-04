@@ -8,8 +8,9 @@ const anomalyCacheError = (message) => {
 
 export async function getStoredAnomaly(cacheKey, sourceSignature) {
   const { data, error } = await supabase
-    .from("ai_consumption_anomalies")
-    .select("anomaly_payload")
+    .from("ai_consumption_cache")
+    .select("result_payload")
+    .eq("result_type", "anomaly")
     .eq("cache_key", cacheKey)
     .eq("source_signature", sourceSignature)
     .maybeSingle();
@@ -20,7 +21,7 @@ export async function getStoredAnomaly(cacheKey, sourceSignature) {
     );
   }
 
-  return data?.anomaly_payload ?? null;
+  return data?.result_payload ?? null;
 }
 
 export async function storeAnomaly({
@@ -33,11 +34,12 @@ export async function storeAnomaly({
 }) {
   const generatedAt = new Date().toISOString();
   const { data, error } = await supabase
-    .from("ai_consumption_anomalies")
+    .from("ai_consumption_cache")
     .upsert(
       {
-        analysis_period: period,
-        anomaly_payload: anomaly,
+        result_type: "anomaly",
+        result_period: period,
+        result_payload: anomaly,
         cache_key: cacheKey,
         generated_at: generatedAt,
         latest_consumption_id: sourceVersion.latestConsumptionId,
@@ -47,9 +49,9 @@ export async function storeAnomaly({
         source_signature: sourceVersion.signature,
         updated_at: generatedAt,
       },
-      { onConflict: "cache_key" },
+      { onConflict: "result_type,cache_key" },
     )
-    .select("anomaly_payload")
+    .select("result_payload")
     .single();
 
   if (error) {
@@ -58,5 +60,5 @@ export async function storeAnomaly({
     );
   }
 
-  return data.anomaly_payload;
+  return data.result_payload;
 }

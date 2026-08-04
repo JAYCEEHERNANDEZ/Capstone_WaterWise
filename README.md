@@ -1,35 +1,39 @@
 # WaterWise — Sucol Water System
 
-WaterWise is a full-stack water consumption and billing management system for administrators, meter readers, and consumers. It records monthly meter readings, automatically creates billing records, delivers consumer notifications, tracks payments, and provides AI-assisted consumption predictions, anomaly detection, and recommendations.
+WaterWise is a full-stack water consumption, billing, payment, and account-management system for administrators, meter readers, and consumers. It records monthly meter readings, creates billing records, delivers notifications, tracks payments, and provides AI-assisted consumption analysis.
 
 ## Main Features
 
 ### Administrator
 
-- View current consumption and billing KPIs
-- Manage consumer accounts
-- View all consumer meter readings through a read-only admin endpoint
-- Review billing records and payment status
-- Create system-wide or consumer-specific announcements
-- View AI consumption predictions, anomalies, and recommendations
-- Filter analytics by overall, yearly, monthly, and purok scope
+- View consumption, billing, payment, and resident KPIs.
+- Create and update consumer accounts using any complete, valid email domain.
+- View consumer meter readings through the administrator read-only endpoint.
+- Manage billing records, payments, events, and announcements.
+- View consumption predictions, anomaly detection, recommendations, analytics, and reports.
+- Use email OTP two-factor authentication before entering the admin portal.
+- Review the administrator username and manage email and security options from Admin Profile Management.
+- Change the administrator password using registered-email OTP only.
+- Change the administrator email after verifying the current email.
+- Super Admins can create regular Admin and Meter Reader accounts with temporary passwords from Profile Management.
 
 ### Meter Reader
 
-- View consumers and their previous readings
-- Record one consumption reading per consumer per month
-- Automatically calculate consumption from the previous and present readings
-- Trigger billing creation and a consumer billing notification after a successful reading
+- View consumers and their latest readings.
+- Record one consumption reading per consumer per month.
+- Calculate consumption from previous and present meter values.
+- Trigger billing and consumer notifications after a successful reading.
+- Change the signed-in password using the current password or email OTP.
+- Change the registered email after verifying an OTP sent to the current email.
 
 ### Consumer
 
-- View the current month's balance and billing history
-- View total, average, and highest consumption
-- Review consumption graphs and monthly usage
-- View profile information
-- Receive targeted and system-wide notifications
-- Mark notifications as read
-- Submit and review payments through the available payment API
+- View current balances, billing history, consumption summaries, and graphs.
+- View profile information and announcements.
+- Receive targeted and system-wide notifications.
+- Mark notifications as read.
+- Review payment and billing information.
+- Change the signed-in password using the current password or email OTP.
 
 ## Technology Stack
 
@@ -38,14 +42,15 @@ WaterWise is a full-stack water consumption and billing management system for ad
 | Frontend | React 19, Vite, Axios, Tailwind CSS, Recharts |
 | Backend | Node.js, Express 5 |
 | Database | PostgreSQL through Supabase |
-| Authentication | Backend-issued JSON Web Tokens (JWT) |
+| Authentication | bcrypt password hashing, backend-issued JWTs, email OTP |
+| Email | SendGrid |
 | AI | Google Gemini |
 
 ## Project Structure
 
 ```text
-Capstone project/
-├── Backend revised for capstone/
+Capstone_WaterWise/
+├── backend/
 │   ├── config/
 │   ├── controllers/
 │   ├── db/
@@ -57,9 +62,9 @@ Capstone project/
 │   ├── server.js
 │   └── package.json
 ├── frontend/
+│   ├── public/
 │   ├── src/
 │   │   ├── components/
-│   │   ├── contexts/
 │   │   ├── pages/
 │   │   └── services/
 │   ├── vite.config.js
@@ -72,16 +77,17 @@ Capstone project/
 - Node.js 20 or later
 - npm
 - A Supabase project
-- A Google Gemini API key for AI analytics
+- A verified SendGrid sender and API key
+- A Google Gemini API key for AI features
 
 ## Database Setup
 
 1. Open the Supabase SQL Editor.
-2. Open [`Backend revised for capstone/db/migration.sql`](Backend%20revised%20for%20capstone/db/migration.sql).
-3. Run the SQL in the migration file against the intended Supabase project.
-4. Confirm that the core and AI cache tables were created.
+2. Open [`backend/db/migration.sql`](backend/db/migration.sql).
+3. Run the SQL against the intended Supabase project.
+4. Confirm that the tables, indexes, triggers, and database functions were created.
 
-The main tables are:
+Core tables include:
 
 - `admins`
 - `consumers`
@@ -91,42 +97,49 @@ The main tables are:
 - `payments`
 - `notifications`
 - `notification_reads`
-- `ai_consumption_predictions`
-- `ai_consumption_anomalies`
-- `ai_consumption_recommendations`
 - `generated_reports`
+- `ai_consumption_cache`
 
-The migration also contains the database functions, indexes, and notification trigger used by the application. Keep the migration definitions aligned with the backend models.
+The migration adds `admins.role` with `admin` and `super-admin` values. When upgrading an existing database with no Super Admin, the oldest existing administrator is promoted automatically. That account must sign out and sign in again after the migration so its new role is included in the JWT.
 
 ## Environment Configuration
 
-Create `Backend revised for capstone/.env`:
+Create `backend/.env`:
 
 ```env
+PORT=5000
 SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-supabase-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 JWT_SECRET=use-a-long-random-secret-with-at-least-32-characters
 GEMINI_API_KEY=your-gemini-api-key
-PORT=5000
+SENDGRID_API_KEY=your-sendgrid-api-key
+SENDGRID_FROM_EMAIL=your-verified-sender@example.com
 ```
 
-`SUPABASE_KEY` can be used as a fallback, but the service-role key is expected for trusted backend database operations.
+`SENDGRID_FROM_EMAIL` must be verified in SendGrid. Password recovery and admin login verification cannot send codes when the SendGrid variables are missing or invalid.
 
-The frontend uses `/api` by default and Vite proxies requests to the backend. An optional `frontend/.env` can override these values:
+The frontend uses `/api` by default. An optional `frontend/.env` can override its API address:
 
 ```env
 VITE_API_URL=/api
-WATERWISE_API_TARGET=http://127.0.0.1:5000
 ```
 
-Do not expose the Supabase service-role key, JWT secret, or Gemini API key in frontend environment variables.
+During local development, Vite proxies `/api` to the backend. `WATERWISE_API_TARGET` can override the proxy target when starting Vite:
+
+```powershell
+$env:WATERWISE_API_TARGET="http://127.0.0.1:5000"
+npm run dev
+```
+
+Never expose the Supabase service-role key, JWT secret, SendGrid API key, or Gemini API key through frontend environment variables.
 
 ## Installation and Development
 
 Install and start the backend:
 
 ```powershell
-cd "Backend revised for capstone"
+cd backend
 npm install
 npm run dev
 ```
@@ -139,168 +152,198 @@ npm install
 npm run dev
 ```
 
-Open:
+Open `http://localhost:5173`. The backend uses `http://127.0.0.1:5000` unless `PORT` is changed.
 
-```text
-http://localhost:5173
+## Authentication and Account Security
+
+### Standard login
+
+Consumers and meter readers submit their username/email and password to `POST /api/auth/login`. After successful authentication, the frontend stores the JWT and account data in tab-scoped `sessionStorage`.
+
+Protected requests include:
+
+```http
+Authorization: Bearer <token>
 ```
 
-The backend runs on `http://127.0.0.1:5000` unless `PORT` is changed.
+### Administrator email OTP login
 
-## Authentication Flow
+Administrators use two-step authentication:
 
-JWT generation and validation remain entirely in the Express backend.
+1. The administrator submits a valid username/email and password.
+2. The backend validates the credentials but does not issue an access token yet.
+3. SendGrid sends a six-digit OTP to the registered administrator email.
+4. The administrator verifies the OTP through `POST /api/auth/admin/verify-login-otp`.
+5. Only successful OTP verification creates the admin JWT and permits portal access.
 
-1. The frontend sends the login credentials to `POST /api/auth/login`.
-2. After a successful login, the frontend saves:
-   - JWT as `sessionStorage.accessToken`
-   - logged-in account data as `sessionStorage.user`
-3. The centralized Axios client sends the token on protected requests:
+Admin login codes expire after 10 minutes, allow up to five incorrect attempts, and cannot be reused after successful verification.
 
-   ```http
-   Authorization: Bearer <token>
-   ```
+### Forgot-password OTP flow
 
-4. Authentication state is restored from `sessionStorage` after a page refresh.
-5. Logging out removes both session values and redirects to `/login`.
-6. A backend `401 Unauthorized` or `403 Forbidden` response clears the frontend session and returns the user to the login page.
+1. The user opens **Forgot password?** and enters the registered email.
+2. The backend sends a six-digit OTP through SendGrid.
+3. The user verifies the OTP.
+4. Only verified users can open the new-password step.
+5. The reset session becomes invalid after the password is changed.
 
-Because `sessionStorage` is tab-scoped, closing the browser tab ends the stored frontend session.
+The forgot-password response does not reveal whether an email belongs to an account.
+
+### Change password while signed in
+
+The desktop account actions are hidden by default and appear after clicking the profile/account identity. Administrators and consumers open their dedicated profile pages for password and email security controls. Meter readers retain the account-menu password option.
+
+The password dialog offers two verification methods:
+
+- **Current password:** verify the existing password before saving a different strong password.
+- **Email OTP:** send a code to the email already registered to the authenticated account, verify it, then create a new password.
+
+Users cannot redirect the signed-in OTP to another email address.
+
+For administrators, the Profile Management password action uses **Email OTP only**; the current-password method is intentionally unavailable.
+
+### Consumer email change
+
+Consumers can select **Change email** from the **Account security** section of their Household Profile page. WaterWise first sends an OTP to the current registered email. After successful verification, the consumer can enter a different complete email address. Codes expire after 10 minutes and allow up to five incorrect attempts.
+
+If the consumer cannot remember or access the current email, the self-service change cannot continue. The consumer must visit the Sucol Water System office so staff can verify their identity and update the account safely.
+
+### Password requirements
+
+New passwords require at least eight characters with:
+
+- One uppercase letter
+- One lowercase letter
+- One number
+- One symbol
+
+Successful password changes clear temporary login lockouts.
 
 ## Role-Based Access
 
 | Role | Main Permissions |
 | --- | --- |
-| `admin` | Manage consumers and announcements, view readings, billings, payments, and analytics |
-| `meter-reader` | Get consumer reading information and record consumption |
-| `consumer` | View their own usage, billing, profile, payments, and notifications |
+| `admin` | Manage residents, readings, billing, payments, events, announcements, analytics, and reports |
+| `super-admin` | All normal admin operations plus exclusive Admin and Meter Reader account creation |
+| `meter-reader` | View reading information and record consumption |
+| `consumer` | View personal usage, billing, profile, payments, announcements, and notifications |
 
-### Consumption Endpoint Rules
+Frontend route guards improve navigation safety, but every protected backend endpoint must still enforce authentication and role authorization.
 
-These routes intentionally separate meter-reader operations from the administrator's read-only access:
+### Staff account creation
 
-| Method | Endpoint | Permission |
+Only a signed-in `super-admin` sees the **Create staff account** section in Admin Profile Management. The Super Admin selects Admin or Meter Reader, enters a username and complete email, and creates a strong temporary password. New Admin accounts always receive the regular `admin` role and cannot create other staff accounts.
+
+Admin Profile Management also contains a Super Admin-only Staff Directory with separate Admin and Meter Reader lists. The Super Admin can update a regular Admin or Meter Reader's email or assign a new temporary password. Super Admin accounts are protected from these staff-management changes, while normal administrators cannot view the directory or use its management endpoints.
+
+Creating an Admin or Meter Reader and changing a regular Admin or Meter Reader email/password require an additional single-use email OTP sent to the signed-in Super Admin's registered email. Each verified authorization is bound to the selected action (and target account for updates), expires after five minutes, and cannot be reused for another staff-management request.
+
+The backend independently restricts `POST /api/admins` and `POST /api/meter-readers` to `super-admin`. Hiding the form from normal admins is only a UI measure; direct API requests from normal admins return `403 Forbidden`.
+
+## Main Authentication Endpoints
+
+| Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/consumption/readings` | Meter reader only |
-| `POST` | `/api/consumption/readings` | Meter reader only |
-| `GET` | `/api/consumption/admin/readings` | Administrator only |
-| `GET` | `/api/consumption/consumer/:consumerId` | The consumer owner and authorized staff |
-
-Administrators must not use `/api/consumption/readings`; the admin Readings page must request `/api/consumption/admin/readings`.
+| `POST` | `/api/auth/login` | Validate account credentials and start admin OTP when required |
+| `POST` | `/api/auth/admin/verify-login-otp` | Verify admin login OTP and issue the admin session |
+| `GET` | `/api/auth/me` | Return the authenticated account |
+| `POST` | `/api/auth/forgot-password` | Send a password-recovery OTP |
+| `POST` | `/api/auth/verify-reset-otp` | Verify a password-recovery or authenticated email OTP |
+| `POST` | `/api/auth/reset-password` | Save a new password after OTP verification |
+| `POST` | `/api/auth/change-password` | Change password using the current password |
+| `POST` | `/api/auth/change-password/email-otp` | Send an OTP to the signed-in account email |
+| `POST` | `/api/auth/consumer/change-email/otp` | Send an email-change OTP to the consumer's current email |
+| `POST` | `/api/auth/consumer/change-email/verify` | Verify the current-email OTP |
+| `POST` | `/api/auth/consumer/change-email` | Save the new consumer email after verification |
+| `POST` | `/api/auth/admin/change-email/otp` | Send an admin email-change OTP to the current email |
+| `POST` | `/api/auth/admin/change-email/verify` | Verify the administrator's current-email OTP |
+| `POST` | `/api/auth/admin/change-email` | Save the new administrator email after verification |
 
 ## Main API Groups
 
-All protected routes require a valid Bearer token.
-
 | Base Route | Purpose |
 | --- | --- |
-| `/api/auth` | Login and current-session account data |
+| `/api/auth` | Authentication, OTP, session, and password security |
 | `/api/admins` | Administrator operations |
 | `/api/consumers` | Consumer accounts and profiles |
 | `/api/meter-readers` | Meter-reader accounts and operations |
-| `/api/consumption` | Meter readings and consumer usage |
+| `/api/consumption` | Meter readings and usage |
 | `/api/billing` | Billing records and balances |
-| `/api/payments` | Payment creation and history |
-| `/api/notifications` | Announcements and notification read state |
+| `/api/payments` | Payment processing and history |
+| `/api/notifications` | Announcements and notification state |
 | `/api/consumption/prediction` | AI consumption predictions |
 | `/api/anomaly` | AI anomaly detection |
 | `/api/recommendation` | AI recommendations |
-| `/api/reports` | Persistent report previews, snapshots, and PDF downloads |
+| `/api/reports` | Report previews, snapshots, and PDF downloads |
 
-## Reading, Billing, and Notification Workflow
+## Reading and Billing Workflow
 
 ```text
 Meter reader records a reading
              ↓
-Backend validates the role, values, date, and monthly limit
+Backend validates role, values, and monthly limit
              ↓
 Consumption row is inserted
              ↓
-Consumption = present reading − previous reading
+Consumption = present reading - previous reading
              ↓
-Billing row is created using the configured rate
+Billing row and consumer notification are created
              ↓
-Consumer billing notification is created
-             ↓
-Dashboards and AI caches detect the updated consumption data
+Dashboards and AI cache detect the updated data
 ```
 
 - A consumer can have only one accepted reading for a given month.
-- The reading date sent by the frontend is preserved by the backend.
-- The calculated consumption is stored by PostgreSQL using the generated `consumption` column.
-- The billing total is currently calculated from consumption at the configured application rate.
-- Notifications may target one consumer or use a `NULL` consumer ID for a system-wide announcement.
-- When a consumer opens a notification, its read state is stored in `notification_reads`.
+- Payment-backed consumption records are protected from silent mutation.
+- Notifications may target one consumer or be system-wide.
+- Notification read state is stored separately for each consumer.
 
-## AI Analytics Cache
+## Production Checks
 
-Predictions, anomaly results, and recommendations are saved in their corresponding Supabase cache tables.
-
-- If the consumption source data has not changed, the backend returns the stored result.
-- When a new consumption entry changes the source signature, the backend requests a new Gemini analysis.
-- The new result replaces or updates the stored cache used after page refresh.
-- Analytics responses are formatted as one concise paragraph for each relevant scope: overall, yearly, monthly, and per purok.
-
-This prevents repeated Gemini requests when no new consumption data is available.
-
-## Production Build
-
-Build the frontend:
+Run frontend lint and production build:
 
 ```powershell
 cd frontend
+npm run lint
 npm run build
 ```
 
-Run frontend lint checks:
+Check backend JavaScript syntax or start the production server:
 
 ```powershell
-npm run lint
-```
-
-Start the backend without the development watcher:
-
-```powershell
-cd "Backend revised for capstone"
+cd backend
 npm start
 ```
 
 ## Troubleshooting
 
-### Login succeeds but redirects back to login
+### OTP email is not received
 
-- Confirm `accessToken` and `user` exist in the browser's `sessionStorage`.
-- Check that the account role returned by the backend matches `admin`, `meter-reader`, or `consumer`.
-- Confirm the system clock is correct so the JWT is not treated as expired.
-- Inspect the failing request and verify that it contains the Bearer token.
+- Confirm `SENDGRID_API_KEY` is valid.
+- Confirm `SENDGRID_FROM_EMAIL` is a verified SendGrid sender.
+- Check spam or junk folders.
+- Confirm the account contains the intended valid email address.
+- Review the backend response and SendGrid activity logs.
 
-### `401 Unauthorized`
+### Admin credentials are accepted but portal access is not granted
 
-- Verify `JWT_SECRET` is configured and unchanged between token generation and verification.
-- Sign in again to replace an expired or invalid token.
-- Confirm the request uses the correct role-specific endpoint.
+This is expected until the emailed OTP is verified. The admin access token is issued only after the second authentication step succeeds.
 
-### `403 Forbidden`
+### Login redirects back to `/login`
 
-The account is authenticated but does not have permission for the requested route. For example, an admin must use `/api/consumption/admin/readings`, while `/api/consumption/readings` is reserved for meter readers.
-
-### AI analytics do not load
-
-- Confirm `GEMINI_API_KEY` is valid.
-- Confirm the three AI cache tables exist.
-- Verify that at least one valid consumption record is available.
+- Confirm `accessToken` and `user` exist in browser `sessionStorage`.
+- Confirm the returned role is `admin`, `meter-reader`, or `consumer`.
+- Verify the system clock so JWT expiry checks remain accurate.
+- Confirm protected requests include the Bearer token.
 
 ### Frontend cannot connect to the backend
 
 - Confirm the backend is running on port `5000`.
-- Confirm `WATERWISE_API_TARGET` points to the correct backend address.
-- Keep `VITE_API_URL=/api` when using the Vite development proxy.
+- Confirm Vite is proxying `/api` to the correct backend address.
+- Keep `VITE_API_URL=/api` when using the development proxy.
 
 ## Security Notes
 
 - Never commit `.env` files or production secrets.
-- Never place the Supabase service-role key in React code.
-- Password hashing, JWT generation, JWT verification, and role authorization are backend responsibilities.
-- Frontend protected routes improve navigation safety but do not replace backend authorization.
-- Validate permissions on every protected backend endpoint.
-
+- Password hashing, JWT generation, OTP validation, and authorization belong to the backend.
+- Email OTP challenges are short-lived and bound to the account’s current password state.
+- The frontend must never create an authenticated session before the backend returns a valid access token.
+- Validate ownership and role permissions on every protected endpoint.

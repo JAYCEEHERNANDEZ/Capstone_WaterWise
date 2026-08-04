@@ -9,6 +9,21 @@ CREATE TABLE IF NOT EXISTS admins (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'admin';
+ALTER TABLE admins DROP CONSTRAINT IF EXISTS admins_role_check;
+ALTER TABLE admins ADD CONSTRAINT admins_role_check CHECK (role IN ('admin', 'super-admin'));
+
+-- Bootstrap exactly one existing administrator when upgrading an installation
+-- that does not have a Super Admin yet.
+UPDATE admins
+SET role = 'super-admin', updated_at = NOW()
+WHERE id = (
+    SELECT id FROM admins
+    WHERE NOT EXISTS (SELECT 1 FROM admins WHERE role = 'super-admin')
+    ORDER BY created_at ASC, id ASC
+    LIMIT 1
+);
+
 -- 2. CONSUMERS TABLE
 CREATE TABLE IF NOT EXISTS consumers (
     id SERIAL PRIMARY KEY, 
@@ -33,6 +48,71 @@ CREATE TABLE IF NOT EXISTS meter_readers (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Temporary login lockout shared by admins, consumers, and meter readers.
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
+ALTER TABLE consumers ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE consumers ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
+ALTER TABLE meter_readers ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE meter_readers ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
+
+CREATE OR REPLACE FUNCTION record_failed_login(p_account_type TEXT, p_account_id INTEGER)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_table TEXT;
+    v_attempts INTEGER;
+    v_locked_until TIMESTAMPTZ;
+BEGIN
+    v_table := CASE p_account_type
+        WHEN 'admin' THEN 'admins'
+        WHEN 'consumer' THEN 'consumers'
+        WHEN 'meter-reader' THEN 'meter_readers'
+        ELSE NULL
+    END;
+
+    IF v_table IS NULL THEN
+        RAISE EXCEPTION 'Unsupported account type.';
+    END IF;
+
+    EXECUTE format(
+        'UPDATE %I
+         SET failed_login_attempts = CASE
+                 WHEN locked_until IS NOT NULL AND locked_until <= NOW() THEN 1
+                 ELSE failed_login_attempts + 1
+             END,
+             locked_until = CASE
+                 WHEN locked_until IS NOT NULL AND locked_until > NOW() THEN locked_until
+                 WHEN (CASE WHEN locked_until IS NOT NULL AND locked_until <= NOW()
+                            THEN 1 ELSE failed_login_attempts + 1 END) >= 5
+                     THEN NOW() + INTERVAL ''3 minutes''
+                 ELSE NULL
+             END,
+             updated_at = NOW()
+         WHERE id = $1
+         RETURNING failed_login_attempts, locked_until',
+        v_table
+    ) INTO v_attempts, v_locked_until USING p_account_id;
+
+    IF v_attempts IS NULL THEN
+        RAISE EXCEPTION 'Account not found.';
+    END IF;
+
+    RETURN jsonb_build_object(
+        'failed_attempts', v_attempts,
+        'locked_until', v_locked_until
+    );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION record_failed_login(TEXT, INTEGER) FROM PUBLIC;
+REVOKE ALL ON FUNCTION record_failed_login(TEXT, INTEGER) FROM anon;
+REVOKE ALL ON FUNCTION record_failed_login(TEXT, INTEGER) FROM authenticated;
+GRANT EXECUTE ON FUNCTION record_failed_login(TEXT, INTEGER) TO service_role;
 
 -- 4. CONSUMPTION LOGS TABLE
 CREATE TABLE IF NOT EXISTS consumption (
@@ -636,81 +716,36 @@ AFTER UPDATE OF status ON consumers
 FOR EACH ROW
 EXECUTE FUNCTION generate_consumer_status_notification();
 
--- 10. GEMINI AI CONSUMPTION PREDICTION CACHE
--- Stores the latest generated result for each forecast type. The backend
--- compares source_signature with the current consumption dataset before reuse.
-CREATE TABLE IF NOT EXISTS ai_consumption_predictions (
+-- New unified cache query.
+
+-- 13. UNIFIED GEMINI AI CONSUMPTION CACHE
+-- Prediction, anomaly, and recommendation results are stored together.
+-- result_type separates cache keys that are shared by the three AI features.
+CREATE TABLE IF NOT EXISTS ai_consumption_cache (
     id BIGSERIAL PRIMARY KEY,
-    cache_key VARCHAR(255) NOT NULL UNIQUE,
+    result_type VARCHAR(30) NOT NULL CHECK (
+        result_type IN ('prediction', 'anomaly', 'recommendation')
+    ),
+    cache_key VARCHAR(255) NOT NULL,
     scope VARCHAR(30) NOT NULL CHECK (
         scope IN ('overall', 'all-puroks', 'purok')
     ),
-    prediction_period VARCHAR(10) NOT NULL CHECK (
-        prediction_period IN ('monthly', 'yearly')
+    result_period VARCHAR(10) NOT NULL CHECK (
+        result_period IN ('monthly', 'yearly')
     ),
     purok VARCHAR(100),
-    prediction_payload JSONB NOT NULL,
+    result_payload JSONB NOT NULL,
     source_signature VARCHAR(255) NOT NULL,
     source_record_count INTEGER NOT NULL DEFAULT 0,
     latest_consumption_id INTEGER REFERENCES consumption(id) ON DELETE SET NULL,
     generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT uq_ai_consumption_cache_type_key
+        UNIQUE (result_type, cache_key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ai_predictions_scope_period
-ON ai_consumption_predictions (scope, prediction_period);
+CREATE INDEX IF NOT EXISTS idx_ai_consumption_cache_lookup
+ON ai_consumption_cache (result_type, scope, result_period);
 
-CREATE INDEX IF NOT EXISTS idx_ai_predictions_latest_consumption
-ON ai_consumption_predictions (latest_consumption_id);
-
--- 11. GEMINI AI CONSUMPTION ANOMALY CACHE
--- Reuses an analysis while its source_signature still matches consumption.
-CREATE TABLE IF NOT EXISTS ai_consumption_anomalies (
-    id BIGSERIAL PRIMARY KEY,
-    cache_key VARCHAR(255) NOT NULL UNIQUE,
-    scope VARCHAR(30) NOT NULL CHECK (
-        scope IN ('overall', 'all-puroks', 'purok')
-    ),
-    analysis_period VARCHAR(10) NOT NULL CHECK (
-        analysis_period IN ('monthly', 'yearly')
-    ),
-    purok VARCHAR(100),
-    anomaly_payload JSONB NOT NULL,
-    source_signature VARCHAR(255) NOT NULL,
-    source_record_count INTEGER NOT NULL DEFAULT 0,
-    latest_consumption_id INTEGER REFERENCES consumption(id) ON DELETE SET NULL,
-    generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_ai_anomalies_scope_period
-ON ai_consumption_anomalies (scope, analysis_period);
-
-CREATE INDEX IF NOT EXISTS idx_ai_anomalies_latest_consumption
-ON ai_consumption_anomalies (latest_consumption_id);
-
--- 12. GEMINI AI CONSUMPTION RECOMMENDATION CACHE
--- Reuses recommendations while the underlying consumption data is unchanged.
-CREATE TABLE IF NOT EXISTS ai_consumption_recommendations (
-    id BIGSERIAL PRIMARY KEY,
-    cache_key VARCHAR(255) NOT NULL UNIQUE,
-    scope VARCHAR(30) NOT NULL CHECK (
-        scope IN ('overall', 'all-puroks', 'purok')
-    ),
-    recommendation_period VARCHAR(10) NOT NULL CHECK (
-        recommendation_period IN ('monthly', 'yearly')
-    ),
-    purok VARCHAR(100),
-    recommendation_payload JSONB NOT NULL,
-    source_signature VARCHAR(255) NOT NULL,
-    source_record_count INTEGER NOT NULL DEFAULT 0,
-    latest_consumption_id INTEGER REFERENCES consumption(id) ON DELETE SET NULL,
-    generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_ai_recommendations_scope_period
-ON ai_consumption_recommendations (scope, recommendation_period);
-
-CREATE INDEX IF NOT EXISTS idx_ai_recommendations_latest_consumption
-ON ai_consumption_recommendations (latest_consumption_id);
+CREATE INDEX IF NOT EXISTS idx_ai_consumption_cache_latest_consumption
+ON ai_consumption_cache (latest_consumption_id);

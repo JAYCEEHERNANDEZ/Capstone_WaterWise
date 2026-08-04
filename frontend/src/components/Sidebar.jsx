@@ -3,7 +3,9 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiDroplet,
+  FiKey,
   FiLogOut,
+  FiMail,
   FiMoreHorizontal,
   FiUser,
   FiX,
@@ -60,6 +62,8 @@ export default function Sidebar({
   accountName = "WaterWise User",
   activeRoleLabel,
   items = [],
+  onChangeEmail,
+  onChangePassword,
   onLogout,
   onProfile,
   subtitle = "Sucol Water System",
@@ -67,11 +71,12 @@ export default function Sidebar({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isAccountActionsOpen, setIsAccountActionsOpen] = useState(false);
   const closeButtonRef = useRef(null);
   const moreTriggerRef = useRef(null);
   const primaryMobileItems = items.length > 4 ? items.slice(0, 3) : items;
   const additionalMobileItems = items.length > 4 ? items.slice(3) : [];
-  const AccountContainer = onProfile ? "button" : "div";
+  const AccountContainer = "button";
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -182,25 +187,68 @@ export default function Sidebar({
 
           <div className={`mt-auto hidden border-t border-slate-100 pt-3 lg:block ${isCollapsed ? "px-0" : "px-1"}`}>
             <AccountContainer
-              aria-label={onProfile && isCollapsed ? `Open profile for ${accountName}` : undefined}
-              className={`group relative flex min-h-14 w-full items-center rounded-xl text-left ${onProfile ? "transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600" : ""} ${isCollapsed ? "justify-center px-2" : "gap-3 px-2"}`}
-              onClick={onProfile}
-              type={onProfile ? "button" : undefined}
+              aria-expanded={isAccountActionsOpen}
+              aria-label={isCollapsed ? `Open account actions for ${accountName}` : undefined}
+              className={`group relative flex min-h-14 w-full items-center rounded-xl text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-2"}`}
+              onClick={() => setIsAccountActionsOpen((isOpen) => !isOpen)}
+              type="button"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-water-50 text-water-700"><FiUser aria-hidden="true" className="h-5 w-5" /></span>
               {!isCollapsed && <span className="ww-popover-enter min-w-0"><span className="block truncate text-sm font-bold text-navy-900">{accountName}</span><span className="mt-0.5 block truncate text-xs font-medium text-slate-500">{activeRoleLabel}</span></span>}
               {isCollapsed && <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">{accountName} · {activeRoleLabel}</span>}
             </AccountContainer>
+            {isAccountActionsOpen && <div className="ww-popover-enter">
+            {onProfile && <button
+              aria-label={isCollapsed ? "View profile" : undefined}
+              className={`group relative mt-2 flex min-h-11 w-full items-center rounded-xl font-bold text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-3 text-sm"}`}
+              onClick={() => {
+                setIsAccountActionsOpen(false);
+                onProfile();
+              }}
+              type="button"
+            >
+              <FiUser aria-hidden="true" className="h-5 w-5 shrink-0" />
+              {!isCollapsed && <span>View profile</span>}
+            </button>}
+            {onChangePassword && <button
+              aria-label={isCollapsed ? "Change password" : undefined}
+              className={`group relative mt-2 flex min-h-11 w-full items-center rounded-xl bg-water-50 font-bold text-water-800 transition-colors hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-3 text-sm"}`}
+              onClick={() => {
+                setIsAccountActionsOpen(false);
+                onChangePassword();
+              }}
+              type="button"
+            >
+              <FiKey aria-hidden="true" className="h-5 w-5 shrink-0" />
+              {!isCollapsed && <span>Change password</span>}
+              {isCollapsed && <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">Change password</span>}
+            </button>}
+            {onChangeEmail && <button
+              aria-label={isCollapsed ? "Change email" : undefined}
+              className={`group relative mt-2 flex min-h-11 w-full items-center rounded-xl bg-water-50 font-bold text-water-800 transition-colors hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-3 text-sm"}`}
+              onClick={() => {
+                setIsAccountActionsOpen(false);
+                onChangeEmail();
+              }}
+              type="button"
+            >
+              <FiMail aria-hidden="true" className="h-5 w-5 shrink-0" />
+              {!isCollapsed && <span>Change email</span>}
+            </button>}
             <button
               aria-label={isCollapsed ? "Log out" : undefined}
               className={`group relative mt-2 flex min-h-11 w-full items-center rounded-xl bg-red-50 font-bold text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-3 text-sm"}`}
-              onClick={onLogout}
+              onClick={() => {
+                setIsAccountActionsOpen(false);
+                onLogout();
+              }}
               type="button"
             >
               <FiLogOut aria-hidden="true" className="h-5 w-5 shrink-0" />
               {!isCollapsed && <span>Log out</span>}
               {isCollapsed && <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">Log out</span>}
             </button>
+            </div>}
           </div>
 
           <nav className="flex min-w-0 flex-1 lg:hidden" aria-label={`${activeRoleLabel ?? "WaterWise"} mobile navigation`}>

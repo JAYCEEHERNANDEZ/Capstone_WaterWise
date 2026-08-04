@@ -11,6 +11,8 @@ import ConsumerProfile from "./pages/ConsumerProfile";
 import ConsumerHome from "./pages/ConsumerHome";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import UsageMetrics from "./pages/UsageMetrics";
 import AnalyticsDashboard from "./pages/analyticsDashboard";
 import Reports from "./pages/Reports";
@@ -21,10 +23,12 @@ import EventManagementPage from "./pages/EventManagementPage";
 import AnnouncementManagementPage from "./pages/AnnouncementManagementPage";
 import PaymentProcessingPage from "./pages/PaymentProcessingPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminProfile from "./pages/AdminProfile";
 import RecordConsumptionPage from "./pages/RecordConsumptionPage";
 
 const portalRoutes = [
   { label: "Dashboard", path: "/admin/dashboard" },
+  { label: "Profile", path: "/admin/profile" },
   { label: "Residents", path: "/admin/consumers" },
   { label: "Readings", path: "/admin/readings" },
   { label: "Billing", path: "/admin/billings" },
@@ -48,6 +52,7 @@ const roleAccess = {
     paths: [
       "/admin",
       "/admin/dashboard",
+      "/admin/profile",
       "/admin/consumers",
       "/admin/readings",
       "/admin/billings",
@@ -79,6 +84,12 @@ const roleAccess = {
       "/consumer/usage-metrics",
     ],
   },
+};
+
+roleAccess["super-admin"] = {
+  ...roleAccess.admin,
+  label: "Super Admin",
+  paths: [...roleAccess.admin.paths],
 };
 
 function findRouteLabel(pathname) {
@@ -124,7 +135,8 @@ function RoleRouteGuard({ children, requiredRole }) {
     return <Navigate replace state={{ from: location.pathname }} to="/login" />;
   }
 
-  if (storedRole && storedRole !== requiredRole) {
+  const satisfiesAdminRole = storedRole === "super-admin" && requiredRole === "admin";
+  if (storedRole && storedRole !== requiredRole && !satisfiesAdminRole) {
     return (
       <RouteAccessError
         allowedPath={roleAccess[storedRole].homePath}
@@ -152,6 +164,8 @@ export function AppRoutes() {
     <Routes>
       <Route element={<Navigate replace to="/login" />} path="/" />
       <Route element={<Login />} path="/login" />
+      <Route element={<ForgotPassword />} path="/forgot-password" />
+      <Route element={<ResetPassword />} path="/reset-password" />
       <Route
         element={
           <RoleRouteGuard requiredRole="meter-reader">
@@ -167,6 +181,14 @@ export function AppRoutes() {
           </RoleRouteGuard>
         }
         path="/admin"
+      />
+      <Route
+        path="/admin/profile"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout><AdminProfile /></AppLayout>
+          </RoleRouteGuard>
+        }
       />
       <Route
         path="/admin/dashboard"

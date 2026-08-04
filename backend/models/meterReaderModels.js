@@ -98,17 +98,20 @@ const parseId = (id) => {
   return parsedId;
 };
 
-export const getMeterReaders = async () => {
-  const { data, error } = await supabase
+export const getMeterReaders = async ({ page = 1, pageSize = 5 } = {}) => {
+  const from = (page - 1) * pageSize;
+  const { data, error, count } = await supabase
     .from("meter_readers")
-    .select(METER_READER_FIELDS)
-    .order("created_at", { ascending: false });
+    .select(METER_READER_FIELDS, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
 
   if (error) {
     throw createError(`Failed to retrieve meter readers: ${error.message}`, 500);
   }
 
-  return data ?? [];
+  const total = count ?? 0;
+  return { items: data ?? [], page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
 };
 
 export const getMeterReaderById = async (id) => {
