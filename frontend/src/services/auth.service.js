@@ -110,6 +110,69 @@ export async function completeConsumerEmailChange(emailChangeToken, newEmail) {
   }
 }
 
+export async function requestStaffActionOtp(action, targetId) {
+  try {
+    return await apiRequest("/auth/admin/staff-action/otp", { method: "POST", body: JSON.stringify({ action, targetId }) });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to send the Super Admin verification code.", { cause: error });
+  }
+}
+
+export async function verifyStaffActionOtp(challengeToken, otp) {
+  try {
+    return await apiRequest("/auth/admin/staff-action/verify", { method: "POST", body: JSON.stringify({ challengeToken, otp }) });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to verify the Super Admin code.", { cause: error });
+  }
+}
+
+export async function createStaffAccount(accountType, account, authorizationToken) {
+  const endpoint = accountType === "admin" ? "/admins" : "/meter-readers";
+  try {
+    return await apiRequest(endpoint, {
+      method: "POST",
+      body: JSON.stringify(account),
+      headers: { "X-Staff-Authorization": authorizationToken },
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to create the staff account.", { cause: error });
+  }
+}
+
+export async function fetchStaffAccounts(accountType, page = 1, pageSize = 5) {
+  const endpoint = accountType === "admins" ? "/admins" : "/meter-readers";
+  try {
+    const result = await apiRequest(`${endpoint}?page=${page}&pageSize=${pageSize}`);
+    return result.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to load staff accounts.", { cause: error });
+  }
+}
+
+export async function updateMeterReaderAccount(meterReaderId, updates, authorizationToken) {
+  try {
+    return await apiRequest(`/meter-readers/${meterReaderId}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+      headers: { "X-Staff-Authorization": authorizationToken },
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to update the meter reader.", { cause: error });
+  }
+}
+
+export async function updateAdminAccount(adminId, updates, authorizationToken) {
+  try {
+    return await apiRequest(`/admins/${adminId}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+      headers: { "X-Staff-Authorization": authorizationToken },
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to update the administrator.", { cause: error });
+  }
+}
+
 export async function resetPassword(token, password) {
   try {
     return await apiRequest("/auth/reset-password", {

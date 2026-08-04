@@ -86,6 +86,12 @@ const roleAccess = {
   },
 };
 
+roleAccess["super-admin"] = {
+  ...roleAccess.admin,
+  label: "Super Admin",
+  paths: [...roleAccess.admin.paths],
+};
+
 function findRouteLabel(pathname) {
   return portalRoutes.find((route) => route.path === pathname)?.label ?? "Dashboard";
 }
@@ -129,7 +135,8 @@ function RoleRouteGuard({ children, requiredRole }) {
     return <Navigate replace state={{ from: location.pathname }} to="/login" />;
   }
 
-  if (storedRole && storedRole !== requiredRole) {
+  const satisfiesAdminRole = storedRole === "super-admin" && requiredRole === "admin";
+  if (storedRole && storedRole !== requiredRole && !satisfiesAdminRole) {
     return (
       <RouteAccessError
         allowedPath={roleAccess[storedRole].homePath}

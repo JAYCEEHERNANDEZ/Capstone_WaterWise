@@ -13,7 +13,7 @@ import {
   getPasswordHash,
   resetAccountPassword,
 } from "../models/authModels.js";
-import { sendAdminLoginOtp, sendPasswordResetOtp } from "../services/passwordResetEmailService.js";
+import { sendAdminLoginOtp, sendPasswordResetOtp, sendStaffActionOtp } from "../services/passwordResetEmailService.js";
 import { sendConsumerEmailChangeOtp } from "../services/passwordResetEmailService.js";
 import { updateConsumer } from "../models/consumerModels.js";
 import { updateAdmin } from "../models/adminModels.js";
@@ -23,9 +23,19 @@ const EMAIL_CHANGE_OTP_AUDIENCE = "waterwise-consumer-email-change-otp";
 const EMAIL_CHANGE_AUDIENCE = "waterwise-consumer-email-change";
 const OTP_AUDIENCE = "waterwise-password-reset-otp";
 const RESET_AUDIENCE = "waterwise-password-reset";
+const STAFF_ACTION_OTP_AUDIENCE = "waterwise-staff-action-otp";
+const STAFF_ACTION_AUDIENCE = "waterwise-staff-action";
 const RESET_RESPONSE = "If an active account uses that email, a verification code has been sent.";
 const adminOtpAttempts = new Map();
 const emailChangeOtpAttempts = new Map();
+const staffActionAttempts = new Map();
+const staffActionAuthorizations = new Map();
+const STAFF_ACTIONS = {
+  "create-admin": "create an Admin account",
+  "create-meter-reader": "create a Meter Reader account",
+  "update-admin": "change an Admin account",
+  "update-meter-reader": "change a Meter Reader account",
+};
 
 function passwordFingerprint(passwordHash) {
   return createHash("sha256").update(String(passwordHash)).digest("hex");
@@ -54,12 +64,70 @@ function createAccessToken(user) {
   );
 }
 
+export async function requestStaffActionOtp(req, res) {
+  try {
+    const { action, targetId } = req.body ?? {};
+    if (req.user.role !== "super-admin" || !STAFF_ACTIONS[action]) return res.status(403).json({ success: false, message: "Only the Super Admin can authorize staff management actions." });
+    const parsedTargetId = action.startsWith("update-") ? Number(targetId) : null;
+    if (action.startsWith("update-") && (!Number.isInteger(parsedTargetId) || parsedTargetId < 1)) return res.status(400).json({ success: false, message: "A valid staff account is required." });
+    const account = await getPasswordResetAccountById(req.user.id, "super-admin");
+    if (!account || account.status !== "active") return res.status(403).json({ success: false, message: "The Super Admin account is not active." });
+    const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const challengeToken = jwt.sign({ role: "super-admin", action, targetId: parsedTargetId, otpHash: otpFingerprint(otp), passwordFingerprint: passwordFingerprint(account.password), emailFingerprint: passwordFingerprint(account.email.toLowerCase()) }, getJwtSecret(), { subject: String(account.id), issuer: JWT_ISSUER, audience: STAFF_ACTION_OTP_AUDIENCE, expiresIn: "10m", jwtid: createHash("sha256").update(`staff:${account.id}:${Date.now()}:${otp}`).digest("hex") });
+    await sendStaffActionOtp({ email: account.email, otp, username: account.username, actionLabel: STAFF_ACTIONS[action] });
+    return res.status(200).json({ success: true, challengeToken, maskedEmail: account.email.replace(/^(.{1,2}).*(@.*)$/, "$1***$2"), message: "A verification code was sent to the Super Admin email." });
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({ success: false, message: error.message || "Unable to send the staff authorization code." });
+  }
+}
+
+export async function verifyStaffActionOtp(req, res) {
+  try {
+    const { challengeToken, otp } = req.body ?? {};
+    if (!challengeToken || !/^\d{6}$/.test(String(otp ?? ""))) return res.status(400).json({ success: false, message: "Enter the 6-digit verification code." });
+    const challenge = jwt.verify(challengeToken, getJwtSecret(), { issuer: JWT_ISSUER, audience: STAFF_ACTION_OTP_AUDIENCE });
+    if (challenge.sub !== String(req.user.id) || req.user.role !== "super-admin" || !STAFF_ACTIONS[challenge.action] || !challenge.jti) throw new jwt.JsonWebTokenError("Invalid staff action challenge.");
+    const state = staffActionAttempts.get(challenge.jti) ?? { attempts: 0, expiresAt: challenge.exp * 1000 };
+    if (state.used || state.attempts >= 5) return res.status(429).json({ success: false, message: "This code can no longer be used. Request a new code." });
+    const account = await getPasswordResetAccountById(req.user.id, "super-admin");
+    const validAccount = account?.status === "active" && valuesMatch(passwordFingerprint(account.password), challenge.passwordFingerprint ?? "") && valuesMatch(passwordFingerprint(account.email.toLowerCase()), challenge.emailFingerprint ?? "");
+    if (!validAccount || !valuesMatch(otpFingerprint(otp), challenge.otpHash ?? "")) {
+      state.attempts += 1; staffActionAttempts.set(challenge.jti, state);
+      return res.status(state.attempts >= 5 ? 429 : 400).json({ success: false, message: state.attempts >= 5 ? "Too many incorrect codes. Request a new code." : `Incorrect verification code. ${5 - state.attempts} attempts remaining.` });
+    }
+    staffActionAttempts.set(challenge.jti, { ...state, used: true });
+    const authorizationToken = jwt.sign({ role: "super-admin", action: challenge.action, targetId: challenge.targetId ?? null, passwordFingerprint: challenge.passwordFingerprint, emailFingerprint: challenge.emailFingerprint }, getJwtSecret(), { subject: String(account.id), issuer: JWT_ISSUER, audience: STAFF_ACTION_AUDIENCE, expiresIn: "5m", jwtid: createHash("sha256").update(`authorized:${challenge.jti}`).digest("hex") });
+    return res.status(200).json({ success: true, authorizationToken });
+  } catch (error) {
+    const isTokenError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError;
+    return res.status(error.statusCode ?? (isTokenError ? 400 : 500)).json({ success: false, message: isTokenError ? "This staff verification session is invalid or expired." : error.message || "Unable to verify the code." });
+  }
+}
+
+export const authorizeStaffAction = (expectedAction) => async (req, res, next) => {
+  try {
+    const token = req.get("x-staff-authorization") ?? "";
+    const payload = jwt.verify(token, getJwtSecret(), { issuer: JWT_ISSUER, audience: STAFF_ACTION_AUDIENCE });
+    if (req.user.role !== "super-admin" || payload.sub !== String(req.user.id) || payload.action !== expectedAction || !payload.jti) throw new jwt.JsonWebTokenError("Invalid staff authorization.");
+    if (expectedAction.startsWith("update-") && Number(payload.targetId) !== Number(req.params.id)) throw new jwt.JsonWebTokenError("Authorization does not match this staff account.");
+    const state = staffActionAuthorizations.get(payload.jti);
+    if (state?.used) return res.status(403).json({ success: false, message: "This staff authorization has already been used." });
+    const account = await getPasswordResetAccountById(req.user.id, "super-admin");
+    const validAccount = account?.status === "active" && valuesMatch(passwordFingerprint(account.password), payload.passwordFingerprint ?? "") && valuesMatch(passwordFingerprint(account.email.toLowerCase()), payload.emailFingerprint ?? "");
+    if (!validAccount) return res.status(403).json({ success: false, message: "The Super Admin credentials changed. Request a new verification code." });
+    staffActionAuthorizations.set(payload.jti, { used: true, expiresAt: payload.exp * 1000 });
+    return next();
+  } catch (error) {
+    return res.status(403).json({ success: false, message: "Verify the Super Admin email OTP before continuing." });
+  }
+};
+
 export async function login(req, res) {
   try {
     const { email, identifier, password } = req.body ?? {};
     const user = await authenticateAccount(identifier ?? email, password);
 
-    if (user.role === "admin") {
+    if (["admin", "super-admin"].includes(user.role)) {
       const account = await getPasswordResetAccountById(user.id, user.role);
       const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
       const challengeToken = jwt.sign(
@@ -127,7 +195,7 @@ export async function verifyAdminLoginOtp(req, res) {
       issuer: JWT_ISSUER,
       audience: ADMIN_LOGIN_OTP_AUDIENCE,
     });
-    if (challenge.role !== "admin" || !challenge.jti) throw new jwt.JsonWebTokenError("Invalid admin challenge.");
+    if (!["admin", "super-admin"].includes(challenge.role) || !challenge.jti) throw new jwt.JsonWebTokenError("Invalid admin challenge.");
 
     const attemptState = adminOtpAttempts.get(challenge.jti) ?? { attempts: 0, expiresAt: challenge.exp * 1000 };
     if (attemptState.used) {
@@ -141,7 +209,7 @@ export async function verifyAdminLoginOtp(req, res) {
       throw error;
     }
 
-    const account = await getPasswordResetAccountById(challenge.sub, "admin");
+    const account = await getPasswordResetAccountById(challenge.sub, challenge.role);
     const otpMatches = valuesMatch(otpFingerprint(otp), challenge.otpHash ?? "");
     const accountMatches = account?.status === "active" && valuesMatch(passwordFingerprint(account.password), challenge.passwordFingerprint ?? "");
     if (!otpMatches || !accountMatches) {
@@ -155,7 +223,7 @@ export async function verifyAdminLoginOtp(req, res) {
     }
 
     adminOtpAttempts.set(challenge.jti, { ...attemptState, used: true });
-    const user = { id: account.id, username: account.username, email: account.email, name: account.username, role: "admin" };
+    const user = { id: account.id, username: account.username, email: account.email, name: account.username, role: account.role };
     return res.status(200).json({ success: true, token: createAccessToken(user), user });
   } catch (error) {
     const isTokenError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError;
@@ -170,7 +238,7 @@ export async function verifyAdminLoginOtp(req, res) {
 export async function requestConsumerEmailChangeOtp(req, res) {
   try {
     const account = await getPasswordResetAccountById(req.user.id, req.user.role);
-    if (!["admin", "consumer"].includes(req.user.role) || !account || account.status !== "active") {
+    if (!["admin", "super-admin", "consumer"].includes(req.user.role) || !account || account.status !== "active") {
       return res.status(403).json({ success: false, message: "Only active accounts can change their email." });
     }
     const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
@@ -239,7 +307,7 @@ export async function completeConsumerEmailChange(req, res) {
   try {
     const { emailChangeToken, newEmail } = req.body ?? {};
     const payload = jwt.verify(emailChangeToken, getJwtSecret(), { issuer: JWT_ISSUER, audience: EMAIL_CHANGE_AUDIENCE });
-    if (payload.sub !== String(req.user.id) || payload.role !== req.user.role || !["admin", "consumer"].includes(req.user.role)) throw new jwt.JsonWebTokenError("Invalid email change session.");
+    if (payload.sub !== String(req.user.id) || payload.role !== req.user.role || !["admin", "super-admin", "consumer"].includes(req.user.role)) throw new jwt.JsonWebTokenError("Invalid email change session.");
     const account = await getPasswordResetAccountById(req.user.id, req.user.role);
     if (!account || !valuesMatch(passwordFingerprint(account.email.toLowerCase()), payload.emailFingerprint ?? "")) {
       const error = new Error("This email change session has already been used or is invalid."); error.statusCode = 400; throw error;
@@ -247,7 +315,7 @@ export async function completeConsumerEmailChange(req, res) {
     if (String(newEmail ?? "").trim().toLowerCase() === account.email.toLowerCase()) {
       const error = new Error("Enter a new email address that is different from your current email."); error.statusCode = 400; throw error;
     }
-    const updated = req.user.role === "admin"
+    const updated = ["admin", "super-admin"].includes(req.user.role)
       ? await updateAdmin(req.user.id, { email: newEmail })
       : await updateConsumer(req.user.id, { email: newEmail });
     return res.status(200).json({ success: true, message: "Your email address has been changed successfully.", email: updated.email });

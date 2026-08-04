@@ -14,6 +14,7 @@ import { useToast } from "../components/Toast";
 
 const accountDestinations = {
   admin: "/admin/dashboard",
+  "super-admin": "/admin/dashboard",
   "meter-reader": "/meter-reader/readings-entry",
   consumer: "/consumer/home",
 };

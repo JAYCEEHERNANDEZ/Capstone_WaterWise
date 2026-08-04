@@ -1,11 +1,13 @@
 import express from "express";
-import { changeAuthenticatedPassword, completeConsumerEmailChange, currentAccount, forgotPassword, login, requestAuthenticatedPasswordOtp, requestConsumerEmailChangeOtp, resetPassword, verifyAdminLoginOtp, verifyConsumerEmailChangeOtp, verifyPasswordResetOtp } from "../controllers/authControllers.js";
+import { changeAuthenticatedPassword, completeConsumerEmailChange, currentAccount, forgotPassword, login, requestAuthenticatedPasswordOtp, requestConsumerEmailChangeOtp, requestStaffActionOtp, resetPassword, verifyAdminLoginOtp, verifyConsumerEmailChangeOtp, verifyPasswordResetOtp, verifyStaffActionOtp } from "../controllers/authControllers.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.post("/login", login);
 router.post("/admin/verify-login-otp", verifyAdminLoginOtp);
+router.post("/admin/staff-action/otp", authenticate, requestStaffActionOtp);
+router.post("/admin/staff-action/verify", authenticate, verifyStaffActionOtp);
 router.post("/forgot-password", forgotPassword);
 router.post("/verify-reset-otp", verifyPasswordResetOtp);
 router.post("/reset-password", resetPassword);

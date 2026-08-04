@@ -62,6 +62,22 @@ export async function sendAdminLoginOtp({ email, otp, username }) {
   });
 }
 
+export async function sendStaffActionOtp({ email, otp, username, actionLabel }) {
+  const { from } = getMailConfiguration();
+  const safeUsername = String(username || "Super Administrator").replace(
+    /[&<>"']/g,
+    (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
+  );
+  const safeAction = String(actionLabel || "manage a staff account").replace(/[&<>"']/g, "");
+  await sgMail.send({
+    to: email,
+    from,
+    subject: "Confirm your WaterWise staff management action",
+    text: `Hello ${username || "Super Administrator"},\n\nYour verification code to ${actionLabel} is: ${otp}\n\nThis code expires in 10 minutes and can authorize only this staff action.`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;max-width:560px;margin:auto"><h1 style="color:#075985">Confirm staff management action</h1><p>Hello ${safeUsername},</p><p>Enter this code to ${safeAction}. It expires in 10 minutes.</p><p style="margin:28px 0;font-size:32px;letter-spacing:8px;font-weight:bold;color:#075985">${otp}</p><p>If you did not request this action, secure your Super Admin account immediately.</p></div>`,
+  });
+}
+
 export async function sendConsumerEmailChangeOtp({ email, otp, username }) {
   const { from } = getMailConfiguration();
   const safeUsername = String(username || "WaterWise resident").replace(

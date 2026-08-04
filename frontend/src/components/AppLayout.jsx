@@ -81,6 +81,14 @@ const ROLE_CONFIG = {
   },
 };
 
+ROLE_CONFIG["super-admin"] = {
+  ...ROLE_CONFIG.admin,
+  label: "Super Admin",
+  profile: "System administrator",
+  userName: "Super Admin",
+  links: [...ROLE_CONFIG.admin.links],
+};
+
 function getRoleFromPath(pathname) {
   return Object.entries(ROLE_CONFIG).find(([, config]) =>
     pathname.startsWith(config.basePath),
@@ -303,7 +311,7 @@ export default function AppLayout({ children }) {
         }
         onChangePassword={activeRole === "meter-reader" ? () => { setIsPasswordEmailOnly(false); setIsChangePasswordOpen(true); } : undefined}
         onLogout={() => setIsLogoutConfirmOpen(true)}
-        onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : activeRole === "admin" ? () => navigate("/admin/profile") : undefined}
+        onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : ["admin", "super-admin"].includes(activeRole) ? () => navigate("/admin/profile") : undefined}
         title="WaterWise"
       />
 
@@ -326,7 +334,7 @@ export default function AppLayout({ children }) {
           items={activeRoleConfig.links}
           onChangePassword={activeRole === "meter-reader" ? () => { setIsPasswordEmailOnly(false); setIsChangePasswordOpen(true); } : undefined}
           onLogout={() => setIsLogoutConfirmOpen(true)}
-          onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : activeRole === "admin" ? () => navigate("/admin/profile") : undefined}
+          onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : ["admin", "super-admin"].includes(activeRole) ? () => navigate("/admin/profile") : undefined}
         />
 
         <main

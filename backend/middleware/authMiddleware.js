@@ -25,7 +25,7 @@ export function authenticate(req, res, next) {
     if (
       !Number.isInteger(userId) ||
       userId < 1 ||
-      !["admin", "meter-reader", "consumer"].includes(payload.role)
+      !["admin", "super-admin", "meter-reader", "consumer"].includes(payload.role)
     ) {
       throw new jwt.JsonWebTokenError("Token identity is invalid.");
     }
@@ -49,7 +49,8 @@ export function authenticate(req, res, next) {
 }
 
 export const authorizeRoles = (...allowedRoles) => (req, res, next) => {
-  if (!req.user || !allowedRoles.includes(req.user.role)) {
+  const inheritsAdminAccess = req.user?.role === "super-admin" && allowedRoles.includes("admin");
+  if (!req.user || (!allowedRoles.includes(req.user.role) && !inheritsAdminAccess)) {
     return res.status(403).json({
       success: false,
       message: "You do not have permission to perform this action.",
@@ -64,7 +65,8 @@ export const authorizeOwnerOrRoles =
     const isOwner =
       req.user?.role === ownerRole &&
       Number(req.params[parameterName]) === Number(req.user.id);
-    if (!isOwner && !allowedRoles.includes(req.user?.role)) {
+    const inheritsAdminAccess = req.user?.role === "super-admin" && allowedRoles.includes("admin");
+    if (!isOwner && !allowedRoles.includes(req.user?.role) && !inheritsAdminAccess) {
       return res.status(403).json({
         success: false,
         message: "You may access only your own account records.",
@@ -76,7 +78,7 @@ export const authorizeOwnerOrRoles =
 export const authorizeConsumerQueryOrRoles =
   (...allowedRoles) =>
   (req, res, next) => {
-    if (allowedRoles.includes(req.user?.role)) return next();
+    if (allowedRoles.includes(req.user?.role) || (req.user?.role === "super-admin" && allowedRoles.includes("admin"))) return next();
     const isConsumerOwner =
       req.user?.role === "consumer" &&
       Number(req.query.consumerId) === Number(req.user.id);

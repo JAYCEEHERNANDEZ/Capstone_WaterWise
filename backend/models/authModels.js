@@ -9,6 +9,10 @@ const ACCOUNT_SOURCES = [
   { role: "consumer", table: "consumers" },
 ];
 
+const getAccountSource = (role) => ACCOUNT_SOURCES.find((item) =>
+  item.role === role || (role === "super-admin" && item.role === "admin")
+);
+
 const createLockoutError = (lockedUntil) => {
   const retryAfterSeconds = Math.max(
     1,
@@ -23,7 +27,9 @@ const createLockoutError = (lockedUntil) => {
 };
 
 const findAccount = async (table, identifier) => {
-  const fields = "id, username, email, password, status, failed_login_attempts, locked_until";
+  const fields = table === "admins"
+    ? "id, username, email, password, status, role, failed_login_attempts, locked_until"
+    : "id, username, email, password, status, failed_login_attempts, locked_until";
   const emailResult = await supabase
     .from(table)
     .select(fields)
@@ -166,7 +172,7 @@ export async function authenticateAccount(identifier, password) {
       username: account.username,
       email: account.email,
       name: account.username,
-      role: source.role,
+      role: source.role === "admin" && account.role === "super-admin" ? "super-admin" : source.role,
     };
   }
 
@@ -203,7 +209,7 @@ export async function findPasswordResetAccount(email) {
 }
 
 export async function resetAccountPassword({ accountId, password, role }) {
-  const source = ACCOUNT_SOURCES.find((item) => item.role === role);
+  const source = getAccountSource(role);
   if (!source) return false;
 
   if (
@@ -245,7 +251,7 @@ export async function resetAccountPassword({ accountId, password, role }) {
 }
 
 export async function getPasswordHash(accountId, role) {
-  const source = ACCOUNT_SOURCES.find((item) => item.role === role);
+  const source = getAccountSource(role);
   if (!source) return null;
   const { data, error } = await supabase
     .from(source.table)
@@ -257,15 +263,15 @@ export async function getPasswordHash(accountId, role) {
 }
 
 export async function getPasswordResetAccountById(accountId, role) {
-  const source = ACCOUNT_SOURCES.find((item) => item.role === role);
+  const source = getAccountSource(role);
   if (!source) return null;
   const { data, error } = await supabase
     .from(source.table)
-    .select("id, username, email, password, status")
+    .select(source.table === "admins" ? "id, username, email, password, status, role" : "id, username, email, password, status")
     .eq("id", accountId)
     .maybeSingle();
   if (error) throw new Error(`Failed to check account: ${error.message}`);
-  return data ? { ...data, role: source.role, table: source.table } : null;
+  return data ? { ...data, role: source.role === "admin" && data.role === "super-admin" ? "super-admin" : source.role, table: source.table } : null;
 }
 
 export async function changePasswordWithCurrent({ accountId, role, currentPassword, newPassword }) {

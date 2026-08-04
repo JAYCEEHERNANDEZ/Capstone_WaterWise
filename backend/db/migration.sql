@@ -9,6 +9,21 @@ CREATE TABLE IF NOT EXISTS admins (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'admin';
+ALTER TABLE admins DROP CONSTRAINT IF EXISTS admins_role_check;
+ALTER TABLE admins ADD CONSTRAINT admins_role_check CHECK (role IN ('admin', 'super-admin'));
+
+-- Bootstrap exactly one existing administrator when upgrading an installation
+-- that does not have a Super Admin yet.
+UPDATE admins
+SET role = 'super-admin', updated_at = NOW()
+WHERE id = (
+    SELECT id FROM admins
+    WHERE NOT EXISTS (SELECT 1 FROM admins WHERE role = 'super-admin')
+    ORDER BY created_at ASC, id ASC
+    LIMIT 1
+);
+
 -- 2. CONSUMERS TABLE
 CREATE TABLE IF NOT EXISTS consumers (
     id SERIAL PRIMARY KEY, 

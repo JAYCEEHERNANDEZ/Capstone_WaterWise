@@ -31,7 +31,9 @@ export const registerAdmin = async (req, res) => {
 
 export const listAdmins = async (req, res) => {
   try {
-    return res.status(200).json({ success: true, data: await getAdmins() });
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(25, Math.max(1, Number.parseInt(req.query.pageSize, 10) || 5));
+    return res.status(200).json({ success: true, data: await getAdmins({ page, pageSize }) });
   } catch (error) {
     return sendError(res, error, "Failed to retrieve admins.");
   }
@@ -50,6 +52,13 @@ export const showAdmin = async (req, res) => {
 
 export const editAdmin = async (req, res) => {
   try {
+    const targetAdmin = await getAdminById(req.params.id);
+    if (targetAdmin.role === "super-admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Super Admin accounts cannot be changed through staff management.",
+      });
+    }
     return res.status(200).json({
       success: true,
       message: "Admin account updated successfully.",
@@ -62,6 +71,13 @@ export const editAdmin = async (req, res) => {
 
 export const removeAdmin = async (req, res) => {
   try {
+    const targetAdmin = await getAdminById(req.params.id);
+    if (targetAdmin.role === "super-admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Super Admin accounts cannot be deleted through staff management.",
+      });
+    }
     return res.status(200).json({
       success: true,
       message: "Admin account deleted successfully.",

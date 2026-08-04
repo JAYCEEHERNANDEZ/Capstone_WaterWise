@@ -15,6 +15,7 @@ WaterWise is a full-stack water consumption, billing, payment, and account-manag
 - Review the administrator username and manage email and security options from Admin Profile Management.
 - Change the administrator password using registered-email OTP only.
 - Change the administrator email after verifying the current email.
+- Super Admins can create regular Admin and Meter Reader accounts with temporary passwords from Profile Management.
 
 ### Meter Reader
 
@@ -98,6 +99,8 @@ Core tables include:
 - `notification_reads`
 - `generated_reports`
 - `ai_consumption_cache`
+
+The migration adds `admins.role` with `admin` and `super-admin` values. When upgrading an existing database with no Super Admin, the oldest existing administrator is promoted automatically. That account must sign out and sign in again after the migration so its new role is included in the JWT.
 
 ## Environment Configuration
 
@@ -220,10 +223,21 @@ Successful password changes clear temporary login lockouts.
 | Role | Main Permissions |
 | --- | --- |
 | `admin` | Manage residents, readings, billing, payments, events, announcements, analytics, and reports |
+| `super-admin` | All normal admin operations plus exclusive Admin and Meter Reader account creation |
 | `meter-reader` | View reading information and record consumption |
 | `consumer` | View personal usage, billing, profile, payments, announcements, and notifications |
 
 Frontend route guards improve navigation safety, but every protected backend endpoint must still enforce authentication and role authorization.
+
+### Staff account creation
+
+Only a signed-in `super-admin` sees the **Create staff account** section in Admin Profile Management. The Super Admin selects Admin or Meter Reader, enters a username and complete email, and creates a strong temporary password. New Admin accounts always receive the regular `admin` role and cannot create other staff accounts.
+
+Admin Profile Management also contains a Super Admin-only Staff Directory with separate Admin and Meter Reader lists. The Super Admin can update a regular Admin or Meter Reader's email or assign a new temporary password. Super Admin accounts are protected from these staff-management changes, while normal administrators cannot view the directory or use its management endpoints.
+
+Creating an Admin or Meter Reader and changing a regular Admin or Meter Reader email/password require an additional single-use email OTP sent to the signed-in Super Admin's registered email. Each verified authorization is bound to the selected action (and target account for updates), expires after five minutes, and cannot be reused for another staff-management request.
+
+The backend independently restricts `POST /api/admins` and `POST /api/meter-readers` to `super-admin`. Hiding the form from normal admins is only a UI measure; direct API requests from normal admins return `403 Forbidden`.
 
 ## Main Authentication Endpoints
 
