@@ -12,8 +12,8 @@ function isStrongPassword(password) {
   return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[^A-Za-z0-9]/.test(password);
 }
 
-export default function ChangePasswordModal({ isOpen, onClose, onSuccess }) {
-  const [method, setMethod] = useState("current");
+export default function ChangePasswordModal({ emailOnly = false, isOpen, onClose, onSuccess }) {
+  const [method, setMethod] = useState(emailOnly ? "email" : "current");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -97,10 +97,10 @@ export default function ChangePasswordModal({ isOpen, onClose, onSuccess }) {
   return (
     <Modal description="Choose how you want to verify your identity." eyebrow="Account security" isOpen={isOpen} onClose={onClose} size="sm" title="Change password">
       <div className="p-5 sm:p-6">
-        <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+        {!emailOnly && <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
           <button className={`min-h-11 rounded-lg px-3 text-sm font-bold ${method === "current" ? "bg-white text-water-800 shadow-sm" : "text-slate-600"}`} onClick={() => { setMethod("current"); setError(""); setMessage(""); }} type="button"><KeyRound className="mr-2 inline h-4 w-4" />Current password</button>
           <button className={`min-h-11 rounded-lg px-3 text-sm font-bold ${method === "email" ? "bg-white text-water-800 shadow-sm" : "text-slate-600"}`} onClick={() => { setMethod("email"); setError(""); setMessage(""); }} type="button"><Mail className="mr-2 inline h-4 w-4" />Email OTP</button>
-        </div>
+        </div>}
 
         {method === "current" && (
           <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit}>

@@ -12,7 +12,9 @@ WaterWise is a full-stack water consumption, billing, payment, and account-manag
 - Manage billing records, payments, events, and announcements.
 - View consumption predictions, anomaly detection, recommendations, analytics, and reports.
 - Use email OTP two-factor authentication before entering the admin portal.
-- Change a signed-in account password using the current password or registered-email OTP.
+- Review the administrator username and manage email and security options from Admin Profile Management.
+- Change the administrator password using registered-email OTP only.
+- Change the administrator email after verifying the current email.
 
 ### Meter Reader
 
@@ -21,6 +23,7 @@ WaterWise is a full-stack water consumption, billing, payment, and account-manag
 - Calculate consumption from previous and present meter values.
 - Trigger billing and consumer notifications after a successful reading.
 - Change the signed-in password using the current password or email OTP.
+- Change the registered email after verifying an OTP sent to the current email.
 
 ### Consumer
 
@@ -184,7 +187,7 @@ The forgot-password response does not reveal whether an email belongs to an acco
 
 ### Change password while signed in
 
-The desktop account actions are hidden by default and appear after clicking the profile/account identity. Signed-in users can then select **Change password** or **Log out**.
+The desktop account actions are hidden by default and appear after clicking the profile/account identity. Administrators and consumers open their dedicated profile pages for password and email security controls. Meter readers retain the account-menu password option.
 
 The password dialog offers two verification methods:
 
@@ -192,6 +195,14 @@ The password dialog offers two verification methods:
 - **Email OTP:** send a code to the email already registered to the authenticated account, verify it, then create a new password.
 
 Users cannot redirect the signed-in OTP to another email address.
+
+For administrators, the Profile Management password action uses **Email OTP only**; the current-password method is intentionally unavailable.
+
+### Consumer email change
+
+Consumers can select **Change email** from the **Account security** section of their Household Profile page. WaterWise first sends an OTP to the current registered email. After successful verification, the consumer can enter a different complete email address. Codes expire after 10 minutes and allow up to five incorrect attempts.
+
+If the consumer cannot remember or access the current email, the self-service change cannot continue. The consumer must visit the Sucol Water System office so staff can verify their identity and update the account safely.
 
 ### Password requirements
 
@@ -226,6 +237,12 @@ Frontend route guards improve navigation safety, but every protected backend end
 | `POST` | `/api/auth/reset-password` | Save a new password after OTP verification |
 | `POST` | `/api/auth/change-password` | Change password using the current password |
 | `POST` | `/api/auth/change-password/email-otp` | Send an OTP to the signed-in account email |
+| `POST` | `/api/auth/consumer/change-email/otp` | Send an email-change OTP to the consumer's current email |
+| `POST` | `/api/auth/consumer/change-email/verify` | Verify the current-email OTP |
+| `POST` | `/api/auth/consumer/change-email` | Save the new consumer email after verification |
+| `POST` | `/api/auth/admin/change-email/otp` | Send an admin email-change OTP to the current email |
+| `POST` | `/api/auth/admin/change-email/verify` | Verify the administrator's current-email OTP |
+| `POST` | `/api/auth/admin/change-email` | Save the new administrator email after verification |
 
 ## Main API Groups
 

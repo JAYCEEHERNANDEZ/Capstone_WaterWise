@@ -14,12 +14,18 @@ import {
   resetAccountPassword,
 } from "../models/authModels.js";
 import { sendAdminLoginOtp, sendPasswordResetOtp } from "../services/passwordResetEmailService.js";
+import { sendConsumerEmailChangeOtp } from "../services/passwordResetEmailService.js";
+import { updateConsumer } from "../models/consumerModels.js";
+import { updateAdmin } from "../models/adminModels.js";
 
 const ADMIN_LOGIN_OTP_AUDIENCE = "waterwise-admin-login-otp";
+const EMAIL_CHANGE_OTP_AUDIENCE = "waterwise-consumer-email-change-otp";
+const EMAIL_CHANGE_AUDIENCE = "waterwise-consumer-email-change";
 const OTP_AUDIENCE = "waterwise-password-reset-otp";
 const RESET_AUDIENCE = "waterwise-password-reset";
 const RESET_RESPONSE = "If an active account uses that email, a verification code has been sent.";
 const adminOtpAttempts = new Map();
+const emailChangeOtpAttempts = new Map();
 
 function passwordFingerprint(passwordHash) {
   return createHash("sha256").update(String(passwordHash)).digest("hex");
@@ -158,6 +164,96 @@ export async function verifyAdminLoginOtp(req, res) {
       message: isTokenError ? "This admin verification session is invalid or has expired. Sign in again." : error.message || "Unable to verify the code.",
       ...(error.field ? { field: error.field } : {}),
     });
+  }
+}
+
+export async function requestConsumerEmailChangeOtp(req, res) {
+  try {
+    const account = await getPasswordResetAccountById(req.user.id, req.user.role);
+    if (!["admin", "consumer"].includes(req.user.role) || !account || account.status !== "active") {
+      return res.status(403).json({ success: false, message: "Only active accounts can change their email." });
+    }
+    const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const challengeToken = jwt.sign(
+      {
+        role: req.user.role,
+        otpHash: otpFingerprint(otp),
+        passwordFingerprint: passwordFingerprint(account.password),
+        emailFingerprint: passwordFingerprint(account.email.toLowerCase()),
+      },
+      getJwtSecret(),
+      {
+        subject: String(account.id), issuer: JWT_ISSUER, audience: EMAIL_CHANGE_OTP_AUDIENCE,
+        expiresIn: "10m", jwtid: createHash("sha256").update(`email:${account.id}:${Date.now()}:${otp}`).digest("hex"),
+      },
+    );
+    await sendConsumerEmailChangeOtp({ email: account.email, otp, username: account.username });
+    return res.status(200).json({
+      success: true,
+      challengeToken,
+      maskedEmail: account.email.replace(/^(.{1,2}).*(@.*)$/, "$1***$2"),
+      message: "A verification code was sent to your current email address.",
+    });
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({ success: false, message: error.message || "Unable to send the verification code." });
+  }
+}
+
+export async function verifyConsumerEmailChangeOtp(req, res) {
+  try {
+    for (const [challengeId, state] of emailChangeOtpAttempts) {
+      if (state.expiresAt <= Date.now()) emailChangeOtpAttempts.delete(challengeId);
+    }
+    const { challengeToken, otp } = req.body ?? {};
+    if (!challengeToken || !/^\d{6}$/.test(String(otp ?? ""))) {
+      const error = new Error("Enter the 6-digit verification code."); error.statusCode = 400; throw error;
+    }
+    const challenge = jwt.verify(challengeToken, getJwtSecret(), { issuer: JWT_ISSUER, audience: EMAIL_CHANGE_OTP_AUDIENCE });
+    if (challenge.sub !== String(req.user.id) || challenge.role !== req.user.role || !challenge.jti) throw new jwt.JsonWebTokenError("Invalid email challenge.");
+    const state = emailChangeOtpAttempts.get(challenge.jti) ?? { attempts: 0, expiresAt: challenge.exp * 1000 };
+    if (state.used || state.attempts >= 5) {
+      const error = new Error("This code can no longer be used. Request a new code."); error.statusCode = 429; throw error;
+    }
+    const account = await getPasswordResetAccountById(req.user.id, "consumer");
+    const validAccount = account?.status === "active" && valuesMatch(passwordFingerprint(account.password), challenge.passwordFingerprint ?? "") && valuesMatch(passwordFingerprint(account.email.toLowerCase()), challenge.emailFingerprint ?? "");
+    if (!validAccount || !valuesMatch(otpFingerprint(otp), challenge.otpHash ?? "")) {
+      state.attempts += 1; emailChangeOtpAttempts.set(challenge.jti, state);
+      const remaining = 5 - state.attempts;
+      const error = new Error(remaining > 0 ? `Incorrect verification code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.` : "Too many incorrect codes. Request a new code.");
+      error.statusCode = remaining > 0 ? 400 : 429; throw error;
+    }
+    emailChangeOtpAttempts.set(challenge.jti, { ...state, used: true });
+    const emailChangeToken = jwt.sign(
+      { role: req.user.role, emailFingerprint: passwordFingerprint(account.email.toLowerCase()) },
+      getJwtSecret(),
+      { subject: String(account.id), issuer: JWT_ISSUER, audience: EMAIL_CHANGE_AUDIENCE, expiresIn: "15m" },
+    );
+    return res.status(200).json({ success: true, emailChangeToken });
+  } catch (error) {
+    const isTokenError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError;
+    return res.status(error.statusCode ?? (isTokenError ? 400 : 500)).json({ success: false, message: isTokenError ? "This verification session is invalid or expired." : error.message || "Unable to verify the code." });
+  }
+}
+
+export async function completeConsumerEmailChange(req, res) {
+  try {
+    const { emailChangeToken, newEmail } = req.body ?? {};
+    const payload = jwt.verify(emailChangeToken, getJwtSecret(), { issuer: JWT_ISSUER, audience: EMAIL_CHANGE_AUDIENCE });
+    if (payload.sub !== String(req.user.id) || payload.role !== req.user.role || !["admin", "consumer"].includes(req.user.role)) throw new jwt.JsonWebTokenError("Invalid email change session.");
+    const account = await getPasswordResetAccountById(req.user.id, req.user.role);
+    if (!account || !valuesMatch(passwordFingerprint(account.email.toLowerCase()), payload.emailFingerprint ?? "")) {
+      const error = new Error("This email change session has already been used or is invalid."); error.statusCode = 400; throw error;
+    }
+    if (String(newEmail ?? "").trim().toLowerCase() === account.email.toLowerCase()) {
+      const error = new Error("Enter a new email address that is different from your current email."); error.statusCode = 400; throw error;
+    }
+    const updated = req.user.role === "admin"
+      ? await updateAdmin(req.user.id, { email: newEmail })
+      : await updateConsumer(req.user.id, { email: newEmail });
+    return res.status(200).json({ success: true, message: "Your email address has been changed successfully.", email: updated.email });
+  } catch (error) {
+    const isTokenError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError;
+    return res.status(error.statusCode ?? (isTokenError ? 400 : 500)).json({ success: false, message: isTokenError ? "This email change session is invalid or expired." : error.message || "Unable to change email." });
   }
 }
 

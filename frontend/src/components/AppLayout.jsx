@@ -12,7 +12,7 @@ import {
   FiWifiOff,
 } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router";
-import { getCurrentAccount, logout } from "../services/auth.service";
+import { ACCOUNT_STORAGE_KEY, getCurrentAccount, logout } from "../services/auth.service";
 import { getStoredAccount } from "../services/authToken";
 import { isCanceledRequest } from "../services/apiClient";
 import { getNotificationPresentation } from "../utils/notificationPresentation";
@@ -23,6 +23,7 @@ import {
 import NotificationPage from "../pages/NotificationPage";
 import Header from "./Header";
 import ChangePasswordModal from "./ChangePasswordModal";
+import ChangeEmailModal from "./ChangeEmailModal";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import NotificationBadgeTrigger from "./NotificationBadgeTrigger";
 import Modal from "./Modal";
@@ -97,6 +98,8 @@ export default function AppLayout({ children }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isPasswordEmailOnly, setIsPasswordEmailOnly] = useState(false);
+  const [isChangeEmailOpen, setIsChangeEmailOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isNotificationLoading, setIsNotificationLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -201,6 +204,20 @@ export default function AppLayout({ children }) {
     };
   }, [isNotificationOpen]);
 
+  useEffect(() => {
+    const openPasswordChange = (event) => {
+      setIsPasswordEmailOnly(Boolean(event.detail?.emailOnly));
+      setIsChangePasswordOpen(true);
+    };
+    const openEmailChange = () => setIsChangeEmailOpen(true);
+    window.addEventListener("waterwise:open-change-password", openPasswordChange);
+    window.addEventListener("waterwise:open-change-email", openEmailChange);
+    return () => {
+      window.removeEventListener("waterwise:open-change-password", openPasswordChange);
+      window.removeEventListener("waterwise:open-change-email", openEmailChange);
+    };
+  }, []);
+
   const handleLogout = async () => {
     setIsSigningOut(true);
     try {
@@ -284,9 +301,9 @@ export default function AppLayout({ children }) {
             </div>
           ) : null
         }
-        onChangePassword={() => setIsChangePasswordOpen(true)}
+        onChangePassword={activeRole === "meter-reader" ? () => { setIsPasswordEmailOnly(false); setIsChangePasswordOpen(true); } : undefined}
         onLogout={() => setIsLogoutConfirmOpen(true)}
-        onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : undefined}
+        onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : activeRole === "admin" ? () => navigate("/admin/profile") : undefined}
         title="WaterWise"
       />
 
@@ -307,9 +324,9 @@ export default function AppLayout({ children }) {
           accountName={accountName || activeRoleConfig.userName}
           activeRoleLabel={activeRoleConfig.label}
           items={activeRoleConfig.links}
-          onChangePassword={() => setIsChangePasswordOpen(true)}
+          onChangePassword={activeRole === "meter-reader" ? () => { setIsPasswordEmailOnly(false); setIsChangePasswordOpen(true); } : undefined}
           onLogout={() => setIsLogoutConfirmOpen(true)}
-          onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : undefined}
+          onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : activeRole === "admin" ? () => navigate("/admin/profile") : undefined}
         />
 
         <main
@@ -331,9 +348,24 @@ export default function AppLayout({ children }) {
 
       {isChangePasswordOpen && (
         <ChangePasswordModal
+          emailOnly={isPasswordEmailOnly}
           isOpen
           onClose={() => setIsChangePasswordOpen(false)}
           onSuccess={(successMessage) => toast.success("Password changed", successMessage)}
+        />
+      )}
+
+      {isChangeEmailOpen && (
+        <ChangeEmailModal
+          accountRole={activeRole}
+          isOpen
+          onClose={() => setIsChangeEmailOpen(false)}
+          onSuccess={(result) => {
+            setAccount((current) => ({ ...current, email: result.email }));
+            window.sessionStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify({ ...getStoredAccount(), email: result.email }));
+            window.dispatchEvent(new CustomEvent("waterwise:email-changed", { detail: { email: result.email } }));
+            toast.success("Email changed", result.message);
+          }}
         />
       )}
 

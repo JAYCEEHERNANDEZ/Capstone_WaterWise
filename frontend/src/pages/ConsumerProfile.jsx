@@ -6,6 +6,7 @@ import {
   CircleSlash2,
   Hash,
   Info,
+  KeyRound,
   Mail,
   MapPin,
   Phone,
@@ -73,6 +74,14 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
 
     return () => controller.abort();
   }, [requestVersion, usesApi]);
+
+  useEffect(() => {
+    const handleEmailChange = (event) => {
+      setLoadedConsumer((current) => current ? { ...current, email: event.detail?.email ?? current.email } : current);
+    };
+    window.addEventListener("waterwise:email-changed", handleEmailChange);
+    return () => window.removeEventListener("waterwise:email-changed", handleEmailChange);
+  }, []);
 
   const consumer = usesApi ? loadedConsumer : consumerProp;
   const pageHeader = (
@@ -167,13 +176,29 @@ export default function ConsumerProfile({ consumer: consumerProp }) {
         />
       </div>
 
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-6" aria-labelledby="account-security-heading">
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Security</p>
+        <h2 className="mt-1 text-xl font-extrabold tracking-tight text-navy-900" id="account-security-heading">Account security</h2>
+        <p className="mt-1 text-sm leading-6 text-slate-600">Update your sign-in password or registered email address securely.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <button className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 text-left transition-colors hover:border-water-300 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600" onClick={() => window.dispatchEvent(new Event("waterwise:open-change-password"))} type="button">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-water-100 text-water-700"><KeyRound aria-hidden="true" className="h-5 w-5" /></span>
+            <span><span className="block text-sm font-bold text-navy-900">Change password</span><span className="mt-1 block text-xs leading-5 text-slate-500">Use your current password or email OTP.</span></span>
+          </button>
+          <button className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 text-left transition-colors hover:border-water-300 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600" onClick={() => window.dispatchEvent(new Event("waterwise:open-change-email"))} type="button">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-water-100 text-water-700"><Mail aria-hidden="true" className="h-5 w-5" /></span>
+            <span><span className="block text-sm font-bold text-navy-900">Change email</span><span className="mt-1 block text-xs leading-5 text-slate-500">Verify through your current registered email.</span></span>
+          </button>
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:p-5" aria-labelledby="profile-correction-heading">
         <div className="flex gap-3">
           <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
           <div>
             <h2 className="text-sm font-bold text-navy-900" id="profile-correction-heading">Need to correct your details?</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              These details are read-only. Contact the barangay office if your name, contact information, or service area needs to be updated.
+              You can securely change your email using the account menu. If you cannot access or remember your current email, visit the Sucol Water System office. Contact the office for other profile corrections.
             </p>
           </div>
         </div>

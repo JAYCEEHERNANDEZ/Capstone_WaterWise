@@ -1,5 +1,5 @@
 import express from "express";
-import { changeAuthenticatedPassword, currentAccount, forgotPassword, login, requestAuthenticatedPasswordOtp, resetPassword, verifyAdminLoginOtp, verifyPasswordResetOtp } from "../controllers/authControllers.js";
+import { changeAuthenticatedPassword, completeConsumerEmailChange, currentAccount, forgotPassword, login, requestAuthenticatedPasswordOtp, requestConsumerEmailChangeOtp, resetPassword, verifyAdminLoginOtp, verifyConsumerEmailChangeOtp, verifyPasswordResetOtp } from "../controllers/authControllers.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -11,6 +11,12 @@ router.post("/verify-reset-otp", verifyPasswordResetOtp);
 router.post("/reset-password", resetPassword);
 router.post("/change-password", authenticate, changeAuthenticatedPassword);
 router.post("/change-password/email-otp", authenticate, requestAuthenticatedPasswordOtp);
+router.post("/consumer/change-email/otp", authenticate, requestConsumerEmailChangeOtp);
+router.post("/consumer/change-email/verify", authenticate, verifyConsumerEmailChangeOtp);
+router.post("/consumer/change-email", authenticate, completeConsumerEmailChange);
+router.post("/admin/change-email/otp", authenticate, requestConsumerEmailChangeOtp);
+router.post("/admin/change-email/verify", authenticate, verifyConsumerEmailChangeOtp);
+router.post("/admin/change-email", authenticate, completeConsumerEmailChange);
 router.get("/me", authenticate, currentAccount);
 
 export default router;

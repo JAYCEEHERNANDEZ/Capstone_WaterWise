@@ -23,10 +23,12 @@ import EventManagementPage from "./pages/EventManagementPage";
 import AnnouncementManagementPage from "./pages/AnnouncementManagementPage";
 import PaymentProcessingPage from "./pages/PaymentProcessingPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminProfile from "./pages/AdminProfile";
 import RecordConsumptionPage from "./pages/RecordConsumptionPage";
 
 const portalRoutes = [
   { label: "Dashboard", path: "/admin/dashboard" },
+  { label: "Profile", path: "/admin/profile" },
   { label: "Residents", path: "/admin/consumers" },
   { label: "Readings", path: "/admin/readings" },
   { label: "Billing", path: "/admin/billings" },
@@ -50,6 +52,7 @@ const roleAccess = {
     paths: [
       "/admin",
       "/admin/dashboard",
+      "/admin/profile",
       "/admin/consumers",
       "/admin/readings",
       "/admin/billings",
@@ -171,6 +174,14 @@ export function AppRoutes() {
           </RoleRouteGuard>
         }
         path="/admin"
+      />
+      <Route
+        path="/admin/profile"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout><AdminProfile /></AppLayout>
+          </RoleRouteGuard>
+        }
       />
       <Route
         path="/admin/dashboard"

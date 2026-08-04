@@ -5,6 +5,7 @@ import {
   FiDroplet,
   FiKey,
   FiLogOut,
+  FiMail,
   FiMoreHorizontal,
   FiUser,
   FiX,
@@ -61,6 +62,7 @@ export default function Sidebar({
   accountName = "WaterWise User",
   activeRoleLabel,
   items = [],
+  onChangeEmail,
   onChangePassword,
   onLogout,
   onProfile,
@@ -208,7 +210,7 @@ export default function Sidebar({
               <FiUser aria-hidden="true" className="h-5 w-5 shrink-0" />
               {!isCollapsed && <span>View profile</span>}
             </button>}
-            <button
+            {onChangePassword && <button
               aria-label={isCollapsed ? "Change password" : undefined}
               className={`group relative mt-2 flex min-h-11 w-full items-center rounded-xl bg-water-50 font-bold text-water-800 transition-colors hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-3 text-sm"}`}
               onClick={() => {
@@ -220,7 +222,19 @@ export default function Sidebar({
               <FiKey aria-hidden="true" className="h-5 w-5 shrink-0" />
               {!isCollapsed && <span>Change password</span>}
               {isCollapsed && <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] z-50 hidden whitespace-nowrap rounded-lg bg-navy-950 px-2.5 py-1.5 text-xs font-semibold text-white shadow-raised group-hover:block group-focus-visible:block">Change password</span>}
-            </button>
+            </button>}
+            {onChangeEmail && <button
+              aria-label={isCollapsed ? "Change email" : undefined}
+              className={`group relative mt-2 flex min-h-11 w-full items-center rounded-xl bg-water-50 font-bold text-water-800 transition-colors hover:bg-water-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-3 text-sm"}`}
+              onClick={() => {
+                setIsAccountActionsOpen(false);
+                onChangeEmail();
+              }}
+              type="button"
+            >
+              <FiMail aria-hidden="true" className="h-5 w-5 shrink-0" />
+              {!isCollapsed && <span>Change email</span>}
+            </button>}
             <button
               aria-label={isCollapsed ? "Log out" : undefined}
               className={`group relative mt-2 flex min-h-11 w-full items-center rounded-xl bg-red-50 font-bold text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 ${isCollapsed ? "justify-center px-2" : "gap-3 px-3 text-sm"}`}

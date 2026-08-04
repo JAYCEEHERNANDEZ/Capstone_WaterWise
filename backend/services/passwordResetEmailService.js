@@ -61,3 +61,26 @@ export async function sendAdminLoginOtp({ email, otp, username }) {
     `,
   });
 }
+
+export async function sendConsumerEmailChangeOtp({ email, otp, username }) {
+  const { from } = getMailConfiguration();
+  const safeUsername = String(username || "WaterWise resident").replace(
+    /[&<>"']/g,
+    (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
+  );
+  await sgMail.send({
+    to: email,
+    from,
+    subject: "Verify your WaterWise email change",
+    text: `Hello ${username || "WaterWise resident"},\n\nYour email change verification code is: ${otp}\n\nThis code expires in 10 minutes. If you did not request this change, you can ignore this email.`,
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;max-width:560px;margin:auto">
+        <h1 style="color:#075985">Verify your email change</h1>
+        <p>Hello ${safeUsername},</p>
+        <p>Enter this code in WaterWise to confirm access to your current email. It expires in 10 minutes.</p>
+        <p style="margin:28px 0;font-size:32px;letter-spacing:8px;font-weight:bold;color:#075985">${otp}</p>
+        <p>If you did not request this change, you can safely ignore this email.</p>
+      </div>
+    `,
+  });
+}

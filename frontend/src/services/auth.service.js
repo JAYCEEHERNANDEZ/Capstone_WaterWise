@@ -80,6 +80,36 @@ export async function requestAuthenticatedPasswordOtp() {
   }
 }
 
+export async function requestConsumerEmailChangeOtp() {
+  try {
+    return await apiRequest("/auth/consumer/change-email/otp", { method: "POST" });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to send the verification code.", { cause: error });
+  }
+}
+
+export async function verifyConsumerEmailChangeOtp(challengeToken, otp) {
+  try {
+    return await apiRequest("/auth/consumer/change-email/verify", {
+      method: "POST",
+      body: JSON.stringify({ challengeToken, otp }),
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to verify the code.", { cause: error });
+  }
+}
+
+export async function completeConsumerEmailChange(emailChangeToken, newEmail) {
+  try {
+    return await apiRequest("/auth/consumer/change-email", {
+      method: "POST",
+      body: JSON.stringify({ emailChangeToken, newEmail }),
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to change your email.", { cause: error });
+  }
+}
+
 export async function resetPassword(token, password) {
   try {
     return await apiRequest("/auth/reset-password", {
