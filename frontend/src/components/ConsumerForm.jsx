@@ -2,8 +2,6 @@ import { useRef, useState } from "react";
 import { CheckCircle2, CircleOff, Eye, EyeOff, Phone, ShieldCheck } from "lucide-react";
 import Dropdown from "./Dropdown";
 
-const EMAIL_DOMAIN = "@waterwise.app";
-
 const initialState = {
   accountName: "",
   fullName: "",
@@ -16,11 +14,10 @@ const initialState = {
 function createInitialState(initialData) {
   if (!initialData) return initialState;
 
-  const emailLocalPart = String(initialData.email ?? "").split("@")[0];
   return {
     ...initialState,
     ...initialData,
-    email: emailLocalPart ? `${emailLocalPart}${EMAIL_DOMAIN}` : "",
+    email: String(initialData.email ?? ""),
   };
 }
 
@@ -51,11 +48,6 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
     setErrors((previous) => ({ ...previous, [field]: "" }));
   };
 
-  const handleEmailChange = (value) => {
-    const localPart = value.replace(/\s/g, "").replace(/@.*$/, "");
-    updateField("email", localPart ? `${localPart}${EMAIL_DOMAIN}` : "");
-  };
-
   const validate = () => {
     const validationErrors = {};
 
@@ -69,9 +61,9 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
       validationErrors.purok = "Select the resident's purok.";
     }
     if (!consumer.email.trim()) {
-      validationErrors.email = "Enter an email name before @waterwise.app.";
-    } else if (!/^[^\s@]+@waterwise\.app$/i.test(consumer.email)) {
-      validationErrors.email = "Use a valid @waterwise.app email address.";
+      validationErrors.email = "Enter the resident's email address.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(consumer.email.trim())) {
+      validationErrors.email = "Enter a valid email address with a domain, such as name@example.com.";
     }
     if (!consumer.contactNumber.trim()) {
       validationErrors.contactNumber = "Enter the resident's contact number.";
@@ -217,25 +209,20 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
 
         <div className="sm:col-span-2">
           <label className={labelClass} htmlFor="resident-email">Email address</label>
-          <div className={`mt-2 flex min-h-12 overflow-hidden rounded-xl border bg-white transition-colors focus-within:ring-4 ${errors.email ? "border-red-600 focus-within:border-red-600 focus-within:ring-red-100" : "border-slate-300 focus-within:border-water-600 focus-within:ring-water-100"}`}>
-            <input
-              aria-describedby={describedBy("email", "email-helper")}
-              aria-invalid={Boolean(errors.email)}
-              autoComplete="off"
-              className="min-w-0 flex-1 bg-transparent px-4 text-navy-900 outline-none placeholder:text-slate-400"
-              id="resident-email"
-              inputMode="email"
-              onChange={(event) => handleEmailChange(event.target.value)}
-              placeholder="juan.delacruz"
-              spellCheck="false"
-              type="text"
-              value={consumer.email.replace(/@waterwise\.app$/i, "")}
-            />
-            <span className="flex items-center border-l border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-600">
-              {EMAIL_DOMAIN}
-            </span>
-          </div>
-          <p className="mt-1.5 text-xs text-slate-500" id="email-helper">The WaterWise email domain is added automatically.</p>
+          <input
+            aria-describedby={describedBy("email", "email-helper")}
+            aria-invalid={Boolean(errors.email)}
+            autoComplete="email"
+            className={`mt-2 ${inputClass("email")}`}
+            id="resident-email"
+            inputMode="email"
+            onChange={(event) => updateField("email", event.target.value)}
+            placeholder="name@example.com"
+            spellCheck="false"
+            type="email"
+            value={consumer.email}
+          />
+          <p className="mt-1.5 text-xs text-slate-500" id="email-helper">Enter the complete email address, including its domain.</p>
           {errors.email && <p className={errorClass} id="email-error" role="alert">{errors.email}</p>}
         </div>
 
