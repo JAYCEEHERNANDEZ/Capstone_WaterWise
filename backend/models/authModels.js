@@ -8,8 +8,21 @@ const ACCOUNT_SOURCES = [
   { role: "consumer", table: "consumers" },
 ];
 
+const createLockoutError = (lockedUntil) => {
+  const retryAfterSeconds = Math.max(
+    1,
+    Math.ceil((new Date(lockedUntil).getTime() - Date.now()) / 1000),
+  );
+  const error = new Error(
+    `Too many incorrect attempts. Try again in ${Math.ceil(retryAfterSeconds / 60)} minute(s).`,
+  );
+  error.statusCode = 429;
+  error.retryAfterSeconds = retryAfterSeconds;
+  return error;
+};
+
 const findAccount = async (table, identifier) => {
-  const fields = "id, username, email, password, status";
+  const fields = "id, username, email, password, status, failed_login_attempts, locked_until";
   const emailResult = await supabase
     .from(table)
     .select(fields)
@@ -31,6 +44,41 @@ const findAccount = async (table, identifier) => {
     throw new Error(`Failed to check account: ${usernameResult.error.message}`);
   }
   return usernameResult.data;
+};
+
+const recordFailedLogin = async (source, account) => {
+  const { data, error } = await supabase.rpc("record_failed_login", {
+    p_account_type: source.role,
+    p_account_id: account.id,
+  });
+
+  if (error) {
+    throw new Error(`Failed to record login attempt: ${error.message}`);
+  }
+
+  if (data?.locked_until) {
+    throw createLockoutError(data.locked_until);
+  }
+
+  return {
+    failedAttempts: Number(data?.failed_attempts ?? 0),
+    remainingAttempts: Math.max(0, 5 - Number(data?.failed_attempts ?? 0)),
+  };
+};
+
+const resetLoginFailures = async (table, accountId) => {
+  const { error } = await supabase
+    .from(table)
+    .update({
+      failed_login_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", accountId);
+
+  if (error) {
+    throw new Error(`Failed to reset login attempts: ${error.message}`);
+  }
 };
 
 const verifyAndUpgradePassword = async (table, account, password) => {
@@ -83,6 +131,7 @@ export async function authenticateAccount(identifier, password) {
   }
 
   let identifierMatched = false;
+  let loginAttemptStatus = null;
 
   for (const source of ACCOUNT_SOURCES) {
     const account = await findAccount(source.table, normalizedIdentifier);
@@ -92,7 +141,12 @@ export async function authenticateAccount(identifier, password) {
 
     identifierMatched = true;
 
+    if (account.locked_until && new Date(account.locked_until).getTime() > Date.now()) {
+      throw createLockoutError(account.locked_until);
+    }
+
     if (!(await verifyAndUpgradePassword(source.table, account, password))) {
+      loginAttemptStatus = await recordFailedLogin(source, account);
       continue;
     }
 
@@ -100,6 +154,10 @@ export async function authenticateAccount(identifier, password) {
       const error = new Error("This account is inactive.");
       error.statusCode = 403;
       throw error;
+    }
+
+    if (account.failed_login_attempts || account.locked_until) {
+      await resetLoginFailures(source.table, account.id);
     }
 
     return {
@@ -118,5 +176,9 @@ export async function authenticateAccount(identifier, password) {
   );
   error.statusCode = 401;
   error.field = identifierMatched ? "password" : "identifier";
+  if (identifierMatched && loginAttemptStatus) {
+    error.failedAttempts = loginAttemptStatus.failedAttempts;
+    error.remainingAttempts = loginAttemptStatus.remainingAttempts;
+  }
   throw error;
 }

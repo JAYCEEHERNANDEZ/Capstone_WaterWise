@@ -28,6 +28,15 @@ export async function login(req, res) {
       success: false,
       message: error.message || "Login failed.",
       ...(error.field ? { field: error.field } : {}),
+      ...(error.retryAfterSeconds
+        ? { retryAfterSeconds: error.retryAfterSeconds }
+        : {}),
+      ...(Number.isInteger(error.failedAttempts)
+        ? { failedAttempts: error.failedAttempts }
+        : {}),
+      ...(Number.isInteger(error.remainingAttempts)
+        ? { remainingAttempts: error.remainingAttempts }
+        : {}),
     });
   }
 }

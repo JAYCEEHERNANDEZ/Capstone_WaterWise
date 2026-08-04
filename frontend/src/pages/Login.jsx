@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FiDroplet,
   FiEye,
@@ -29,6 +29,19 @@ export default function Login() {
   const [identifierError, setIdentifierError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lockSeconds, setLockSeconds] = useState(0);
+
+  useEffect(() => {
+    if (lockSeconds <= 0) return undefined;
+    const timer = window.setTimeout(() => {
+      setLockSeconds((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [lockSeconds]);
+
+  const lockMessage = lockSeconds > 0
+    ? `Too many incorrect attempts. Try again in ${Math.floor(lockSeconds / 60)}:${String(lockSeconds % 60).padStart(2, "0")}.`
+    : "";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -81,19 +94,43 @@ export default function Login() {
     } catch (error) {
       const status = error.cause?.response?.status;
       const errorField = error.cause?.response?.data?.field;
+      const retryAfterSeconds = Number(
+        error.cause?.response?.data?.retryAfterSeconds ?? 0,
+      );
+      const failedAttempts = Number(
+        error.cause?.response?.data?.failedAttempts ?? 0,
+      );
+      const remainingAttempts = Number(
+        error.cause?.response?.data?.remainingAttempts ?? 0,
+      );
       const isCredentialError =
         [400, 401].includes(status) ||
         /invalid (email|username|password|credentials)/i.test(error.message);
 
-      if (isCredentialError && errorField === "identifier") {
+      if (status === 429 && retryAfterSeconds > 0) {
+        setLockSeconds(retryAfterSeconds);
+        setIdentifierError("");
+        setPasswordError("");
+        setMessage("");
+      } else if (isCredentialError && errorField === "identifier") {
         setIdentifierError(error.message || "Email address or username was not found.");
         setPasswordError("");
         setMessage("");
         requestAnimationFrame(() => identifierRef.current?.focus());
       } else if (isCredentialError && errorField === "password") {
         setIdentifierError("");
-        setPasswordError(error.message || "Incorrect password.");
+        const attemptWarning = failedAttempts >= 3 && remainingAttempts > 0
+          ? `${remainingAttempts} login attempt${remainingAttempts === 1 ? "" : "s"} remaining before your account is temporarily locked.`
+          : "";
+        setPasswordError(
+          attemptWarning
+            ? `Incorrect password. ${attemptWarning}`
+            : error.message || "Incorrect password.",
+        );
         setMessage("");
+        if (attemptWarning) {
+          toast.warning("Login attempts running out", attemptWarning);
+        }
         requestAnimationFrame(() => passwordRef.current?.focus());
       } else if (isCredentialError) {
         setIdentifierError("");
@@ -160,7 +197,7 @@ export default function Login() {
                       aria-invalid={Boolean(identifierError)}
                       autoComplete="username"
                       className="ww-field py-3 pl-12 pr-4 text-base"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || lockSeconds > 0}
                       id="login-identifier"
                       onChange={(event) => {
                         setIdentifier(event.target.value);
@@ -194,7 +231,7 @@ export default function Login() {
                       aria-invalid={Boolean(passwordError)}
                       autoComplete="current-password"
                       className="ww-field py-3 pl-12 pr-12 text-base"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || lockSeconds > 0}
                       id="login-password"
                       onChange={(event) => {
                         setPassword(event.target.value);
@@ -210,7 +247,7 @@ export default function Login() {
                       aria-label={showPassword ? "Hide password" : "Show password"}
                       aria-pressed={showPassword}
                       className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-water-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-water-600"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || lockSeconds > 0}
                       onClick={() => setShowPassword((visible) => !visible)}
                       type="button"
                     >
@@ -230,7 +267,7 @@ export default function Login() {
 
                 <button
                   className="ww-primary-button flex min-h-12 w-full items-center justify-center gap-2 px-5 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-water-500 disabled:opacity-90"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || lockSeconds > 0}
                   style={{ cursor: isSubmitting ? "default" : undefined }}
                   type="submit"
                 >
@@ -241,6 +278,12 @@ export default function Login() {
                 <span aria-live="polite" className="sr-only" role="status">
                   {isSubmitting ? "Signing in. Please wait." : ""}
                 </span>
+
+                {lockMessage && (
+                  <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">
+                    {lockMessage}
+                  </p>
+                )}
 
                 {message && (
                   <p

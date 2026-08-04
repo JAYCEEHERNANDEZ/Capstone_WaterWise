@@ -8,8 +8,9 @@ const recommendationCacheError = (message) => {
 
 export async function getStoredRecommendation(cacheKey, sourceSignature) {
   const { data, error } = await supabase
-    .from("ai_consumption_recommendations")
-    .select("recommendation_payload")
+    .from("ai_consumption_cache")
+    .select("result_payload")
+    .eq("result_type", "recommendation")
     .eq("cache_key", cacheKey)
     .eq("source_signature", sourceSignature)
     .maybeSingle();
@@ -20,7 +21,7 @@ export async function getStoredRecommendation(cacheKey, sourceSignature) {
     );
   }
 
-  return data?.recommendation_payload ?? null;
+  return data?.result_payload ?? null;
 }
 
 export async function storeRecommendation({
@@ -33,23 +34,24 @@ export async function storeRecommendation({
 }) {
   const generatedAt = new Date().toISOString();
   const { data, error } = await supabase
-    .from("ai_consumption_recommendations")
+    .from("ai_consumption_cache")
     .upsert(
       {
+        result_type: "recommendation",
         cache_key: cacheKey,
         generated_at: generatedAt,
         latest_consumption_id: sourceVersion.latestConsumptionId,
         purok,
-        recommendation_payload: recommendation,
-        recommendation_period: period,
+        result_payload: recommendation,
+        result_period: period,
         scope,
         source_record_count: sourceVersion.recordCount,
         source_signature: sourceVersion.signature,
         updated_at: generatedAt,
       },
-      { onConflict: "cache_key" },
+      { onConflict: "result_type,cache_key" },
     )
-    .select("recommendation_payload")
+    .select("result_payload")
     .single();
 
   if (error) {
@@ -58,5 +60,5 @@ export async function storeRecommendation({
     );
   }
 
-  return data.recommendation_payload;
+  return data.result_payload;
 }

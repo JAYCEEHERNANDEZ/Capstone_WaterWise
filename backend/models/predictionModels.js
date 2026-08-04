@@ -31,10 +31,9 @@ export async function getConsumptionSourceVersion() {
 
 export async function getStoredPrediction(cacheKey, sourceSignature) {
   const { data, error } = await supabase
-    .from("ai_consumption_predictions")
-    .select(
-      "prediction_payload, source_signature, generated_at, updated_at",
-    )
+    .from("ai_consumption_cache")
+    .select("result_payload, source_signature, generated_at, updated_at")
+    .eq("result_type", "prediction")
     .eq("cache_key", cacheKey)
     .eq("source_signature", sourceSignature)
     .maybeSingle();
@@ -45,7 +44,7 @@ export async function getStoredPrediction(cacheKey, sourceSignature) {
     );
   }
 
-  return data?.prediction_payload ?? null;
+  return data?.result_payload ?? null;
 }
 
 export async function storePrediction({
@@ -58,28 +57,29 @@ export async function storePrediction({
 }) {
   const generatedAt = new Date().toISOString();
   const { data, error } = await supabase
-    .from("ai_consumption_predictions")
+    .from("ai_consumption_cache")
     .upsert(
       {
+        result_type: "prediction",
         cache_key: cacheKey,
         scope,
-        prediction_period: period,
+        result_period: period,
         purok,
-        prediction_payload: prediction,
+        result_payload: prediction,
         source_signature: sourceVersion.signature,
         source_record_count: sourceVersion.recordCount,
         latest_consumption_id: sourceVersion.latestConsumptionId,
         generated_at: generatedAt,
         updated_at: generatedAt,
       },
-      { onConflict: "cache_key" },
+      { onConflict: "result_type,cache_key" },
     )
-    .select("prediction_payload")
+    .select("result_payload")
     .single();
 
   if (error) {
     throw predictionError(`Failed to store AI prediction: ${error.message}`);
   }
 
-  return data.prediction_payload;
+  return data.result_payload;
 }
