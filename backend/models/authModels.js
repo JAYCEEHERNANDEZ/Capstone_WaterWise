@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { timingSafeEqual } from "node:crypto";
+import validator from "validator";
 import { supabase } from "../config/supabase.js";
 
 const ACCOUNT_SOURCES = [
@@ -181,4 +182,116 @@ export async function authenticateAccount(identifier, password) {
     error.remainingAttempts = loginAttemptStatus.remainingAttempts;
   }
   throw error;
+}
+
+export async function findPasswordResetAccount(email) {
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+  if (!validator.isEmail(normalizedEmail)) {
+    const error = new Error("Enter a valid email address.");
+    error.statusCode = 400;
+    error.field = "email";
+    throw error;
+  }
+
+  for (const source of ACCOUNT_SOURCES) {
+    const account = await findAccount(source.table, normalizedEmail);
+    if (account && account.email?.toLowerCase() === normalizedEmail) {
+      return { ...account, role: source.role, table: source.table };
+    }
+  }
+  return null;
+}
+
+export async function resetAccountPassword({ accountId, password, role }) {
+  const source = ACCOUNT_SOURCES.find((item) => item.role === role);
+  if (!source) return false;
+
+  if (
+    typeof password !== "string" ||
+    password.length < 8 ||
+    !/[a-z]/.test(password) ||
+    !/[A-Z]/.test(password) ||
+    !/\d/.test(password) ||
+    !/[^A-Za-z0-9]/.test(password)
+  ) {
+    const error = new Error(
+      "Use at least 8 characters with uppercase, lowercase, a number, and a symbol.",
+    );
+    error.statusCode = 400;
+    error.field = "password";
+    throw error;
+  }
+
+  const { data: account, error: findError } = await supabase
+    .from(source.table)
+    .select("id, password")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (findError) throw new Error(`Failed to check account: ${findError.message}`);
+  if (!account) return false;
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const { error } = await supabase
+    .from(source.table)
+    .update({
+      password: hashedPassword,
+      failed_login_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", accountId);
+  if (error) throw new Error(`Failed to reset password: ${error.message}`);
+  return { previousPassword: String(account.password ?? "") };
+}
+
+export async function getPasswordHash(accountId, role) {
+  const source = ACCOUNT_SOURCES.find((item) => item.role === role);
+  if (!source) return null;
+  const { data, error } = await supabase
+    .from(source.table)
+    .select("password")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to check password reset session: ${error.message}`);
+  return data?.password ?? null;
+}
+
+export async function getPasswordResetAccountById(accountId, role) {
+  const source = ACCOUNT_SOURCES.find((item) => item.role === role);
+  if (!source) return null;
+  const { data, error } = await supabase
+    .from(source.table)
+    .select("id, username, email, password, status")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to check account: ${error.message}`);
+  return data ? { ...data, role: source.role, table: source.table } : null;
+}
+
+export async function changePasswordWithCurrent({ accountId, role, currentPassword, newPassword }) {
+  const account = await getPasswordResetAccountById(accountId, role);
+  if (!account) {
+    const error = new Error("Account not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (typeof currentPassword !== "string" || !currentPassword) {
+    const error = new Error("Enter your current password.");
+    error.statusCode = 400;
+    error.field = "currentPassword";
+    throw error;
+  }
+  if (!(await verifyAndUpgradePassword(account.table, account, currentPassword))) {
+    const error = new Error("Your current password is incorrect.");
+    error.statusCode = 400;
+    error.field = "currentPassword";
+    throw error;
+  }
+  if (currentPassword === newPassword) {
+    const error = new Error("Your new password must be different from your current password.");
+    error.statusCode = 400;
+    error.field = "newPassword";
+    throw error;
+  }
+  return resetAccountPassword({ accountId, role, password: newPassword });
 }

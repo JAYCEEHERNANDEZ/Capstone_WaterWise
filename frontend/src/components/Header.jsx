@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { FiChevronDown, FiChevronRight, FiDroplet, FiLogOut, FiUser } from "react-icons/fi";
+import { FiChevronDown, FiChevronRight, FiDroplet, FiKey, FiLogOut, FiUser } from "react-icons/fi";
 
 export default function Header({
   accountName = "WaterWise User",
   activeRoleLabel,
   notificationSlot,
+  onChangePassword,
   onLogout,
   onProfile,
   subtitle = "Sucol Water System",
@@ -95,6 +96,12 @@ export default function Header({
                     </div>
                   )}
                   <div className="my-1 border-t border-slate-100" />
+                  {onChangePassword && (
+                    <button className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-600 transition-colors hover:bg-water-50 hover:text-water-800" onClick={() => { setIsAccountOpen(false); onChangePassword(); }} role="menuitem" type="button">
+                      <FiKey aria-hidden="true" className="h-4 w-4" />
+                      Change password
+                    </button>
+                  )}
                   <button
                     className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
                     onClick={() => {

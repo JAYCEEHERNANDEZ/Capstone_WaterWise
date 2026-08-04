@@ -3,12 +3,13 @@ import {
   FiDroplet,
   FiEye,
   FiEyeOff,
+  FiHash,
   FiLoader,
   FiLock,
   FiMail,
 } from "react-icons/fi";
-import { useNavigate } from "react-router";
-import { login } from "../services/auth.service";
+import { Link, useNavigate } from "react-router";
+import { login, verifyAdminLoginOtp } from "../services/auth.service";
 import { useToast } from "../components/Toast";
 
 const accountDestinations = {
@@ -24,6 +25,9 @@ export default function Login() {
   const passwordRef = useRef(null);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [adminChallengeToken, setAdminChallengeToken] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [identifierError, setIdentifierError] = useState("");
@@ -46,6 +50,25 @@ export default function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (isSubmitting) return;
+
+    if (adminChallengeToken) {
+      if (!/^\d{6}$/.test(otp)) {
+        setMessage("Enter the 6-digit verification code.");
+        return;
+      }
+      setIsSubmitting(true);
+      setMessage("");
+      try {
+        const result = await verifyAdminLoginOtp(adminChallengeToken, otp);
+        toast.success("Admin verified", "Welcome to the WaterWise admin portal.");
+        navigate(accountDestinations[result.user.role]);
+      } catch (error) {
+        setMessage(error.message);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
 
     const trimmedIdentifier = identifier.trim();
     const nextIdentifierError = !trimmedIdentifier
@@ -80,6 +103,13 @@ export default function Login() {
 
     try {
       const result = await login({ email: trimmedIdentifier, password });
+      if (result.requiresOtp) {
+        setAdminChallengeToken(result.challengeToken);
+        setMaskedEmail(result.maskedEmail);
+        setPassword("");
+        setMessage(result.message);
+        return;
+      }
       const authenticatedRole = result.user?.role === "tenant"
         ? "consumer"
         : result.user?.role;
@@ -175,15 +205,15 @@ export default function Login() {
                   Secure sign in
                 </p>
                 <h2 className="mt-2 text-3xl font-extrabold leading-tight tracking-[-0.04em] text-slate-900 sm:text-4xl">
-                  Sign in to your account
+                  {adminChallengeToken ? "Verify admin sign in" : "Sign in to your account"}
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-slate-500">
-                  Use the credentials assigned to your WaterWise account.
+                  {adminChallengeToken ? `Enter the code sent to ${maskedEmail}. It expires in 10 minutes.` : "Use the credentials assigned to your WaterWise account."}
                 </p>
               </div>
 
               <form aria-busy={isSubmitting} className="space-y-5" onSubmit={handleSubmit}>
-                <div>
+                {!adminChallengeToken && <div>
                   <label
                     className="text-sm font-semibold text-slate-900"
                     htmlFor="login-identifier"
@@ -215,15 +245,13 @@ export default function Login() {
                       {identifierError}
                     </p>
                   )}
-                </div>
+                </div>}
 
-                <div>
-                  <label
-                    className="text-sm font-semibold text-slate-900"
-                    htmlFor="login-password"
-                  >
-                    Password
-                  </label>
+                {!adminChallengeToken && <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-sm font-semibold text-slate-900" htmlFor="login-password">Password</label>
+                    <Link className="text-sm font-bold text-water-700 hover:text-water-900" to="/forgot-password">Forgot password?</Link>
+                  </div>
                   <div className="relative mt-2">
                     <FiLock aria-hidden="true" className={`pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${passwordError ? "text-red-500" : "text-slate-400"}`} />
                     <input
@@ -263,7 +291,17 @@ export default function Login() {
                       {passwordError}
                     </p>
                   )}
-                </div>
+                </div>}
+
+                {adminChallengeToken && (
+                  <div>
+                    <label className="text-sm font-semibold text-slate-900" htmlFor="admin-login-otp">Verification code</label>
+                    <div className="relative mt-2">
+                      <FiHash aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input autoComplete="one-time-code" className="ww-field py-3 pl-12 pr-4 font-mono text-lg tracking-[0.3em]" disabled={isSubmitting} id="admin-login-otp" inputMode="numeric" maxLength={6} onChange={(event) => { setOtp(event.target.value.replace(/\D/g, "")); setMessage(""); }} placeholder="000000" type="text" value={otp} />
+                    </div>
+                  </div>
+                )}
 
                 <button
                   className="ww-primary-button flex min-h-12 w-full items-center justify-center gap-2 px-5 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600 focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-water-500 disabled:opacity-90"
@@ -272,11 +310,11 @@ export default function Login() {
                   type="submit"
                 >
                   {isSubmitting && <FiLoader aria-hidden="true" className="h-5 w-5 animate-spin" />}
-                  {isSubmitting ? "Signing in…" : "Sign in"}
+                  {isSubmitting ? (adminChallengeToken ? "Verifying…" : "Signing in…") : (adminChallengeToken ? "Verify and continue" : "Sign in")}
                 </button>
 
                 <span aria-live="polite" className="sr-only" role="status">
-                  {isSubmitting ? "Signing in. Please wait." : ""}
+                  {isSubmitting ? (adminChallengeToken ? "Verifying admin code. Please wait." : "Signing in. Please wait.") : ""}
                 </span>
 
                 {lockMessage && (
@@ -292,6 +330,9 @@ export default function Login() {
                   >
                     {message}
                   </p>
+                )}
+                {adminChallengeToken && (
+                  <button className="w-full text-sm font-bold text-water-700 hover:text-water-900" disabled={isSubmitting} onClick={() => { setAdminChallengeToken(""); setMaskedEmail(""); setOtp(""); setMessage(""); }} type="button">Back to sign in</button>
                 )}
               </form>
             </div>

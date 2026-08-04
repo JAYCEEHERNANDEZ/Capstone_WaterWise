@@ -11,6 +11,8 @@ import ConsumerProfile from "./pages/ConsumerProfile";
 import ConsumerHome from "./pages/ConsumerHome";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import UsageMetrics from "./pages/UsageMetrics";
 import AnalyticsDashboard from "./pages/analyticsDashboard";
 import Reports from "./pages/Reports";
@@ -152,6 +154,8 @@ export function AppRoutes() {
     <Routes>
       <Route element={<Navigate replace to="/login" />} path="/" />
       <Route element={<Login />} path="/login" />
+      <Route element={<ForgotPassword />} path="/forgot-password" />
+      <Route element={<ResetPassword />} path="/reset-password" />
       <Route
         element={
           <RoleRouteGuard requiredRole="meter-reader">

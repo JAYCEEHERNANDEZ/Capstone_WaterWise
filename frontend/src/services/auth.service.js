@@ -14,7 +14,7 @@ export async function login(credentials) {
       method: "POST",
       body: JSON.stringify(credentials),
     });
-    storeSession(result);
+    if (result.token && result.user) storeSession(result);
     return result;
   } catch (error) {
     throw new Error(
@@ -23,6 +23,71 @@ export async function login(credentials) {
         "Unable to sign in.",
       { cause: error },
     );
+  }
+}
+
+export async function verifyAdminLoginOtp(challengeToken, otp) {
+  try {
+    const result = await apiRequest("/auth/admin/verify-login-otp", {
+      method: "POST",
+      body: JSON.stringify({ challengeToken, otp }),
+    });
+    storeSession(result);
+    return result;
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to verify the admin sign-in code.", { cause: error });
+  }
+}
+
+export async function requestPasswordReset(email) {
+  try {
+    return await apiRequest("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to send the reset email.", { cause: error });
+  }
+}
+
+export async function verifyPasswordResetOtp(challengeToken, otp) {
+  try {
+    return await apiRequest("/auth/verify-reset-otp", {
+      method: "POST",
+      body: JSON.stringify({ challengeToken, otp }),
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to verify the code.", { cause: error });
+  }
+}
+
+export async function changePasswordWithCurrent(currentPassword, newPassword) {
+  try {
+    return await apiRequest("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to change your password.", { cause: error });
+  }
+}
+
+export async function requestAuthenticatedPasswordOtp() {
+  try {
+    return await apiRequest("/auth/change-password/email-otp", { method: "POST" });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to send a verification code.", { cause: error });
+  }
+}
+
+export async function resetPassword(token, password) {
+  try {
+    return await apiRequest("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
+    });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to reset your password.", { cause: error });
   }
 }
 

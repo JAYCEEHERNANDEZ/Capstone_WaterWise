@@ -22,6 +22,7 @@ import {
 } from "../services/consumerPortal.service";
 import NotificationPage from "../pages/NotificationPage";
 import Header from "./Header";
+import ChangePasswordModal from "./ChangePasswordModal";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import NotificationBadgeTrigger from "./NotificationBadgeTrigger";
 import Modal from "./Modal";
@@ -95,6 +96,7 @@ export default function AppLayout({ children }) {
   const [account, setAccount] = useState(getStoredAccount);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isNotificationLoading, setIsNotificationLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -282,6 +284,7 @@ export default function AppLayout({ children }) {
             </div>
           ) : null
         }
+        onChangePassword={() => setIsChangePasswordOpen(true)}
         onLogout={() => setIsLogoutConfirmOpen(true)}
         onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : undefined}
         title="WaterWise"
@@ -304,6 +307,7 @@ export default function AppLayout({ children }) {
           accountName={accountName || activeRoleConfig.userName}
           activeRoleLabel={activeRoleConfig.label}
           items={activeRoleConfig.links}
+          onChangePassword={() => setIsChangePasswordOpen(true)}
           onLogout={() => setIsLogoutConfirmOpen(true)}
           onProfile={activeRole === "consumer" ? () => navigate("/consumer/profile-details") : undefined}
         />
@@ -324,6 +328,14 @@ export default function AppLayout({ children }) {
         onCancel={() => setIsLogoutConfirmOpen(false)}
         onConfirm={handleLogout}
       />
+
+      {isChangePasswordOpen && (
+        <ChangePasswordModal
+          isOpen
+          onClose={() => setIsChangePasswordOpen(false)}
+          onSuccess={(successMessage) => toast.success("Password changed", successMessage)}
+        />
+      )}
 
       <Modal
         description={selectedNotificationPresentation.label}
