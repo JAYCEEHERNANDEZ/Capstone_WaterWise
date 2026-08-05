@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 
 import adminRoutes from "./routes/adminRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -16,7 +17,63 @@ import { startNotificationReminderScheduler } from "./services/notificationServi
 
 const app = express();
 
-app.use(express.json());
+const normalizeOrigin = (value) => value.trim().replace(/\/$/, "");
+const productionOrigins = ["https://deployed-frontend-one.vercel.app"];
+const developmentOrigins =
+  process.env.NODE_ENV === "production"
+    ? []
+    : ["http://localhost:5173", "http://127.0.0.1:5173"];
+const configuredOrigins = [
+  ...productionOrigins,
+  ...developmentOrigins,
+  process.env.FRONTEND_URL,
+  ...(process.env.ALLOWED_ORIGINS ?? "").split(","),
+]
+  .filter(Boolean)
+  .map(normalizeOrigin);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (configuredOrigins.includes(normalizedOrigin)) return true;
+
+  // Vercel preview URLs are optional and must be explicitly enabled.
+  return (
+    process.env.ALLOW_VERCEL_PREVIEWS === "true" &&
+    /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalizedOrigin)
+  );
+};
+
+app.disable("x-powered-by");
+app.set("trust proxy", 1);
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type", "Accept"],
+    credentials: false,
+  }),
+);
+app.use(express.json({ limit: "1mb" }));
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    service: "WaterWise API",
+    status: "running",
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ success: true, status: "healthy" });
+});
 
 app.use("/api/admins", adminRoutes);
 app.use("/api/auth", authRoutes);
@@ -39,7 +96,21 @@ app.use((error, req, res, next) => {
     });
   }
 
-  return next(error);
+  if (error.message?.includes("not allowed by CORS")) {
+    return res.status(403).json({
+      success: false,
+      message: error.message,
+    });
+  }
+
+  console.error(error);
+  return res.status(error.status ?? 500).json({
+    success: false,
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal server error."
+        : error.message,
+  });
 });
 
 const PORT = Number(process.env.PORT) || 5000;
