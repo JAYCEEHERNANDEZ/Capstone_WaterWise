@@ -16,6 +16,7 @@ const presentations = {
   bill_due_soon: { Icon: FiCalendar, label: "Upcoming due date" },
   bill_due_today: { Icon: FiClock, label: "Bill due today" },
   bill_generated: { Icon: FiDroplet, label: "New meter reading and bill" },
+  disconnection_warning: { Icon: FiAlertTriangle, label: "Disconnection warning" },
   payment_received: { Icon: FiCheckCircle, label: "Payment received" },
   service_alert: { Icon: FiAlertTriangle, label: "Service alert" },
 };

@@ -36,16 +36,28 @@ function createInitialPayment(initialData, billingRecords) {
   const billing = billingRecords.find(
     (record) => String(record.id) === String(initialData?.billingId ?? ""),
   );
+  const selectedResidentKey = billing ? residentKey(billing) : "";
+  const oldestBilling = billingRecords
+    .filter(
+      (record) =>
+        record.outstandingBalance > 0 && residentKey(record) === selectedResidentKey,
+    )
+    .sort((first, second) =>
+      String(first.raw?.billing_date ?? "").localeCompare(
+        String(second.raw?.billing_date ?? ""),
+      ) || Number(first.id) - Number(second.id),
+    )[0];
 
   return {
     amountReceived: String(initialData?.amountReceived ?? initialData?.amountPaid ?? ""),
-    billingId: initialData?.billingId ?? "",
+    billingId: oldestBilling?.id ?? "",
     consumerName: initialData?.consumerName ?? billing?.consumerName ?? "",
-    currentBalance: String(initialData?.currentBalance ?? billing?.outstandingBalance ?? ""),
+    currentBalance: String(oldestBilling?.outstandingBalance ?? ""),
     paymentDate: initialData?.paymentDate ?? today(),
     paymentMethod: initialData?.paymentMethod ?? "Cash",
+    paymentScope: "oldest",
     referenceNumber: initialData?.referenceNumber ?? "",
-    residentKey: billing ? residentKey(billing) : "",
+    residentKey: selectedResidentKey,
   };
 }
 
@@ -121,13 +133,25 @@ export default function PaymentForm({
     resident.name.toLowerCase().includes(residentSearchTerm),
   );
   const selectedResident = residentOptions.find((resident) => resident.key === form.residentKey);
-  const residentBills = unpaidBillings.filter(
-    (record) => residentKey(record) === form.residentKey,
-  );
+  const residentBills = unpaidBillings
+    .filter((record) => residentKey(record) === form.residentKey)
+    .sort((first, second) =>
+      String(first.raw?.billing_date ?? "").localeCompare(
+        String(second.raw?.billing_date ?? ""),
+      ) || Number(first.id) - Number(second.id),
+    );
   const selectedBilling = billingRecords.find(
     (record) => String(record.id) === String(form.billingId),
   );
-  const balance = Number(form.currentBalance) || 0;
+  const selectedBillIsCurrentMonth =
+    String(selectedBilling?.raw?.billing_date ?? "").slice(0, 7) === today().slice(0, 7);
+  const allBillsBalance = residentBills.reduce(
+    (total, billing) => total + Number(billing.outstandingBalance || 0),
+    0,
+  );
+  const balance = form.paymentScope === "all"
+    ? allBillsBalance
+    : Number(selectedBilling?.outstandingBalance || 0);
   const amountReceived = Number(form.amountReceived) || 0;
   const amountApplied =
     form.paymentMethod === "Cash" ? Math.min(amountReceived, balance) : amountReceived;
@@ -161,12 +185,21 @@ export default function PaymentForm({
     );
 
   const selectResident = (resident) => {
+    const oldestBilling = unpaidBillings
+      .filter((record) => residentKey(record) === resident.key)
+      .sort((first, second) =>
+        String(first.raw?.billing_date ?? "").localeCompare(
+          String(second.raw?.billing_date ?? ""),
+        ) || Number(first.id) - Number(second.id),
+      )[0];
     setResidentQuery(resident.name);
     setForm((previous) => ({
       ...previous,
-      billingId: "",
+      amountReceived: "",
+      billingId: oldestBilling?.id ?? "",
       consumerName: resident.name,
-      currentBalance: "",
+      currentBalance: String(oldestBilling?.outstandingBalance ?? ""),
+      paymentScope: "oldest",
       residentKey: resident.key,
     }));
     setErrors((previous) => ({ ...previous, billingId: "", resident: "" }));
@@ -179,18 +212,9 @@ export default function PaymentForm({
       billingId: "",
       consumerName: "",
       currentBalance: "",
+      paymentScope: "oldest",
       residentKey: "",
     }));
-  };
-
-  const selectBilling = (billing) => {
-    setForm((previous) => ({
-      ...previous,
-      billingId: billing.id,
-      consumerName: billing.consumerName,
-      currentBalance: String(billing.outstandingBalance),
-    }));
-    setErrors((previous) => ({ ...previous, billingId: "", currentBalance: "" }));
   };
 
   const handleChange = ({ target }) => {
@@ -214,9 +238,19 @@ export default function PaymentForm({
     if (!form.amountReceived) nextErrors.amountReceived = "Enter the amount received.";
     else if (Number(form.amountReceived) <= 0) {
       nextErrors.amountReceived = "The amount must be greater than zero.";
+    } else if (form.paymentScope === "all" && Number(form.amountReceived) < balance) {
+      nextErrors.amountReceived =
+        "The amount is not enough to pay all bills. Proceed with the oldest bill only for a per-month payment.";
+    } else if (
+      form.paymentScope === "oldest" &&
+      !selectedBillIsCurrentMonth &&
+      amountApplied < balance
+    ) {
+      nextErrors.amountReceived =
+        "Bills from previous months require full payment. Partial payment is allowed only for the current month.";
     } else if (
       form.paymentMethod !== "Cash" &&
-      Number(form.amountReceived) > Number(form.currentBalance)
+      Number(form.amountReceived) > balance
     ) {
       nextErrors.amountReceived = "Electronic payments cannot exceed the current balance.";
     }
@@ -251,9 +285,11 @@ export default function PaymentForm({
         amountReceived,
         amountTendered: amountReceived,
         billingId: Number(form.billingId),
+        billingIds: residentBills.map((billing) => billing.id),
         currentBalance: balance,
         idempotencyKey: idempotencyKeyRef.current,
         paymentStatus,
+        paymentScope: form.paymentScope,
         remainingBalance,
         changeGiven,
       });
@@ -296,10 +332,10 @@ export default function PaymentForm({
         <div className="space-y-6">
           <section aria-labelledby="resident-selection-heading">
             <h3 className="text-base font-extrabold text-navy-900" id="resident-selection-heading">
-              1. Select resident and bill
+              1. Select resident
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Choose the account first, then select the exact unpaid billing period.
+              The oldest outstanding bill is selected automatically.
             </p>
 
             {!selectedResident ? (
@@ -368,50 +404,99 @@ export default function PaymentForm({
             )}
 
             {selectedResident && (
-              <fieldset className="mt-4">
-                <legend className="text-sm font-bold text-navy-900">Unpaid billing records</legend>
-                <div className="mt-2 space-y-2">
-                  {residentBills.map((billing) => {
-                    const selected = String(form.billingId) === String(billing.id);
-                    return (
-                      <label
-                        className={`block cursor-pointer rounded-2xl border p-4 transition-colors ${
-                          selected
-                            ? "border-water-500 bg-water-50 ring-2 ring-water-100"
-                            : "border-slate-200 bg-white hover:border-water-300"
-                        }`}
-                        key={billing.id}
-                      >
-                        <input
-                          checked={selected}
-                          className="sr-only"
-                          name="billingId"
-                          onChange={() => selectBilling(billing)}
-                          type="radio"
-                          value={billing.id}
-                        />
-                        <span className="flex items-start justify-between gap-4">
-                          <span>
-                            <span className="block font-mono text-sm font-bold text-water-700">
-                              {billing.invoiceNumber}
-                            </span>
-                            <span className="mt-1 block text-sm font-semibold text-navy-900">
-                              {billing.billingPeriod}
-                            </span>
-                            <span className="mt-1 block text-xs text-slate-500">
-                              Due {billing.dueDate || "Not available"}
-                            </span>
-                          </span>
-                          <span className="font-mono text-base font-extrabold tabular-nums text-navy-900">
-                            {currency(billing.outstandingBalance)}
-                          </span>
-                        </span>
-                      </label>
-                    );
-                  })}
+              <div className="mt-4 space-y-4">
+                <div className="rounded-2xl border border-water-200 bg-water-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-water-700">
+                    Oldest outstanding bill
+                  </p>
+                  <div className="mt-2 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-mono text-sm font-bold text-water-700">
+                        {selectedBilling?.invoiceNumber}
+                      </p>
+                      <p className="mt-1 font-bold text-navy-900">{selectedBilling?.billingPeriod}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Due {selectedBilling?.dueDate || "Not available"}
+                      </p>
+                      <p className={`mt-2 text-xs font-bold ${
+                        selectedBillIsCurrentMonth ? "text-water-700" : "text-amber-700"
+                      }`}>
+                        {selectedBillIsCurrentMonth
+                          ? "Partial payment allowed for the current month"
+                          : "Full payment required for a previous month"}
+                      </p>
+                    </div>
+                    <p className="font-mono text-lg font-extrabold text-navy-900">
+                      {currency(selectedBilling?.outstandingBalance)}
+                    </p>
+                  </div>
                 </div>
-                {error("billingId")}
-              </fieldset>
+
+                {residentBills.length > 1 && (
+                  <>
+                    <fieldset>
+                      <legend className="text-sm font-bold text-navy-900">Payment coverage</legend>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {[
+                        {
+                          label: selectedBillIsCurrentMonth
+                            ? "Oldest bill only"
+                            : "Oldest bill (full payment required)",
+                          value: "oldest",
+                          amount: selectedBilling?.outstandingBalance,
+                        },
+                        { label: `Pay all ${residentBills.length} bills`, value: "all", amount: allBillsBalance },
+                      ].map((option) => (
+                        <label
+                          className={`cursor-pointer rounded-xl border p-4 ${
+                            form.paymentScope === option.value
+                              ? "border-water-500 bg-water-50 ring-2 ring-water-100"
+                              : "border-slate-200 bg-white hover:border-water-300"
+                          }`}
+                          key={option.value}
+                        >
+                          <input
+                            checked={form.paymentScope === option.value}
+                            className="sr-only"
+                            name="paymentScope"
+                            onChange={() => setForm((previous) => ({
+                              ...previous,
+                              amountReceived: "",
+                              paymentScope: option.value,
+                            }))}
+                            type="radio"
+                            value={option.value}
+                          />
+                          <span className="block font-bold text-navy-900">{option.label}</span>
+                          <span className="mt-1 block font-mono text-sm text-slate-600">
+                            {currency(option.amount)}
+                          </span>
+                        </label>
+                      ))}
+                      </div>
+                    </fieldset>
+
+                    <div>
+                      <p className="text-sm font-bold text-navy-900">Other outstanding bills</p>
+                      <div className="mt-2 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                        {residentBills.slice(1).map((billing) => (
+                          <div className="flex items-center justify-between gap-4 px-4 py-3" key={billing.id}>
+                            <div>
+                              <p className="font-semibold text-navy-900">{billing.billingPeriod}</p>
+                              <p className="mt-0.5 font-mono text-xs text-slate-500">
+                                {billing.invoiceNumber} · Due {billing.dueDate || "Not available"}
+                              </p>
+                            </div>
+                            <p className="font-mono text-sm font-extrabold text-slate-700">
+                              {currency(billing.outstandingBalance)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </section>
 
@@ -453,6 +538,26 @@ export default function PaymentForm({
                   value={form.amountReceived}
                 />
                 {error("amountReceived")}
+                {form.paymentScope === "all" &&
+                  amountReceived > 0 &&
+                  amountReceived < balance &&
+                  !errors.amountReceived && (
+                    <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800" role="status">
+                      <p className="font-semibold">
+                        The received amount is not enough to pay all outstanding bills.
+                      </p>
+                      <button
+                        className="mt-1 min-h-9 font-bold text-water-700 underline"
+                        onClick={() => setForm((previous) => ({
+                          ...previous,
+                          paymentScope: "oldest",
+                        }))}
+                        type="button"
+                      >
+                        Proceed with oldest bill only
+                      </button>
+                    </div>
+                  )}
               </div>
 
               <div>
@@ -460,12 +565,12 @@ export default function PaymentForm({
                   Payment date
                 </label>
                 <input
-                  {...accessibility("paymentDate")}
-                  className={inputClass("paymentDate")}
+                  aria-readonly="true"
+                  className={inputClass("paymentDate", true)}
                   id="paymentDate"
                   name="paymentDate"
-                  onChange={handleChange}
-                  type="date"
+                  readOnly
+                  type="text"
                   value={form.paymentDate}
                 />
                 {error("paymentDate")}
@@ -581,8 +686,12 @@ export default function PaymentForm({
 
           <dl className="mt-5 rounded-2xl border border-slate-200 bg-white px-4">
             <ReviewRow label="Resident" value={selectedBilling?.consumerName} />
-            <ReviewRow label="Invoice" value={selectedBilling?.invoiceNumber} />
-            <ReviewRow label="Billing period" value={selectedBilling?.billingPeriod} />
+            <ReviewRow
+              label="Payment coverage"
+              value={form.paymentScope === "all" ? `All ${residentBills.length} outstanding bills` : "Oldest bill only"}
+            />
+            <ReviewRow label="Starting invoice" value={selectedBilling?.invoiceNumber} />
+            <ReviewRow label="Starting billing period" value={selectedBilling?.billingPeriod} />
             <ReviewRow label="Payment date" value={form.paymentDate} />
             <ReviewRow label="Payment method" value={form.paymentMethod} />
             {form.referenceNumber && (

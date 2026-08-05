@@ -1,6 +1,7 @@
 import {
   createConsumer,
   deleteConsumer,
+  disconnectFlaggedConsumer,
   getConsumerById,
   getConsumers,
   updateConsumer,
@@ -72,6 +73,18 @@ export const editConsumer = async (req, res) => {
     });
   } catch (error) {
     return sendError(res, error, "Failed to update consumer account.");
+  }
+};
+
+export const disconnectConsumer = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "Consumer account disconnected successfully.",
+      data: await disconnectFlaggedConsumer(req.params.id),
+    });
+  } catch (error) {
+    return sendError(res, error, "Failed to disconnect consumer account.");
   }
 };
 

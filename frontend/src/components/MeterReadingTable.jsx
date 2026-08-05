@@ -23,7 +23,15 @@ function ReadingStatus({ status }) {
   );
 }
 
-const MeterReadingTable = ({ readings = [], onEdit, onDelete, readOnly = false }) => {
+const MeterReadingTable = ({
+  readings = [],
+  onEdit,
+  onDelete,
+  readOnly = false,
+  readingDateFirst = false,
+  showConsumerDetails = true,
+  showUsage = true,
+}) => {
   const [selectedRecord, setSelectedRecord] = useState(null);
 
   const viewRecord = (reading) => {
@@ -52,13 +60,18 @@ const MeterReadingTable = ({ readings = [], onEdit, onDelete, readOnly = false }
       <Table
         ariaLabel="Meter readings"
         columns={[
-          { key: "account", label: "Account" },
-          { key: "resident", label: "Resident" },
-          { key: "purok", label: "Purok" },
+          ...(showConsumerDetails
+            ? [
+                { key: "account", label: "Account" },
+                { key: "resident", label: "Resident" },
+                { key: "purok", label: "Purok" },
+              ]
+            : []),
+          ...(readingDateFirst ? [{ key: "date", label: "Reading date" }] : []),
           { key: "previous", label: "Previous", className: "text-right" },
           { key: "current", label: "Current", className: "text-right" },
-          { key: "usage", label: "Usage", className: "text-right" },
-          { key: "date", label: "Reading date" },
+          ...(showUsage ? [{ key: "usage", label: "Usage", className: "text-right" }] : []),
+          ...(!readingDateFirst ? [{ key: "date", label: "Reading date" }] : []),
           { key: "status", label: "Status" },
           { key: "record", label: "Reading details" },
           ...(!readOnly ? [{ key: "actions", label: "Actions", className: "text-right" }] : []),
@@ -69,13 +82,26 @@ const MeterReadingTable = ({ readings = [], onEdit, onDelete, readOnly = false }
         getRowKey={(reading) => reading.id}
         renderRow={(reading) => (
           <>
+                {showConsumerDetails && (
                 <td className="flex flex-col font-mono text-navy-900 before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Account'] md:table-cell md:px-4 md:py-4 md:before:hidden">{reading.consumerNo}</td>
+                )}
+                {showConsumerDetails && (
                 <td className="col-span-2 row-start-1 flex flex-col font-bold text-navy-900 before:mb-1 before:text-xs before:font-semibold before:text-slate-500 before:content-['Resident'] md:table-cell md:px-4 md:py-4 md:before:hidden">{reading.consumerName}</td>
+                )}
+                {showConsumerDetails && (
                 <td className="flex flex-col text-slate-600 before:mb-1 before:text-xs before:font-semibold before:text-slate-500 before:content-['Purok'] md:table-cell md:px-4 md:py-4 md:before:hidden">{reading.purok}</td>
+                )}
+                {readingDateFirst && (
+                <td className="flex flex-col font-mono text-slate-600 before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Date'] md:table-cell md:px-4 md:py-4 md:before:hidden">{reading.readingDate}</td>
+                )}
                 <td className="flex flex-col font-mono tabular-nums before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Previous'] md:table-cell md:px-4 md:py-4 md:text-right md:before:hidden">{reading.previousReading} m³</td>
                 <td className="flex flex-col font-mono tabular-nums before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Current'] md:table-cell md:px-4 md:py-4 md:text-right md:before:hidden">{reading.currentReading} m³</td>
+                {showUsage && (
                 <td className="flex flex-col font-mono font-bold tabular-nums text-navy-900 before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Usage'] md:table-cell md:px-4 md:py-4 md:text-right md:before:hidden">{reading.consumption} m³</td>
+                )}
+                {!readingDateFirst && (
                 <td className="flex flex-col font-mono text-slate-600 before:mb-1 before:font-sans before:text-xs before:font-semibold before:text-slate-500 before:content-['Date'] md:table-cell md:px-4 md:py-4 md:before:hidden">{reading.readingDate}</td>
+                )}
                 <td className="flex items-end md:table-cell md:px-4 md:py-4"><ReadingStatus status={reading.status} /></td>
                 <td className="col-span-2 md:table-cell md:px-4 md:py-4 md:text-center">
                   <button

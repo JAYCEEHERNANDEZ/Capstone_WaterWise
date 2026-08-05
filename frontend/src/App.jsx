@@ -22,6 +22,7 @@ import BillingManagementPage from "./pages/BillingManagementPage";
 import EventManagementPage from "./pages/EventManagementPage";
 import AnnouncementManagementPage from "./pages/AnnouncementManagementPage";
 import PaymentProcessingPage from "./pages/PaymentProcessingPage";
+import FlaggedAccountsPage from "./pages/FlaggedAccountsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminProfile from "./pages/AdminProfile";
 import RecordConsumptionPage from "./pages/RecordConsumptionPage";
@@ -33,6 +34,7 @@ const portalRoutes = [
   { label: "Readings", path: "/admin/readings" },
   { label: "Billing", path: "/admin/billings" },
   { label: "Payments", path: "/admin/payments" },
+  { label: "Flagged Accounts", path: "/admin/flagged-accounts" },
   { label: "Events", path: "/admin/events" },
   { label: "Announcements", path: "/admin/announcements" },
   { label: "Record Consumption Entry", path: "/meter-reader/readings-entry" },
@@ -57,6 +59,7 @@ const roleAccess = {
       "/admin/readings",
       "/admin/billings",
       "/admin/payments",
+      "/admin/flagged-accounts",
       "/admin/events",
       "/admin/announcements",
       "/admin/analytics",
@@ -206,6 +209,16 @@ export function AppRoutes() {
           <RoleRouteGuard requiredRole="admin">
             <AppLayout>
               <PaymentProcessingPage />
+            </AppLayout>
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/flagged-accounts"
+        element={
+          <RoleRouteGuard requiredRole="admin">
+            <AppLayout>
+              <FlaggedAccountsPage />
             </AppLayout>
           </RoleRouteGuard>
         }
