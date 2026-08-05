@@ -13,10 +13,21 @@ import {
   getPasswordHash,
   resetAccountPassword,
 } from "../models/authModels.js";
-import { sendAdminLoginOtp, sendPasswordResetOtp, sendStaffActionOtp } from "../services/passwordResetEmailService.js";
+import { sendAdminLoginOtp, sendConsumerPasswordChangeOtp, sendPasswordResetOtp, sendStaffActionOtp } from "../services/passwordResetEmailService.js";
 import { sendConsumerEmailChangeOtp } from "../services/passwordResetEmailService.js";
-import { updateConsumer } from "../models/consumerModels.js";
+import { getConsumerById, updateConsumer } from "../models/consumerModels.js";
 import { updateAdmin } from "../models/adminModels.js";
+import {
+  createTrustedDevice,
+  getTrustedDeviceCookieName,
+  listAdminTrustedDevices,
+  readCookie,
+  revokeAdminTrustedDevices,
+  revokeOtherTrustedDevices,
+  revokeTrustedDevice,
+  trustedDeviceCookieOptions,
+  verifyTrustedDevice,
+} from "../models/trustedDeviceModels.js";
 
 const ADMIN_LOGIN_OTP_AUDIENCE = "waterwise-admin-login-otp";
 const EMAIL_CHANGE_OTP_AUDIENCE = "waterwise-consumer-email-change-otp";
@@ -25,11 +36,15 @@ const OTP_AUDIENCE = "waterwise-password-reset-otp";
 const RESET_AUDIENCE = "waterwise-password-reset";
 const STAFF_ACTION_OTP_AUDIENCE = "waterwise-staff-action-otp";
 const STAFF_ACTION_AUDIENCE = "waterwise-staff-action";
+const CONSUMER_PASSWORD_OTP_AUDIENCE = "waterwise-consumer-password-otp";
+const CONSUMER_PASSWORD_AUDIENCE = "waterwise-consumer-password-change";
 const RESET_RESPONSE = "If an active account uses that email, a verification code has been sent.";
 const adminOtpAttempts = new Map();
 const emailChangeOtpAttempts = new Map();
 const staffActionAttempts = new Map();
 const staffActionAuthorizations = new Map();
+const consumerPasswordOtpAttempts = new Map();
+const consumerPasswordAuthorizations = new Map();
 const STAFF_ACTIONS = {
   "create-admin": "create an Admin account",
   "create-meter-reader": "create a Meter Reader account",
@@ -49,6 +64,12 @@ function valuesMatch(first, second) {
   const firstBuffer = Buffer.from(String(first));
   const secondBuffer = Buffer.from(String(second));
   return firstBuffer.length === secondBuffer.length && timingSafeEqual(firstBuffer, secondBuffer);
+}
+
+function clearTrustedDeviceCookie(res, role) {
+  const options = trustedDeviceCookieOptions(role);
+  delete options.maxAge;
+  res.clearCookie(getTrustedDeviceCookieName(), options);
 }
 
 function createAccessToken(user) {
@@ -122,12 +143,99 @@ export const authorizeStaffAction = (expectedAction) => async (req, res, next) =
   }
 };
 
+export async function requestConsumerPasswordChangeOtp(req, res) {
+  try {
+    if (!["admin", "super-admin"].includes(req.user.role)) return res.status(403).json({ success: false, message: "Only administrators can change resident passwords." });
+    const consumerId = Number(req.body?.consumerId);
+    if (!Number.isInteger(consumerId) || consumerId < 1) return res.status(400).json({ success: false, message: "A valid resident account is required." });
+    const [account, consumer] = await Promise.all([
+      getPasswordResetAccountById(req.user.id, req.user.role),
+      getConsumerById(consumerId),
+    ]);
+    if (!account || account.status !== "active") return res.status(403).json({ success: false, message: "Your administrator account is not active." });
+    const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const challengeToken = jwt.sign(
+      { role: req.user.role, consumerId, otpHash: otpFingerprint(otp), passwordFingerprint: passwordFingerprint(account.password), emailFingerprint: passwordFingerprint(account.email.toLowerCase()) },
+      getJwtSecret(),
+      { subject: String(account.id), issuer: JWT_ISSUER, audience: CONSUMER_PASSWORD_OTP_AUDIENCE, expiresIn: "10m", jwtid: createHash("sha256").update(`consumer-password:${account.id}:${consumerId}:${Date.now()}:${otp}`).digest("hex") },
+    );
+    await sendConsumerPasswordChangeOtp({ email: account.email, otp, username: account.username, consumerName: consumer.full_name ?? consumer.username });
+    return res.status(200).json({ success: true, challengeToken, maskedEmail: account.email.replace(/^(.{1,2}).*(@.*)$/, "$1***$2"), message: "A verification code was sent to your administrator email." });
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({ success: false, message: error.message || "Unable to send the password-change code." });
+  }
+}
+
+export async function verifyConsumerPasswordChangeOtp(req, res) {
+  try {
+    const { challengeToken, otp } = req.body ?? {};
+    if (!challengeToken || !/^\d{6}$/.test(String(otp ?? ""))) return res.status(400).json({ success: false, message: "Enter the 6-digit verification code." });
+    const challenge = jwt.verify(challengeToken, getJwtSecret(), { issuer: JWT_ISSUER, audience: CONSUMER_PASSWORD_OTP_AUDIENCE });
+    if (challenge.sub !== String(req.user.id) || challenge.role !== req.user.role || !["admin", "super-admin"].includes(req.user.role) || !challenge.jti) throw new jwt.JsonWebTokenError("Invalid resident password challenge.");
+    const state = consumerPasswordOtpAttempts.get(challenge.jti) ?? { attempts: 0, expiresAt: challenge.exp * 1000 };
+    if (state.used || state.attempts >= 5) return res.status(429).json({ success: false, message: "This code can no longer be used. Request a new code." });
+    const account = await getPasswordResetAccountById(req.user.id, req.user.role);
+    const validAccount = account?.status === "active" && valuesMatch(passwordFingerprint(account.password), challenge.passwordFingerprint ?? "") && valuesMatch(passwordFingerprint(account.email.toLowerCase()), challenge.emailFingerprint ?? "");
+    if (!validAccount || !valuesMatch(otpFingerprint(otp), challenge.otpHash ?? "")) {
+      state.attempts += 1; consumerPasswordOtpAttempts.set(challenge.jti, state);
+      const remaining = 5 - state.attempts;
+      return res.status(remaining > 0 ? 400 : 429).json({ success: false, message: remaining > 0 ? `Incorrect verification code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.` : "Too many incorrect codes. Request a new code." });
+    }
+    consumerPasswordOtpAttempts.set(challenge.jti, { ...state, used: true });
+    const authorizationToken = jwt.sign(
+      { role: req.user.role, consumerId: challenge.consumerId, passwordFingerprint: challenge.passwordFingerprint, emailFingerprint: challenge.emailFingerprint },
+      getJwtSecret(),
+      { subject: String(account.id), issuer: JWT_ISSUER, audience: CONSUMER_PASSWORD_AUDIENCE, expiresIn: "5m", jwtid: createHash("sha256").update(`consumer-password-authorized:${challenge.jti}`).digest("hex") },
+    );
+    return res.status(200).json({ success: true, authorizationToken });
+  } catch (error) {
+    const isTokenError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError;
+    return res.status(error.statusCode ?? (isTokenError ? 400 : 500)).json({ success: false, message: isTokenError ? "This verification session is invalid or expired." : error.message || "Unable to verify the code." });
+  }
+}
+
+export async function authorizeConsumerPasswordChange(req, res, next) {
+  if (req.body?.password === undefined) return next();
+  try {
+    const token = req.get("x-consumer-password-authorization") ?? "";
+    const payload = jwt.verify(token, getJwtSecret(), { issuer: JWT_ISSUER, audience: CONSUMER_PASSWORD_AUDIENCE });
+    if (payload.sub !== String(req.user.id) || payload.role !== req.user.role || Number(payload.consumerId) !== Number(req.params.id) || !payload.jti || !["admin", "super-admin"].includes(req.user.role)) throw new jwt.JsonWebTokenError("Invalid resident password authorization.");
+    const state = consumerPasswordAuthorizations.get(payload.jti);
+    if (state?.used) return res.status(403).json({ success: false, message: "This password-change authorization has already been used." });
+    const account = await getPasswordResetAccountById(req.user.id, req.user.role);
+    const validAccount = account?.status === "active" && valuesMatch(passwordFingerprint(account.password), payload.passwordFingerprint ?? "") && valuesMatch(passwordFingerprint(account.email.toLowerCase()), payload.emailFingerprint ?? "");
+    if (!validAccount) return res.status(403).json({ success: false, message: "Your administrator credentials changed. Request a new verification code." });
+    consumerPasswordAuthorizations.set(payload.jti, { used: true, expiresAt: payload.exp * 1000 });
+    return next();
+  } catch {
+    return res.status(403).json({ success: false, message: "Verify your administrator email OTP before changing the resident password." });
+  }
+}
+
 export async function login(req, res) {
   try {
     const { email, identifier, password } = req.body ?? {};
     const user = await authenticateAccount(identifier ?? email, password);
 
     if (["admin", "super-admin"].includes(user.role)) {
+      const deviceToken = readCookie(req, getTrustedDeviceCookieName());
+      const isTrustedDevice = await verifyTrustedDevice({
+        token: deviceToken,
+        adminId: user.id,
+        role: user.role,
+      });
+      if (isTrustedDevice) {
+        return res.status(200).json({
+          success: true,
+          token: createAccessToken(user),
+          user,
+          trustedDevice: true,
+        });
+      }
+      if (deviceToken) {
+        clearTrustedDeviceCookie(res, user.role);
+      }
+
       const account = await getPasswordResetAccountById(user.id, user.role);
       const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
       const challengeToken = jwt.sign(
@@ -178,6 +286,50 @@ export function currentAccount(req, res) {
   return res.status(200).json({ success: true, user: req.user });
 }
 
+export async function getAdminTrustedDevices(req, res) {
+  try {
+    if (!["admin", "super-admin"].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: "Only administrators can manage trusted devices." });
+    }
+    const currentToken = readCookie(req, getTrustedDeviceCookieName());
+    const devices = await listAdminTrustedDevices({ adminId: req.user.id, currentToken });
+    return res.status(200).json({ success: true, devices });
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({ success: false, message: error.message || "Unable to load trusted devices." });
+  }
+}
+
+export async function removeAdminTrustedDevice(req, res) {
+  try {
+    if (!["admin", "super-admin"].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: "Only administrators can manage trusted devices." });
+    }
+    const deviceId = Number(req.params.deviceId);
+    if (!Number.isInteger(deviceId) || deviceId < 1) {
+      return res.status(400).json({ success: false, message: "A valid trusted device is required." });
+    }
+    const currentToken = readCookie(req, getTrustedDeviceCookieName());
+    const result = await revokeTrustedDevice({ adminId: req.user.id, deviceId, currentToken });
+    if (result.revokedCurrentDevice) clearTrustedDeviceCookie(res, req.user.role);
+    return res.status(200).json({ success: true, ...result, message: "Trusted device removed." });
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({ success: false, message: error.message || "Unable to remove trusted device." });
+  }
+}
+
+export async function removeOtherAdminTrustedDevices(req, res) {
+  try {
+    if (!["admin", "super-admin"].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: "Only administrators can manage trusted devices." });
+    }
+    const currentToken = readCookie(req, getTrustedDeviceCookieName());
+    const revokedCount = await revokeOtherTrustedDevices({ adminId: req.user.id, currentToken });
+    return res.status(200).json({ success: true, revokedCount, message: "Other trusted devices removed." });
+  } catch (error) {
+    return res.status(error.statusCode ?? 500).json({ success: false, message: error.message || "Unable to remove other trusted devices." });
+  }
+}
+
 export async function verifyAdminLoginOtp(req, res) {
   try {
     for (const [challengeId, state] of adminOtpAttempts) {
@@ -224,7 +376,22 @@ export async function verifyAdminLoginOtp(req, res) {
 
     adminOtpAttempts.set(challenge.jti, { ...attemptState, used: true });
     const user = { id: account.id, username: account.username, email: account.email, name: account.username, role: account.role };
-    return res.status(200).json({ success: true, token: createAccessToken(user), user });
+    const trustedDevice = await createTrustedDevice({
+      adminId: account.id,
+      role: account.role,
+      userAgent: req.get("user-agent"),
+    });
+    res.cookie(
+      getTrustedDeviceCookieName(),
+      trustedDevice.token,
+      trustedDeviceCookieOptions(account.role),
+    );
+    return res.status(200).json({
+      success: true,
+      token: createAccessToken(user),
+      user,
+      trustedDeviceExpiresAt: trustedDevice.expiresAt.toISOString(),
+    });
   } catch (error) {
     const isTokenError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError;
     return res.status(error.statusCode ?? (isTokenError ? 400 : 500)).json({
@@ -411,6 +578,10 @@ export async function changeAuthenticatedPassword(req, res) {
       currentPassword: req.body?.currentPassword,
       newPassword: req.body?.newPassword,
     });
+    if (["admin", "super-admin"].includes(req.user.role)) {
+      await revokeAdminTrustedDevices(req.user.id);
+      clearTrustedDeviceCookie(res, req.user.role);
+    }
     return res.status(200).json({ success: true, message: "Your password has been changed successfully." });
   } catch (error) {
     return res.status(error.statusCode ?? 500).json({
@@ -491,6 +662,10 @@ export async function resetPassword(req, res) {
       const error = new Error("This password reset session is invalid or has expired.");
       error.statusCode = 400;
       throw error;
+    }
+    if (["admin", "super-admin"].includes(payload.role)) {
+      await revokeAdminTrustedDevices(payload.sub);
+      clearTrustedDeviceCookie(res, payload.role);
     }
     return res.status(200).json({ success: true, message: "Your password has been reset. You can now sign in." });
   } catch (error) {

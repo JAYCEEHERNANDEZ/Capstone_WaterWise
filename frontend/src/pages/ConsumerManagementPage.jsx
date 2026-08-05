@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiCheckCircle, FiPlus, FiUsers } from "react-icons/fi";
+import { FiCheckCircle, FiLoader, FiPlus, FiUsers } from "react-icons/fi";
 import ConsumerForm from "../components/ConsumerForm";
 import ConsumerListTable from "../components/ConsumerListTable";
 import Filter from "../components/Filter";
@@ -8,7 +8,7 @@ import Modal from "../components/Modal";
 import PageHeader from "../components/PageHeader";
 import Search from "../components/Search";
 import { useToast } from "../components/Toast";
-import { createConsumer, fetchConsumerDirectory, updateConsumer } from "../services/consumerDirectoryAPI";
+import { createConsumer, fetchConsumerDirectory, requestConsumerPasswordOtp, updateConsumer, verifyConsumerPasswordOtp } from "../services/consumerDirectoryAPI";
 
 function toManagementConsumer(consumer) {
   return {
@@ -36,6 +36,11 @@ function ConsumerManagementPage() {
   const [purok, setPurok] = useState("all");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [passwordChallenge, setPasswordChallenge] = useState(null);
+  const [pendingConsumerUpdate, setPendingConsumerUpdate] = useState(null);
+  const [passwordOtp, setPasswordOtp] = useState("");
+  const [passwordOtpError, setPasswordOtpError] = useState("");
+  const [isPasswordVerifying, setIsPasswordVerifying] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -93,10 +98,10 @@ function ConsumerManagementPage() {
     }
   };
 
-  const editConsumer = async (consumer) => {
+  const saveConsumerUpdate = async (consumer, passwordAuthorization) => {
     try {
       setError("");
-      const updated = await updateConsumer(selectedConsumer.id, consumer);
+      const updated = await updateConsumer(selectedConsumer.id, consumer, { passwordAuthorization });
       const savedConsumer = toManagementConsumer(updated);
       setConsumers((current) => current.map((item) => item.id === savedConsumer.id ? savedConsumer : item));
       setSelectedConsumer(null);
@@ -109,6 +114,35 @@ function ConsumerManagementPage() {
       toast.error("Resident not updated", message);
       return false;
     }
+  };
+
+  const editConsumer = async (consumer) => {
+    if (!consumer.password) return saveConsumerUpdate(consumer);
+    setIsPasswordVerifying(true); setError(""); setPasswordOtpError("");
+    try {
+      const result = await requestConsumerPasswordOtp(selectedConsumer.id);
+      setPendingConsumerUpdate(consumer);
+      setPasswordChallenge(result);
+      setPasswordOtp("");
+    } catch (requestError) {
+      const message = getConsumerRequestError(requestError, "Unable to send the verification code.");
+      setError(message);
+      toast.error("Verification unavailable", message);
+    } finally { setIsPasswordVerifying(false); }
+    return false;
+  };
+
+  const confirmPasswordChange = async (event) => {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(passwordOtp)) return setPasswordOtpError("Enter the 6-digit verification code.");
+    setIsPasswordVerifying(true); setPasswordOtpError("");
+    try {
+      const result = await verifyConsumerPasswordOtp(passwordChallenge.challengeToken, passwordOtp);
+      const saved = await saveConsumerUpdate(pendingConsumerUpdate, result.authorizationToken);
+      if (saved) { setPasswordChallenge(null); setPendingConsumerUpdate(null); setPasswordOtp(""); }
+    } catch (requestError) {
+      setPasswordOtpError(getConsumerRequestError(requestError, "Unable to verify the code."));
+    } finally { setIsPasswordVerifying(false); }
   };
 
   const visibleConsumers = useMemo(() => {
@@ -138,6 +172,10 @@ function ConsumerManagementPage() {
     setFormMode("");
     setSelectedConsumer(null);
     setError("");
+    setPasswordChallenge(null);
+    setPendingConsumerUpdate(null);
+    setPasswordOtp("");
+    setPasswordOtpError("");
   };
 
   return (
@@ -182,6 +220,7 @@ function ConsumerManagementPage() {
               </p>
             )}
             <ConsumerForm
+              allowPasswordChange={formMode === "edit"}
               embedded
               initialData={formMode === "edit" ? selectedConsumer : null}
               key={`${formMode}-${selectedConsumer?.id ?? "new"}`}
@@ -190,6 +229,14 @@ function ConsumerManagementPage() {
               requirePassword={formMode === "add"}
             />
       </Modal>
+
+      {passwordChallenge && <Modal description={`Enter the code sent to ${passwordChallenge.maskedEmail}. It expires in 10 minutes.`} eyebrow="Password security" isOpen onClose={() => { if (!isPasswordVerifying) { setPasswordChallenge(null); setPendingConsumerUpdate(null); setPasswordOtp(""); setPasswordOtpError(""); } }} size="sm" title="Verify resident password change">
+        <form className="grid gap-4 p-5 sm:p-6" onSubmit={confirmPasswordChange}>
+          <div><label className="text-sm font-semibold text-slate-900" htmlFor="resident-password-otp">Verification code</label><input autoComplete="one-time-code" className="ww-field mt-2 px-4 py-3 text-center font-mono text-xl" disabled={isPasswordVerifying} id="resident-password-otp" inputMode="numeric" maxLength={6} onChange={(event) => { setPasswordOtp(event.target.value.replace(/\D/g, "")); setPasswordOtpError(""); }} placeholder="000000" value={passwordOtp} /></div>
+          {passwordOtpError && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700" role="alert">{passwordOtpError}</p>}
+          <button className="ww-primary-button flex min-h-12 items-center justify-center gap-2" disabled={isPasswordVerifying} type="submit">{isPasswordVerifying && <FiLoader className="h-5 w-5 animate-spin" />}{isPasswordVerifying ? "Verifying..." : "Verify and update password"}</button>
+        </form>
+      </Modal>}
 
       {error && !formMode && <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700" role="alert">{error}</p>}
 

@@ -1,12 +1,44 @@
 import { useEffect, useState } from "react";
-import { AtSign, ChevronLeft, ChevronRight, Eye, EyeOff, KeyRound, LoaderCircle, Mail, Settings, ShieldCheck, UserPlus, UserRound } from "lucide-react";
+import { AtSign, ChevronLeft, ChevronRight, Eye, EyeOff, KeyRound, LoaderCircle, Mail, Monitor, Settings, ShieldCheck, Smartphone, Trash2, UserPlus, UserRound } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import Modal from "../components/Modal";
 import { useToast } from "../components/Toast";
-import { createStaffAccount, fetchStaffAccounts, requestStaffActionOtp, updateAdminAccount, updateMeterReaderAccount, verifyStaffActionOtp } from "../services/auth.service";
+import { createStaffAccount, fetchStaffAccounts, fetchTrustedDevices, requestStaffActionOtp, revokeOtherTrustedDevices, revokeTrustedDevice, updateAdminAccount, updateMeterReaderAccount, verifyStaffActionOtp } from "../services/auth.service";
 import { getStoredAccount } from "../services/authToken";
 
-const STAFF_PAGE_SIZE = 5;
+const STAFF_PAGE_SIZE = 2;
+
+function describeDevice(userAgent = "") {
+  const mobile = /Android|iPhone|iPad/i.test(userAgent);
+  const platform = /iPhone/i.test(userAgent)
+    ? "iPhone"
+    : /iPad/i.test(userAgent)
+      ? "iPad"
+      : /Android/i.test(userAgent)
+        ? "Android device"
+        : /Windows/i.test(userAgent)
+          ? "Windows PC"
+          : /Macintosh|Mac OS/i.test(userAgent)
+            ? "Mac"
+            : /Linux/i.test(userAgent)
+              ? "Linux computer"
+              : "Unknown device";
+  const browser = /Edg\//i.test(userAgent)
+    ? "Microsoft Edge"
+    : /Chrome\//i.test(userAgent)
+      ? "Google Chrome"
+      : /Firefox\//i.test(userAgent)
+        ? "Mozilla Firefox"
+        : /Safari\//i.test(userAgent)
+          ? "Safari"
+          : "Unknown browser";
+  return { browser, Icon: mobile ? Smartphone : Monitor, platform };
+}
+
+const formatDeviceDate = (value) => new Intl.DateTimeFormat("en-PH", {
+  dateStyle: "medium",
+  timeStyle: "short",
+}).format(new Date(value));
 
 export default function AdminProfile() {
   const toast = useToast();
@@ -36,6 +68,11 @@ export default function AdminProfile() {
   const [staffOtp, setStaffOtp] = useState("");
   const [staffOtpError, setStaffOtpError] = useState("");
   const [isAuthorizingStaff, setIsAuthorizingStaff] = useState(false);
+  const [isTrustedDevicesOpen, setIsTrustedDevicesOpen] = useState(false);
+  const [trustedDevices, setTrustedDevices] = useState([]);
+  const [trustedDevicesError, setTrustedDevicesError] = useState("");
+  const [isTrustedDevicesLoading, setIsTrustedDevicesLoading] = useState(false);
+  const [revokingDeviceId, setRevokingDeviceId] = useState(null);
 
   useEffect(() => {
     const handleEmailChange = (event) => setAccount((current) => ({ ...current, email: event.detail?.email ?? current.email }));
@@ -53,6 +90,43 @@ export default function AdminProfile() {
       .catch((error) => setDirectoryError(error.message))
       .finally(() => setIsDirectoryLoading(false));
   }, [account?.role, directoryPage, directoryType]);
+
+  const loadTrustedDevices = async () => {
+    setIsTrustedDevicesLoading(true); setTrustedDevicesError("");
+    try {
+      const result = await fetchTrustedDevices();
+      setTrustedDevices(result.devices ?? []);
+    } catch (error) {
+      setTrustedDevicesError(error.message);
+    } finally { setIsTrustedDevicesLoading(false); }
+  };
+
+  const openTrustedDevices = () => {
+    setIsTrustedDevicesOpen(true);
+    loadTrustedDevices();
+  };
+
+  const removeTrustedDevice = async (device) => {
+    setRevokingDeviceId(device.id); setTrustedDevicesError("");
+    try {
+      await revokeTrustedDevice(device.id);
+      setTrustedDevices((current) => current.filter((item) => item.id !== device.id));
+      toast.success("Device removed", device.isCurrent ? "This browser will require OTP on the next sign-in." : "That browser will require OTP on its next sign-in.");
+    } catch (error) {
+      setTrustedDevicesError(error.message);
+    } finally { setRevokingDeviceId(null); }
+  };
+
+  const removeOtherTrustedDevices = async () => {
+    setRevokingDeviceId("others"); setTrustedDevicesError("");
+    try {
+      await revokeOtherTrustedDevices();
+      setTrustedDevices((current) => current.filter((device) => device.isCurrent));
+      toast.success("Other devices removed", "They will require OTP the next time they sign in.");
+    } catch (error) {
+      setTrustedDevicesError(error.message);
+    } finally { setRevokingDeviceId(null); }
+  };
 
   const beginStaffAuthorization = async (pendingAction) => {
     setIsAuthorizingStaff(true); setStaffOtpError("");
@@ -171,10 +245,10 @@ export default function AdminProfile() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
         <div className="flex items-center gap-4"><span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-water-50 text-water-700"><UserRound className="h-8 w-8" /></span><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">{account?.role === "super-admin" ? "Super Administrator" : "Administrator"}</p><h2 className="mt-1 text-2xl font-extrabold text-navy-900">{account?.username ?? account?.name ?? "Administrator"}</h2><p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700"><ShieldCheck className="h-4 w-4" />Active {account?.role === "super-admin" ? "super administrator" : "administrator"} account</p></div></div>
       </section>
-      {account?.role === "super-admin" && <div className="grid items-start gap-5 lg:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.7fr)] lg:gap-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6 lg:sticky lg:top-6">
+      {account?.role === "super-admin" && <div className="grid gap-5 lg:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.7fr)] lg:items-stretch lg:gap-6">
+      <section className="flex rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6 lg:h-full lg:flex-col">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Super Admin only</p><h2 className="mt-1 text-xl font-extrabold text-navy-900">Create staff account</h2><p className="mt-1 text-sm leading-6 text-slate-600">Create a regular Admin or Meter Reader account with a temporary password. This section is hidden from normal administrators.</p>
-        <div className="mt-5 grid gap-3">
+        <div className="mt-5 grid gap-3 lg:flex-1 lg:grid-rows-2">
           <button className="group flex min-h-24 items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left transition-colors hover:border-water-300 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600" onClick={() => setStaffType("admin")} type="button"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-water-100 text-water-700"><UserPlus className="h-6 w-6" /></span><span><span className="block font-bold text-navy-900">Create Admin</span><span className="mt-1 block text-xs leading-5 text-slate-500">Add a regular administrator account.</span></span></button>
           <button className="group flex min-h-24 items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left transition-colors hover:border-water-300 hover:bg-water-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-water-600" onClick={() => setStaffType("meter-reader")} type="button"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-water-100 text-water-700"><UserRound className="h-6 w-6" /></span><span><span className="block font-bold text-navy-900">Create Meter Reader</span><span className="mt-1 block text-xs leading-5 text-slate-500">Add field personnel for meter readings.</span></span></button>
         </div>
@@ -195,6 +269,24 @@ export default function AdminProfile() {
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Account</p><h2 className="mt-1 text-xl font-extrabold text-navy-900">Account information</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4"><AtSign className="h-5 w-5 text-water-700" /><div><p className="text-xs text-slate-500">Username</p><p className="mt-1 font-bold text-navy-900">{account?.username ?? account?.name}</p></div></div><div className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4"><Mail className="h-5 w-5 text-water-700" /><div className="min-w-0"><p className="text-xs text-slate-500">Email address</p><p className="mt-1 break-all font-bold text-navy-900">{account?.email}</p></div></div></div>
       </section>
+      {isTrustedDevicesOpen && <Modal description="Review browsers that can skip email OTP. Removing a device makes it verify again on its next sign-in." eyebrow="Account security" isOpen onClose={() => setIsTrustedDevicesOpen(false)} size="md" title="Trusted devices">
+        <div className="p-5 sm:p-6">
+          {isTrustedDevicesLoading && <div className="flex min-h-40 items-center justify-center gap-2 text-sm font-semibold text-slate-500"><LoaderCircle className="h-5 w-5 animate-spin" />Loading trusted devices...</div>}
+          {!isTrustedDevicesLoading && trustedDevicesError && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700" role="alert">{trustedDevicesError}</p>}
+          {!isTrustedDevicesLoading && !trustedDevicesError && trustedDevices.length === 0 && <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-10 text-center"><ShieldCheck className="mx-auto h-7 w-7 text-slate-400" /><p className="mt-3 font-bold text-navy-900">No trusted devices</p><p className="mt-1 text-sm text-slate-500">A browser appears here after a successful admin OTP verification.</p></div>}
+          {!isTrustedDevicesLoading && trustedDevices.length > 0 && <div className="overflow-hidden rounded-xl border border-slate-200">
+            {trustedDevices.map((device) => {
+              const { browser, Icon, platform } = describeDevice(device.userAgent);
+              return <div className="flex items-start gap-3 border-b border-slate-200 p-4 last:border-b-0" key={device.id}>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-water-50 text-water-700"><Icon className="h-5 w-5" /></span>
+                <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-navy-900">{platform}</p>{device.isCurrent && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">This device</span>}</div><p className="mt-1 text-sm text-slate-600">{browser}</p><p className="mt-1 text-xs leading-5 text-slate-500">Last used {formatDeviceDate(device.lastUsedAt)}<span aria-hidden="true"> · </span>Expires {formatDeviceDate(device.expiresAt)}</p></div>
+                <button aria-label={`Remove ${platform}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50" disabled={revokingDeviceId !== null} onClick={() => removeTrustedDevice(device)} title="Remove trusted device" type="button">{revokingDeviceId === device.id ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}</button>
+              </div>;
+            })}
+          </div>}
+          {!isTrustedDevicesLoading && trustedDevices.some((device) => device.isCurrent) && trustedDevices.some((device) => !device.isCurrent) && <button className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-50" disabled={revokingDeviceId !== null} onClick={removeOtherTrustedDevices} type="button">{revokingDeviceId === "others" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}Remove all other devices</button>}
+        </div>
+      </Modal>}
       {staffType && <Modal description={`Enter the new ${staffType === "admin" ? "administrator" : "meter reader"} credentials and assign a temporary password.`} eyebrow="Super Admin only" isOpen onClose={() => { setStaffType(""); setStaffError(""); setStaffForm({ username: "", email: "", password: "" }); }} size="sm" title={`Create ${staffType === "admin" ? "Admin" : "Meter Reader"}`}>
         <form className="grid gap-4 p-5 sm:p-6" onSubmit={createStaff}>
           <div><label className="text-sm font-semibold" htmlFor="staff-username">Username</label><input autoComplete="off" className="ww-field mt-2 px-4 py-3" id="staff-username" onChange={(event) => { setStaffForm((current) => ({ ...current, username: event.target.value })); setStaffError(""); }} placeholder={staffType === "admin" ? "e.g. admin02" : "e.g. reader01"} value={staffForm.username} /></div>
@@ -231,7 +323,7 @@ export default function AdminProfile() {
       </Modal>}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-water-700">Security</p><h2 className="mt-1 text-xl font-extrabold text-navy-900">Profile security</h2><p className="mt-1 text-sm text-slate-600">Security changes are verified through your registered administrator email.</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2"><button className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left hover:bg-water-50" onClick={() => window.dispatchEvent(new CustomEvent("waterwise:open-change-password", { detail: { emailOnly: true } }))} type="button"><KeyRound className="h-5 w-5 text-water-700" /><span><span className="block text-sm font-bold">Change password</span><span className="mt-1 block text-xs text-slate-500">Verify using email OTP only.</span></span></button><button className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left hover:bg-water-50" onClick={() => window.dispatchEvent(new Event("waterwise:open-change-email"))} type="button"><Mail className="h-5 w-5 text-water-700" /><span><span className="block text-sm font-bold">Change email</span><span className="mt-1 block text-xs text-slate-500">Verify your current email first.</span></span></button></div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><button className="flex min-h-20 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left hover:bg-water-50" onClick={openTrustedDevices} type="button"><ShieldCheck className="h-5 w-5 shrink-0 text-water-700" /><span className="min-w-0 flex-1"><span className="block text-sm font-bold">Trusted devices</span><span className="mt-1 block text-xs leading-5 text-slate-500">Review browsers that can skip email OTP.</span></span><ChevronRight className="h-4 w-4 shrink-0 text-slate-400" /></button><button className="flex min-h-20 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left hover:bg-water-50" onClick={() => window.dispatchEvent(new CustomEvent("waterwise:open-change-password", { detail: { emailOnly: true } }))} type="button"><KeyRound className="h-5 w-5 shrink-0 text-water-700" /><span><span className="block text-sm font-bold">Change password</span><span className="mt-1 block text-xs leading-5 text-slate-500">Verify using email OTP only.</span></span></button><button className="flex min-h-20 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left hover:bg-water-50" onClick={() => window.dispatchEvent(new Event("waterwise:open-change-email"))} type="button"><Mail className="h-5 w-5 shrink-0 text-water-700" /><span><span className="block text-sm font-bold">Change email</span><span className="mt-1 block text-xs leading-5 text-slate-500">Verify your current email first.</span></span></button></div>
       </section>
     </div>
   );

@@ -149,6 +149,30 @@ export async function fetchStaffAccounts(accountType, page = 1, pageSize = 5) {
   }
 }
 
+export async function fetchTrustedDevices() {
+  try {
+    return await apiRequest("/auth/admin/trusted-devices");
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to load trusted devices.", { cause: error });
+  }
+}
+
+export async function revokeTrustedDevice(deviceId) {
+  try {
+    return await apiRequest(`/auth/admin/trusted-devices/${deviceId}`, { method: "DELETE" });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to remove trusted device.", { cause: error });
+  }
+}
+
+export async function revokeOtherTrustedDevices() {
+  try {
+    return await apiRequest("/auth/admin/trusted-devices/others", { method: "DELETE" });
+  } catch (error) {
+    throw new Error(error.response?.data?.message ?? "Unable to remove other trusted devices.", { cause: error });
+  }
+}
+
 export async function updateMeterReaderAccount(meterReaderId, updates, authorizationToken) {
   try {
     return await apiRequest(`/meter-readers/${meterReaderId}`, {

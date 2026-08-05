@@ -48,6 +48,23 @@ export async function createConsumer(consumer, options = {}) {
 }
 
 export async function updateConsumer(id, consumer, options = {}) {
-  const response = await client.patch(`/${id}`, toConsumerPayload(consumer, false, true), options);
+  const { passwordAuthorization, ...requestOptions } = options;
+  const response = await client.patch(`/${id}`, toConsumerPayload(consumer, true, true), {
+    ...requestOptions,
+    headers: {
+      ...requestOptions.headers,
+      ...(passwordAuthorization ? { "X-Consumer-Password-Authorization": passwordAuthorization } : {}),
+    },
+  });
   return response.data?.data ? normalizeConsumer(response.data.data) : null;
+}
+
+export async function requestConsumerPasswordOtp(consumerId) {
+  const response = await apiClient.post("/auth/admin/consumer-password/otp", { consumerId });
+  return response.data;
+}
+
+export async function verifyConsumerPasswordOtp(challengeToken, otp) {
+  const response = await apiClient.post("/auth/admin/consumer-password/verify", { challengeToken, otp });
+  return response.data;
 }

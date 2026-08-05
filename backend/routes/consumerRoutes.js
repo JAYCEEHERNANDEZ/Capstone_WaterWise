@@ -11,6 +11,7 @@ import {
   authorizeOwnerOrRoles,
   authorizeRoles,
 } from "../middleware/authMiddleware.js";
+import { authorizeConsumerPasswordChange } from "../controllers/authControllers.js";
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ router.get(
   showConsumer
 );
 router.post("/", authorizeRoles("admin"), registerConsumer);
-router.patch("/:id", authorizeRoles("admin"), editConsumer);
+router.patch("/:id", authorizeRoles("admin"), authorizeConsumerPasswordChange, editConsumer);
 router.delete("/:id", authorizeRoles("admin"), removeConsumer);
 
 export default router;
