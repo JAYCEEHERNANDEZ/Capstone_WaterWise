@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   FiBarChart2,
+  FiAlertTriangle,
   FiBookOpen,
   FiCalendar,
   FiCreditCard,
@@ -43,6 +44,7 @@ const ROLE_CONFIG = {
       { label: "Readings", path: "/admin/readings", Icon: FiBookOpen },
       { label: "Billing", path: "/admin/billings", Icon: FiFileText },
       { label: "Payments", path: "/admin/payments", Icon: FiCreditCard },
+      { label: "Flagged Accounts", path: "/admin/flagged-accounts", Icon: FiAlertTriangle },
       { label: "Events", path: "/admin/events", Icon: FiCalendar },
       {
         label: "Announcements",

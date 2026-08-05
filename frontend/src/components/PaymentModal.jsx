@@ -68,14 +68,20 @@ export default function PaymentModal({
                 Payment saved successfully
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                The transaction is in the payment ledger and the billing balance has been updated.
+                {completedPayment.paymentCount > 1
+                  ? `${completedPayment.paymentCount} bills were paid from oldest to newest.`
+                  : "The transaction is in the payment ledger and the billing balance has been updated."}
               </p>
 
               <dl className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="flex items-center justify-between gap-4 py-2">
-                  <dt className="text-sm font-semibold text-emerald-800">Transaction</dt>
+                  <dt className="text-sm font-semibold text-emerald-800">
+                    {completedPayment.paymentCount > 1 ? "Transactions" : "Transaction"}
+                  </dt>
                   <dd className="font-mono text-sm font-bold text-emerald-950">
-                    #{completedPayment.id}
+                    {completedPayment.paymentCount > 1
+                      ? completedPayment.paymentCount
+                      : `#${completedPayment.id}`}
                   </dd>
                 </div>
                 <div className="flex items-center justify-between gap-4 py-2">
@@ -92,15 +98,17 @@ export default function PaymentModal({
                 </div>
               </dl>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <button
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-4 font-bold text-white hover:bg-water-700"
-                  onClick={() => onViewReceipt?.(completedPayment)}
-                  type="button"
-                >
-                  <FileText aria-hidden="true" className="h-4 w-4" />
-                  View receipt
-                </button>
+              <div className={`mt-6 grid gap-3 ${completedPayment.paymentCount > 1 ? "" : "sm:grid-cols-2"}`}>
+                {(completedPayment.paymentCount ?? 1) <= 1 && (
+                  <button
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-water-600 px-4 font-bold text-white hover:bg-water-700"
+                    onClick={() => onViewReceipt?.(completedPayment)}
+                    type="button"
+                  >
+                    <FileText aria-hidden="true" className="h-4 w-4" />
+                    View receipt
+                  </button>
+                )}
                 <button
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 font-bold text-navy-900 hover:bg-slate-50"
                   onClick={recordAnother}

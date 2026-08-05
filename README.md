@@ -10,6 +10,10 @@ WaterWise is a full-stack water consumption, billing, payment, and account-manag
 - Create and update consumer accounts using any complete, valid email domain.
 - View consumer meter readings through the administrator read-only endpoint.
 - Manage billing records, payments, events, and announcements.
+- Review one grouped row per resident in Readings, Billing, and Payments, then open resident-specific record details.
+- Process the oldest outstanding bill first or settle every outstanding bill from oldest to newest.
+- Review residents with three or more outstanding monthly bills from the Flagged Accounts workspace.
+- Confirm account disconnection only after the backend revalidates the resident's outstanding bills.
 - View consumption predictions, anomaly detection, recommendations, analytics, and reports.
 - Use email OTP two-factor authentication before entering the admin portal.
 - Review the administrator username and manage email and security options from Admin Profile Management.
@@ -122,6 +126,8 @@ JWT_SECRET=use-a-long-random-secret-with-at-least-32-characters
 GEMINI_API_KEY=your-gemini-api-key
 SENDGRID_API_KEY=your-sendgrid-api-key
 SENDGRID_FROM_EMAIL=your-verified-sender@example.com
+# Optional; minimum 60000 ms. Defaults to six hours.
+NOTIFICATION_REMINDER_INTERVAL_MS=21600000
 ```
 
 `SENDGRID_FROM_EMAIL` must be verified in SendGrid. Password recovery and admin login verification cannot send codes when the SendGrid variables are missing or invalid.
@@ -249,7 +255,7 @@ Successful password changes clear temporary login lockouts.
 
 | Role | Main Permissions |
 | --- | --- |
-| `admin` | Manage residents, OTP-protected resident password changes, readings, billing, payments, events, announcements, analytics, reports, and personal trusted devices |
+| `admin` | Manage residents, OTP-protected resident password changes, grouped readings and billing records, oldest-first payments, flagged accounts, confirmed disconnections, events, announcements, analytics, reports, and personal trusted devices |
 | `super-admin` | All normal admin operations plus exclusive Admin and Meter Reader account creation |
 | `meter-reader` | View reading information and record consumption |
 | `consumer` | View personal usage, billing, profile, payments, announcements, and notifications |
@@ -296,7 +302,7 @@ The backend independently restricts `POST /api/admins` and `POST /api/meter-read
 | --- | --- |
 | `/api/auth` | Authentication, OTP, session, and password security |
 | `/api/admins` | Administrator operations |
-| `/api/consumers` | Consumer accounts and profiles |
+| `/api/consumers` | Consumer accounts, profiles, status changes, and confirmed flagged-account disconnection |
 | `/api/meter-readers` | Meter-reader accounts and operations |
 | `/api/consumption` | Meter readings and usage |
 | `/api/billing` | Billing records and balances |
@@ -327,6 +333,45 @@ Dashboards and AI cache detect the updated data
 - Payment-backed consumption records are protected from silent mutation.
 - Notifications may target one consumer or be system-wide.
 - Notification read state is stored separately for each consumer.
+
+## Administrator Record Views
+
+The main administrator tables group records by resident to avoid repeating the same account for every month:
+
+- **Readings:** shows Account, Name, Purok, and **View readings**. The resident modal lists Reading Date, Previous, Current, Status, and **View record**. The full record remains printable and downloadable.
+- **Billing:** shows Name, Purok, overall bill count/amount, and **View all billings**. The resident modal lists Billing Period, Reading Date, Consumption, Total Bill, Balance, and Status.
+- **Payments:** shows one row per resident with the outstanding bill count, oldest unpaid bill, total balance, and **Record payment**.
+- **Flagged Accounts:** shows one row per resident with at least three outstanding monthly bills, including the oldest period, total outstanding balance, account state, and payment/disconnection actions.
+
+Search and table filters operate at the grouped resident level. Detail modals retain the individual monthly records.
+
+## Payment Rules
+
+WaterWise enforces payment order in both the frontend and backend:
+
+1. The resident's oldest outstanding bill is selected automatically; administrators cannot choose a newer month first.
+2. A bill outside the current Manila month must be paid in full.
+3. Partial payment is allowed only for the current Manila month's bill.
+4. **Oldest bill only** applies the payment to the automatically selected oldest bill.
+5. **Pay all bills** requires the full combined outstanding amount and creates bill-level transactions from oldest to newest.
+6. The administrator enters the amount received. If it cannot cover **Pay all bills**, the form blocks submission and offers **Proceed with oldest bill only**.
+7. Cash overpayment is returned as change. GCash and bank-transfer payments cannot exceed the applicable balance and require a reference number.
+8. Payment date is read-only and uses the current date in the `Asia/Manila` timezone.
+9. Idempotency keys protect payment retries from creating duplicate financial records.
+
+The relevant payment endpoint is `POST /api/payments`. Direct API calls are subject to the same oldest-first and full-payment rules.
+
+## Flagged Accounts and Disconnection
+
+- A resident is flagged when three or more monthly bills have a remaining balance. Unpaid and partially paid bills both count while their balance is greater than zero.
+- The notification scheduler creates a one-time critical `disconnection_warning` notification for a newly eligible resident. It runs when the backend starts and then at the configured reminder interval.
+- Flagging does **not** automatically deactivate an account.
+- An administrator must review the account and select **Confirm disconnection**.
+- `POST /api/consumers/:id/disconnect` rechecks that the resident still has at least three outstanding bills, creates the critical warning if it does not already exist, and then changes the consumer status to `inactive`.
+- The existing consumer-status database trigger creates an additional account-status notification when the account is deactivated or reactivated.
+- Inactive consumers cannot create a new login session. Reactivation remains an administrator action through resident account management.
+
+Disconnection notifications are currently in-app notifications. Email and SMS disconnection delivery are not included.
 
 ## Production Checks
 

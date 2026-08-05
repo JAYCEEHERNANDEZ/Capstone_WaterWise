@@ -50,6 +50,17 @@ const parseOptionalReference = (value) => {
   return reference || null;
 };
 
+const currentManilaMonth = () => {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      month: "2-digit",
+      timeZone: "Asia/Manila",
+      year: "numeric",
+    }).formatToParts(new Date()).map(({ type, value }) => [type, value]),
+  );
+  return `${parts.year}-${parts.month}`;
+};
+
 const paymentErrorStatus = (message) => {
   if (message.includes("not found")) return 404;
   if (message.includes("already fully paid")) return 409;
@@ -88,6 +99,56 @@ export async function createPayment({
 
   if (!normalizedIdempotencyKey || normalizedIdempotencyKey.length > 200) {
     throw createError("A valid payment idempotency key is required.");
+  }
+
+  const { data: existingPayment, error: existingPaymentError } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("idempotency_key", normalizedIdempotencyKey)
+    .maybeSingle();
+
+  if (existingPaymentError) {
+    throw createError(`Failed to validate payment request: ${existingPaymentError.message}`, 500);
+  }
+
+  if (!existingPayment) {
+    const { data: targetBilling, error: targetBillingError } = await supabase
+      .from("billing")
+      .select("id, user_id, billing_date, remaining_balance")
+      .eq("id", normalizedBillingId)
+      .maybeSingle();
+
+    if (targetBillingError) {
+      throw createError(`Failed to validate billing payment order: ${targetBillingError.message}`, 500);
+    }
+    if (!targetBilling) {
+      throw createError("Billing record not found.", 404);
+    }
+    if (
+      String(targetBilling.billing_date).slice(0, 7) !== currentManilaMonth() &&
+      paymentAmount < Number(targetBilling.remaining_balance)
+    ) {
+      throw createError(
+        "Bills from previous months must be paid in full. Partial payments are allowed only for the current month's bill.",
+        400,
+      );
+    }
+
+    const { data: oldestUnpaidBills, error: oldestUnpaidError } = await supabase
+      .from("billing")
+      .select("id")
+      .eq("user_id", targetBilling.user_id)
+      .gt("remaining_balance", 0)
+      .order("billing_date", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(1);
+
+    if (oldestUnpaidError) {
+      throw createError(`Failed to validate billing payment order: ${oldestUnpaidError.message}`, 500);
+    }
+    if (oldestUnpaidBills[0]?.id !== normalizedBillingId) {
+      throw createError("The resident's oldest outstanding bill must be paid in full first.", 409);
+    }
   }
 
   const { data, error } = await supabase.rpc("record_payment_transaction", {

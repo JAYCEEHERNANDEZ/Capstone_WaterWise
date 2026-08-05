@@ -59,6 +59,11 @@ export async function updateConsumer(id, consumer, options = {}) {
   return response.data?.data ? normalizeConsumer(response.data.data) : null;
 }
 
+export async function disconnectFlaggedConsumer(id, options = {}) {
+  const response = await client.post(`/${id}/disconnect`, {}, options);
+  return response.data?.data ? normalizeConsumer(response.data.data) : null;
+}
+
 export async function requestConsumerPasswordOtp(consumerId) {
   const response = await apiClient.post("/auth/admin/consumer-password/otp", { consumerId });
   return response.data;

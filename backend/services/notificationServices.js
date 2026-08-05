@@ -96,23 +96,56 @@ export async function processBillingReminders({ today = currentManilaDate() } = 
   const reminderWindowEnd = addDays(today, UPCOMING_DUE_WINDOW_DAYS);
   const { data: bills, error: billingError } = await supabase
     .from("billing")
-    .select("id, user_id, due_date, remaining_balance, status")
+    .select("id, user_id, billing_date, due_date, remaining_balance, status")
     .gt("remaining_balance", 0)
-    .neq("status", "Paid")
-    .lte("due_date", reminderWindowEnd);
+    .neq("status", "Paid");
 
   if (billingError) {
     throw new Error(`Failed to retrieve bills for reminders: ${billingError.message}`);
   }
 
-  const reminders = (bills ?? []).map((bill) => reminderForBill(bill, today));
-  if (reminders.length === 0) {
+  const outstandingBills = bills ?? [];
+  const reminders = outstandingBills
+    .filter((bill) => bill.due_date <= reminderWindowEnd)
+    .map((bill) => reminderForBill(bill, today));
+  const billsByConsumer = outstandingBills.reduce((groups, bill) => {
+    const consumerBills = groups.get(bill.user_id) ?? [];
+    consumerBills.push(bill);
+    groups.set(bill.user_id, consumerBills);
+    return groups;
+  }, new Map());
+  const disconnectionNotices = Array.from(billsByConsumer.entries())
+    .filter(([, consumerBills]) => consumerBills.length >= 3)
+    .map(([consumerId, consumerBills]) => {
+      const oldestBill = [...consumerBills].sort((first, second) =>
+        String(first.billing_date).localeCompare(String(second.billing_date)),
+      )[0];
+      const totalBalance = consumerBills.reduce(
+        (total, bill) => total + Number(bill.remaining_balance || 0),
+        0,
+      );
+
+      return {
+        action_path: "/consumer/billing-ledger",
+        announcement_date: today,
+        announcement_type: "Account Alert",
+        billing_id: oldestBill.id,
+        consumer_id: consumerId,
+        event_key: `disconnection-warning:${consumerId}:3-outstanding-bills`,
+        message: `Your account has been flagged for possible disconnection because it has ${consumerBills.length} outstanding monthly bills totaling ${currency(totalBalance)}. Please settle your oldest bill or contact the water district office immediately.`,
+        notification_type: "disconnection_warning",
+        priority: "critical",
+        title: "Account flagged for disconnection",
+      };
+    });
+  const notifications = [...reminders, ...disconnectionNotices];
+  if (notifications.length === 0) {
     return { checked: 0, created: 0, date: today };
   }
 
   const { data, error } = await supabase
     .from("notifications")
-    .upsert(reminders, { ignoreDuplicates: true, onConflict: "event_key" })
+    .upsert(notifications, { ignoreDuplicates: true, onConflict: "event_key" })
     .select("id, event_key");
 
   if (error) {
@@ -120,7 +153,7 @@ export async function processBillingReminders({ today = currentManilaDate() } = 
   }
 
   return {
-    checked: reminders.length,
+    checked: notifications.length,
     created: data?.length ?? 0,
     date: today,
   };

@@ -1,6 +1,7 @@
 import express from "express";
 import {
   editConsumer,
+  disconnectConsumer,
   listConsumers,
   registerConsumer,
   removeConsumer,
@@ -23,6 +24,7 @@ router.get(
   showConsumer
 );
 router.post("/", authorizeRoles("admin"), registerConsumer);
+router.post("/:id/disconnect", authorizeRoles("admin"), disconnectConsumer);
 router.patch("/:id", authorizeRoles("admin"), authorizeConsumerPasswordChange, editConsumer);
 router.delete("/:id", authorizeRoles("admin"), removeConsumer);
 

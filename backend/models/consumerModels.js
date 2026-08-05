@@ -309,6 +309,62 @@ export const updateConsumer = async (id, updates = {}) => {
   return data;
 };
 
+export const disconnectFlaggedConsumer = async (id) => {
+  const consumerId = parseId(id);
+  const { data: outstandingBills, error: billingError } = await supabase
+    .from("billing")
+    .select("id, billing_date, remaining_balance")
+    .eq("user_id", consumerId)
+    .gt("remaining_balance", 0)
+    .order("billing_date", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (billingError) {
+    throw createError(`Failed to verify outstanding bills: ${billingError.message}`, 500);
+  }
+  if ((outstandingBills ?? []).length < 3) {
+    throw createError(
+      "This account is no longer eligible for disconnection because it has fewer than three outstanding bills.",
+      409,
+    );
+  }
+
+  const totalOutstanding = outstandingBills.reduce(
+    (total, bill) => total + Number(bill.remaining_balance || 0),
+    0,
+  );
+  const dateParts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Manila",
+    year: "numeric",
+  }).formatToParts(new Date()).map(({ type, value }) => [type, value]));
+  const notificationDate = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+  const { error: notificationError } = await supabase
+    .from("notifications")
+    .upsert(
+      {
+        action_path: "/consumer/billing-ledger",
+        announcement_date: notificationDate,
+        announcement_type: "Account Alert",
+        billing_id: outstandingBills[0].id,
+        consumer_id: consumerId,
+        event_key: `disconnection-warning:${consumerId}:3-outstanding-bills`,
+        message: `Your account has been flagged for disconnection because it has ${outstandingBills.length} outstanding monthly bills totaling PHP ${totalOutstanding.toFixed(2)}. Contact the water district office immediately.`,
+        notification_type: "disconnection_warning",
+        priority: "critical",
+        title: "Account flagged for disconnection",
+      },
+      { ignoreDuplicates: true, onConflict: "event_key" },
+    );
+
+  if (notificationError) {
+    throw createError(`Failed to notify the resident: ${notificationError.message}`, 500);
+  }
+
+  return updateConsumer(consumerId, { status: "inactive" });
+};
+
 export const deleteConsumer = async (id) => {
   const consumerId = parseId(id);
   const { data, error } = await supabase
