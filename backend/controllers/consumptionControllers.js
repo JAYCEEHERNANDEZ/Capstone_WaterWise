@@ -1,6 +1,5 @@
 import {
   createReading,
-  getAllHistoryConsumption,
   getAllPuroksMonthlyHistory as getAllPuroksMonthlyHistoryService,
   getAllPuroksYearlyHistory as getAllPuroksYearlyHistoryService,
   getConsumptionRanking,
@@ -183,10 +182,8 @@ export const getAllPuroksYearlyHistory = async (req, res) =>
 
 export const generateAllHistoryConsumption = async (req, res) => {
   try {
-    const history = await getAllHistoryConsumption();
-    const yearlyHistory = Array.isArray(history?.overallYearly)
-      ? history.overallYearly
-      : [];
+    const history = await getOverallYearlyHistory();
+    const yearlyHistory = Array.isArray(history) ? history : [];
     const overallConsumption = yearlyHistory.reduce((total, item) => {
       const consumption = Number(item?.consumption ?? 0);
       return total + (Number.isFinite(consumption) ? consumption : 0);
