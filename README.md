@@ -15,7 +15,11 @@ WaterWise is a full-stack water consumption, billing, payment, and account-manag
 - Review the administrator username and manage email and security options from Admin Profile Management.
 - Change the administrator password using registered-email OTP only.
 - Change the administrator email after verifying the current email.
+- Trust a verified administrator browser so later logins can skip OTP after the password is validated. Trust lasts 7 days for Super Admins and 30 days for regular Admins.
+- Review and revoke individual trusted devices, or revoke all other trusted devices, from Profile Security.
+- Change a resident password after verifying a single-use OTP sent to the acting administrator's registered email. Other resident profile changes do not require OTP.
 - Super Admins can create regular Admin and Meter Reader accounts with temporary passwords from Profile Management.
+- Super Admins can browse the Admin and Meter Reader directories two accounts per page.
 
 ### Meter Reader
 
@@ -42,7 +46,7 @@ WaterWise is a full-stack water consumption, billing, payment, and account-manag
 | Frontend | React 19, Vite, Axios, Tailwind CSS, Recharts |
 | Backend | Node.js, Express 5 |
 | Database | PostgreSQL through Supabase |
-| Authentication | bcrypt password hashing, backend-issued JWTs, email OTP |
+| Authentication | bcrypt password hashing, backend-issued JWTs, email OTP, hashed trusted-device tokens |
 | Email | SendGrid |
 | AI | Google Gemini |
 
@@ -99,8 +103,11 @@ Core tables include:
 - `notification_reads`
 - `generated_reports`
 - `ai_consumption_cache`
+- `admin_trusted_devices`
 
 The migration adds `admins.role` with `admin` and `super-admin` values. When upgrading an existing database with no Super Admin, the oldest existing administrator is promoted automatically. That account must sign out and sign in again after the migration so its new role is included in the JWT.
+
+The `admin_trusted_devices` table stores only SHA-256 hashes of random browser tokens. It records the owning administrator, role, user agent, creation time, last use, expiration, and revocation time. Run the latest migration before enabling trusted-device login; the backend does not create this table automatically.
 
 ## Environment Configuration
 
@@ -154,6 +161,8 @@ npm run dev
 
 Open `http://localhost:5173`. The backend uses `http://127.0.0.1:5000` unless `PORT` is changed.
 
+For testing from another device on the same network, start Vite with host access and open the computer's private address, for example `http://192.168.1.87:5173`. In development, the backend accepts Vite port `5173` from RFC 1918 private addresses (`10.x.x.x`, `172.16-31.x.x`, and `192.168.x.x`). Production CORS remains restricted to configured frontend origins.
+
 ## Authentication and Account Security
 
 ### Standard login
@@ -166,7 +175,7 @@ Protected requests include:
 Authorization: Bearer <token>
 ```
 
-### Administrator email OTP login
+### Administrator OTP and trusted-device login
 
 Administrators use two-step authentication:
 
@@ -174,9 +183,15 @@ Administrators use two-step authentication:
 2. The backend validates the credentials but does not issue an access token yet.
 3. SendGrid sends a six-digit OTP to the registered administrator email.
 4. The administrator verifies the OTP through `POST /api/auth/admin/verify-login-otp`.
-5. Only successful OTP verification creates the admin JWT and permits portal access.
+5. Successful OTP verification creates the admin JWT and a random trusted-device token in an `HttpOnly` browser cookie.
 
 Admin login codes expire after 10 minutes, allow up to five incorrect attempts, and cannot be reused after successful verification.
+
+On later logins, the backend still validates the administrator password first. If the browser presents an active trusted-device cookie belonging to the same administrator and role, the backend skips only the OTP step and issues the normal eight-hour access JWT. A regular Admin browser remains trusted for 30 days; a Super Admin browser remains trusted for 7 days.
+
+The browser stores the raw random token only in an `HttpOnly` cookie. The database stores only its SHA-256 hash. Production cookies use `Secure` and `SameSite=None` for the deployed cross-origin frontend/backend configuration. Frontend API requests therefore use credentials, and backend CORS allows credentialed requests only from approved origins.
+
+Admin Profile Management contains one **Profile security** section with **Trusted devices**, **Change password**, and **Change email** controls. The device view shows the platform, browser, last-used time, expiry, and current device. Administrators can revoke one device or all other devices. A revoked or expired browser must complete OTP again on its next login. Revocation removes trusted-browser status; it does not cancel an access JWT that was already issued for the current eight-hour session. Changing or resetting an administrator password revokes every trusted device for that account.
 
 ### Forgot-password OTP flow
 
@@ -201,6 +216,18 @@ Users cannot redirect the signed-in OTP to another email address.
 
 For administrators, the Profile Management password action uses **Email OTP only**; the current-password method is intentionally unavailable.
 
+### Administrator-managed resident passwords
+
+Regular Admins and Super Admins can optionally assign a new password while editing a resident:
+
+1. The administrator enters a strong new password in **Edit resident**.
+2. The backend sends a six-digit OTP to the acting administrator's registered email.
+3. The OTP challenge is bound to the acting administrator and selected resident.
+4. Successful verification creates a single-use authorization valid for five minutes.
+5. The consumer update accepts the password only when that authorization matches the same administrator and resident.
+
+The OTP expires after 10 minutes and allows up to five incorrect attempts. Updating the resident's name, username, email, contact number, purok, or account status does not request OTP when the optional password field is blank.
+
 ### Consumer email change
 
 Consumers can select **Change email** from the **Account security** section of their Household Profile page. WaterWise first sends an OTP to the current registered email. After successful verification, the consumer can enter a different complete email address. Codes expire after 10 minutes and allow up to five incorrect attempts.
@@ -222,7 +249,7 @@ Successful password changes clear temporary login lockouts.
 
 | Role | Main Permissions |
 | --- | --- |
-| `admin` | Manage residents, readings, billing, payments, events, announcements, analytics, and reports |
+| `admin` | Manage residents, OTP-protected resident password changes, readings, billing, payments, events, announcements, analytics, reports, and personal trusted devices |
 | `super-admin` | All normal admin operations plus exclusive Admin and Meter Reader account creation |
 | `meter-reader` | View reading information and record consumption |
 | `consumer` | View personal usage, billing, profile, payments, announcements, and notifications |
@@ -233,7 +260,7 @@ Frontend route guards improve navigation safety, but every protected backend end
 
 Only a signed-in `super-admin` sees the **Create staff account** section in Admin Profile Management. The Super Admin selects Admin or Meter Reader, enters a username and complete email, and creates a strong temporary password. New Admin accounts always receive the regular `admin` role and cannot create other staff accounts.
 
-Admin Profile Management also contains a Super Admin-only Staff Directory with separate Admin and Meter Reader lists. The Super Admin can update a regular Admin or Meter Reader's email or assign a new temporary password. Super Admin accounts are protected from these staff-management changes, while normal administrators cannot view the directory or use its management endpoints.
+Admin Profile Management also contains a Super Admin-only Staff Directory with separate Admin and Meter Reader lists. Each list displays two accounts per page and uses previous/next controls for additional records. The Create Staff and Staff Directory panels use matching desktop heights. The Super Admin can update a regular Admin or Meter Reader's email or assign a new temporary password. Super Admin accounts are protected from these staff-management changes, while normal administrators cannot view the directory or use its management endpoints.
 
 Creating an Admin or Meter Reader and changing a regular Admin or Meter Reader email/password require an additional single-use email OTP sent to the signed-in Super Admin's registered email. Each verified authorization is bound to the selected action (and target account for updates), expires after five minutes, and cannot be reused for another staff-management request.
 
@@ -245,6 +272,11 @@ The backend independently restricts `POST /api/admins` and `POST /api/meter-read
 | --- | --- | --- |
 | `POST` | `/api/auth/login` | Validate account credentials and start admin OTP when required |
 | `POST` | `/api/auth/admin/verify-login-otp` | Verify admin login OTP and issue the admin session |
+| `GET` | `/api/auth/admin/trusted-devices` | List the signed-in administrator's active trusted devices |
+| `DELETE` | `/api/auth/admin/trusted-devices/:deviceId` | Revoke one trusted device owned by the signed-in administrator |
+| `DELETE` | `/api/auth/admin/trusted-devices/others` | Revoke all trusted devices except the current browser |
+| `POST` | `/api/auth/admin/consumer-password/otp` | Send an administrator OTP for one resident password change |
+| `POST` | `/api/auth/admin/consumer-password/verify` | Verify the OTP and issue a single-use resident password authorization |
 | `GET` | `/api/auth/me` | Return the authenticated account |
 | `POST` | `/api/auth/forgot-password` | Send a password-recovery OTP |
 | `POST` | `/api/auth/verify-reset-otp` | Verify a password-recovery or authenticated email OTP |
@@ -339,11 +371,14 @@ This is expected until the emailed OTP is verified. The admin access token is is
 - Confirm the backend is running on port `5000`.
 - Confirm Vite is proxying `/api` to the correct backend address.
 - Keep `VITE_API_URL=/api` when using the development proxy.
+- If the frontend is opened through a private LAN address, use Vite port `5173` and restart the backend after changing CORS settings.
 
 ## Security Notes
 
 - Never commit `.env` files or production secrets.
 - Password hashing, JWT generation, OTP validation, and authorization belong to the backend.
 - Email OTP challenges are short-lived and bound to the account’s current password state.
+- Trusted-device cookies contain random secrets, use `HttpOnly`, and are validated against hashed, expiring, revocable database records.
+- Resident password authorization is required only when a consumer update contains `password`; it is bound to the acting administrator and target resident and is single-use.
 - The frontend must never create an authenticated session before the backend returns a valid access token.
 - Validate ownership and role permissions on every protected endpoint.
