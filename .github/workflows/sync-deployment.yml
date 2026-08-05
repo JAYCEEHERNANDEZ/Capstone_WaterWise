@@ -5,67 +5,88 @@ on:
     branches:
       - main
 
+  workflow_dispatch:
+
 jobs:
   sync-frontend:
-    if: contains(github.event.head_commit.modified, 'frontend/') || contains(github.event.head_commit.added, 'frontend/') || contains(github.event.head_commit.removed, 'frontend/')
+    name: Sync Frontend
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Capstone_WaterWise
+        uses: actions/checkout@v4
 
       - name: Clone Deployed_Frontend
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_REPOS_TOKEN }}
         run: |
-          git clone https://x-access-token:${{ secrets.DEPLOY_REPOS_TOKEN }}@github.com/JAYCEEHERNANDEZ/Deployed_Frontend.git deployed-frontend
+          git clone \
+            "https://x-access-token:${DEPLOY_TOKEN}@github.com/JAYCEEHERNANDEZ/Deployed_Frontend.git" \
+            deployed-frontend
 
-      - name: Sync frontend
+      - name: Synchronize frontend files
         run: |
           rsync -av --delete \
-            --exclude=".git" \
+            --exclude=".git/" \
+            --exclude=".github/" \
+            --exclude="node_modules/" \
+            --exclude="dist/" \
+            --exclude=".env" \
+            --exclude=".env.*" \
             frontend/ deployed-frontend/
 
-      - name: Push changes
+      - name: Commit and push frontend
         working-directory: deployed-frontend
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add .
+          git add --all
 
           if git diff --cached --quiet; then
-            echo "No changes"
+            echo "No frontend changes to sync."
           else
             git commit -m "Sync frontend from Capstone_WaterWise"
-            git push
+            git push origin main
           fi
 
   sync-backend:
-    if: contains(github.event.head_commit.modified, 'backend/') || contains(github.event.head_commit.added, 'backend/') || contains(github.event.head_commit.removed, 'backend/')
+    name: Sync Backend
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Capstone_WaterWise
+        uses: actions/checkout@v4
 
       - name: Clone Deployed_Backend
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_REPOS_TOKEN }}
         run: |
-          git clone https://x-access-token:${{ secrets.DEPLOY_REPOS_TOKEN }}@github.com/JAYCEEHERNANDEZ/Deployed_Backend.git deployed-backend
+          git clone \
+            "https://x-access-token:${DEPLOY_TOKEN}@github.com/JAYCEEHERNANDEZ/Deployed_Backend.git" \
+            deployed-backend
 
-      - name: Sync backend
+      - name: Synchronize backend files
         run: |
           rsync -av --delete \
-            --exclude=".git" \
+            --exclude=".git/" \
+            --exclude=".github/" \
+            --exclude="node_modules/" \
+            --exclude=".env" \
+            --exclude=".env.*" \
             backend/ deployed-backend/
 
-      - name: Push changes
+      - name: Commit and push backend
         working-directory: deployed-backend
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add .
+          git add --all
 
           if git diff --cached --quiet; then
-            echo "No changes"
+            echo "No backend changes to sync."
           else
             git commit -m "Sync backend from Capstone_WaterWise"
-            git push
+            git push origin main
           fi
