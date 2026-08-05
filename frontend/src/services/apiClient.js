@@ -3,12 +3,25 @@ import { clearSession, getAccessToken } from "./authToken";
 
 const configuredBaseUrl =
   import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL;
-const API_BASE_URL = (configuredBaseUrl || "/api").replace(/\/$/, "");
+
+function resolveApiBaseUrl(value) {
+  const baseUrl = (value || "/api").trim().replace(/\/+$/, "");
+
+  // Accept either the Render service root or its complete /api URL.
+  if (baseUrl === "/api" || /\/api$/i.test(baseUrl)) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}/api`;
+}
+
+const API_BASE_URL = resolveApiBaseUrl(configuredBaseUrl);
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: { Accept: "application/json" },
-  withCredentials: true,
+  // Authentication uses a Bearer token, so cross-origin cookies are unnecessary.
+  withCredentials: false,
 });
 
 apiClient.interceptors.request.use((config) => {
