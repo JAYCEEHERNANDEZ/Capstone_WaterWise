@@ -78,6 +78,23 @@ export async function sendStaffActionOtp({ email, otp, username, actionLabel }) 
   });
 }
 
+export async function sendConsumerPasswordChangeOtp({ email, otp, username, consumerName }) {
+  const { from } = getMailConfiguration();
+  const escapeHtml = (value) => String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
+  );
+  const safeUsername = escapeHtml(username || "Administrator");
+  const safeConsumerName = escapeHtml(consumerName || "the resident");
+  await sgMail.send({
+    to: email,
+    from,
+    subject: "Confirm resident password change",
+    text: `Hello ${username || "Administrator"},\n\nYour verification code to change ${consumerName || "the resident"}'s password is: ${otp}\n\nThis code expires in 10 minutes and can authorize only this resident password change.`,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;max-width:560px;margin:auto"><h1 style="color:#075985">Confirm resident password change</h1><p>Hello ${safeUsername},</p><p>Enter this code to change the password for <strong>${safeConsumerName}</strong>. It expires in 10 minutes.</p><p style="margin:28px 0;font-size:32px;letter-spacing:8px;font-weight:bold;color:#075985">${otp}</p><p>If you did not request this action, secure your administrator account immediately.</p></div>`,
+  });
+}
+
 export async function sendConsumerEmailChangeOtp({ email, otp, username }) {
   const { from } = getMailConfiguration();
   const safeUsername = String(username || "WaterWise resident").replace(

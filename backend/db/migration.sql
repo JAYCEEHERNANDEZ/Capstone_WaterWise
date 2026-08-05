@@ -749,3 +749,21 @@ ON ai_consumption_cache (result_type, scope, result_period);
 
 CREATE INDEX IF NOT EXISTS idx_ai_consumption_cache_latest_consumption
 ON ai_consumption_cache (latest_consumption_id);
+
+-- Trusted browsers can skip admin login OTP until their role-specific expiry.
+-- Only a SHA-256 hash of the random browser token is stored.
+CREATE TABLE IF NOT EXISTS admin_trusted_devices (
+    id BIGSERIAL PRIMARY KEY,
+    admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'super-admin')),
+    user_agent VARCHAR(500),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_used_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    revoked_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_trusted_devices_admin
+ON admin_trusted_devices (admin_id, expires_at)
+WHERE revoked_at IS NULL;

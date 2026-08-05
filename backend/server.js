@@ -38,6 +38,19 @@ const isAllowedOrigin = (origin) => {
   const normalizedOrigin = normalizeOrigin(origin);
   if (configuredOrigins.includes(normalizedOrigin)) return true;
 
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const { hostname, port, protocol } = new URL(normalizedOrigin);
+      const isPrivateLanHost =
+        /^10\./.test(hostname) ||
+        /^192\.168\./.test(hostname) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname);
+      if (protocol === "http:" && port === "5173" && isPrivateLanHost) return true;
+    } catch {
+      return false;
+    }
+  }
+
   // Vercel preview URLs are optional and must be explicitly enabled.
   return (
     process.env.ALLOW_VERCEL_PREVIEWS === "true" &&
@@ -57,8 +70,14 @@ app.use(
       return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Authorization", "Content-Type", "Accept"],
-    credentials: false,
+    allowedHeaders: [
+      "Authorization",
+      "Content-Type",
+      "Accept",
+      "X-Staff-Authorization",
+      "X-Consumer-Password-Authorization",
+    ],
+    credentials: true,
   }),
 );
 app.use(express.json({ limit: "1mb" }));

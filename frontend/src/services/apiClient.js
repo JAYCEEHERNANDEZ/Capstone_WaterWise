@@ -20,8 +20,8 @@ const API_BASE_URL = resolveApiBaseUrl(configuredBaseUrl);
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: { Accept: "application/json" },
-  // Authentication uses a Bearer token, so cross-origin cookies are unnecessary.
-  withCredentials: false,
+  // Admin trusted-device verification uses a secure cross-origin cookie.
+  withCredentials: true,
 });
 
 apiClient.interceptors.request.use((config) => {

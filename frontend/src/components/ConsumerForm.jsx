@@ -36,7 +36,7 @@ function isValidContactNumber(contactNumber) {
   return /^(?:09\d{9}|\+639\d{9})$/.test(compactNumber);
 }
 
-function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword = false, initialData = null, onCancel }) {
+function ConsumerForm({ allowPasswordChange = false, embedded = false, onSubmit = () => {}, requirePassword = false, initialData = null, onCancel }) {
   const formRef = useRef(null);
   const [consumer, setConsumer] = useState(() => createInitialState(initialData));
   const [password, setPassword] = useState("");
@@ -77,6 +77,9 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
         validationErrors.password =
           "Password is weak. Try at least 8 characters with uppercase, lowercase, a number, and a symbol.";
       }
+    } else if (allowPasswordChange && password && !isStrongPassword(password)) {
+      validationErrors.password =
+        "Password is weak. Try at least 8 characters with uppercase, lowercase, a number, and a symbol.";
     }
 
     setErrors(validationErrors);
@@ -92,7 +95,7 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
 
     const saved = await onSubmit({
       ...consumer,
-      ...(requirePassword ? { password } : {}),
+      ...((requirePassword || allowPasswordChange) && password ? { password } : {}),
     });
 
     if (saved === false) return;
@@ -226,9 +229,9 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
           {errors.email && <p className={errorClass} id="email-error" role="alert">{errors.email}</p>}
         </div>
 
-        {requirePassword && (
+        {(requirePassword || allowPasswordChange) && (
           <div className="sm:col-span-2">
-            <label className={labelClass} htmlFor="resident-password">Password</label>
+            <label className={labelClass} htmlFor="resident-password">{allowPasswordChange ? "New password" : "Password"}{allowPasswordChange && <span className="font-normal text-slate-500"> (optional)</span>}</label>
             <div className="relative mt-2">
               <input
                 aria-describedby={describedBy("password", "password-helper")}
@@ -240,7 +243,7 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
                   setPassword(event.target.value);
                   setErrors((previous) => ({ ...previous, password: "" }));
                 }}
-                placeholder="Create a strong password"
+                placeholder={allowPasswordChange ? "Leave blank to keep current password" : "Create a strong password"}
                 type={showPassword ? "text" : "password"}
                 value={password}
               />
@@ -255,7 +258,7 @@ function ConsumerForm({ embedded = false, onSubmit = () => {}, requirePassword =
               </button>
             </div>
             <p className="mt-1.5 text-xs leading-5 text-slate-500" id="password-helper">
-              Use 8 or more characters with uppercase, lowercase, a number, and a symbol.
+              {allowPasswordChange ? "Changing the password requires verification through your administrator email OTP." : "Use 8 or more characters with uppercase, lowercase, a number, and a symbol."}
             </p>
             {errors.password && <p className={errorClass} id="password-error" role="alert">{errors.password}</p>}
           </div>
