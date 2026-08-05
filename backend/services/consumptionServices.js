@@ -147,15 +147,3 @@ export const getAllPuroksYearlyHistory = async () => {
       })),
   }));
 };
-
-export const getAllHistoryConsumption = async () => {
-  const [overallMonthly, overallYearly, allPuroksMonthly, allPuroksYearly] =
-    await Promise.all([
-      getOverallMonthlyHistory(),
-      getOverallYearlyHistory(),
-      getAllPuroksMonthlyHistory(),
-      getAllPuroksYearlyHistory(),
-    ]);
-
-  return { overallMonthly, overallYearly, allPuroksMonthly, allPuroksYearly };
-};
