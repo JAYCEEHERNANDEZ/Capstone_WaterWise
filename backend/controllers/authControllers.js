@@ -11,6 +11,7 @@ import {
   findPasswordResetAccount,
   getPasswordResetAccountById,
   getPasswordHash,
+  reservePasswordResetOtpRequest,
   resetAccountPassword,
 } from "../models/authModels.js";
 import { sendAdminLoginOtp, sendConsumerPasswordChangeOtp, sendPasswordResetOtp, sendStaffActionOtp } from "../services/passwordResetEmailService.js";
@@ -38,13 +39,18 @@ const STAFF_ACTION_OTP_AUDIENCE = "waterwise-staff-action-otp";
 const STAFF_ACTION_AUDIENCE = "waterwise-staff-action";
 const CONSUMER_PASSWORD_OTP_AUDIENCE = "waterwise-consumer-password-otp";
 const CONSUMER_PASSWORD_AUDIENCE = "waterwise-consumer-password-change";
-const RESET_RESPONSE = "If an active account uses that email, a verification code has been sent.";
 const adminOtpAttempts = new Map();
 const emailChangeOtpAttempts = new Map();
 const staffActionAttempts = new Map();
 const staffActionAuthorizations = new Map();
 const consumerPasswordOtpAttempts = new Map();
 const consumerPasswordAuthorizations = new Map();
+const ACCESS_TOKEN_DURATION_BY_ROLE = {
+  consumer: "4h",
+  "meter-reader": "2h",
+  admin: "1h",
+  "super-admin": "30m",
+};
 const STAFF_ACTIONS = {
   "create-admin": "create an Admin account",
   "create-meter-reader": "create a Meter Reader account",
@@ -66,6 +72,12 @@ function valuesMatch(first, second) {
   return firstBuffer.length === secondBuffer.length && timingSafeEqual(firstBuffer, secondBuffer);
 }
 
+function passwordResetRequestKey(email, purpose = "password-reset") {
+  return createHmac("sha256", getJwtSecret())
+    .update(`otp-request:${purpose}:${String(email ?? "").trim().toLowerCase()}`)
+    .digest("hex");
+}
+
 function clearTrustedDeviceCookie(res, role) {
   const options = trustedDeviceCookieOptions(role);
   delete options.maxAge;
@@ -80,7 +92,7 @@ function createAccessToken(user) {
       subject: String(user.id),
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
-      expiresIn: "8h",
+      expiresIn: ACCESS_TOKEN_DURATION_BY_ROLE[user.role] ?? "1h",
     },
   );
 }
@@ -94,7 +106,7 @@ export async function requestStaffActionOtp(req, res) {
     const account = await getPasswordResetAccountById(req.user.id, "super-admin");
     if (!account || account.status !== "active") return res.status(403).json({ success: false, message: "The Super Admin account is not active." });
     const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
-    const challengeToken = jwt.sign({ role: "super-admin", action, targetId: parsedTargetId, otpHash: otpFingerprint(otp), passwordFingerprint: passwordFingerprint(account.password), emailFingerprint: passwordFingerprint(account.email.toLowerCase()) }, getJwtSecret(), { subject: String(account.id), issuer: JWT_ISSUER, audience: STAFF_ACTION_OTP_AUDIENCE, expiresIn: "10m", jwtid: createHash("sha256").update(`staff:${account.id}:${Date.now()}:${otp}`).digest("hex") });
+    const challengeToken = jwt.sign({ role: "super-admin", action, targetId: parsedTargetId, otpHash: otpFingerprint(otp), passwordFingerprint: passwordFingerprint(account.password), emailFingerprint: passwordFingerprint(account.email.toLowerCase()) }, getJwtSecret(), { subject: String(account.id), issuer: JWT_ISSUER, audience: STAFF_ACTION_OTP_AUDIENCE, expiresIn: "5m", jwtid: createHash("sha256").update(`staff:${account.id}:${Date.now()}:${otp}`).digest("hex") });
     await sendStaffActionOtp({ email: account.email, otp, username: account.username, actionLabel: STAFF_ACTIONS[action] });
     return res.status(200).json({ success: true, challengeToken, maskedEmail: account.email.replace(/^(.{1,2}).*(@.*)$/, "$1***$2"), message: "A verification code was sent to the Super Admin email." });
   } catch (error) {
@@ -157,7 +169,7 @@ export async function requestConsumerPasswordChangeOtp(req, res) {
     const challengeToken = jwt.sign(
       { role: req.user.role, consumerId, otpHash: otpFingerprint(otp), passwordFingerprint: passwordFingerprint(account.password), emailFingerprint: passwordFingerprint(account.email.toLowerCase()) },
       getJwtSecret(),
-      { subject: String(account.id), issuer: JWT_ISSUER, audience: CONSUMER_PASSWORD_OTP_AUDIENCE, expiresIn: "10m", jwtid: createHash("sha256").update(`consumer-password:${account.id}:${consumerId}:${Date.now()}:${otp}`).digest("hex") },
+      { subject: String(account.id), issuer: JWT_ISSUER, audience: CONSUMER_PASSWORD_OTP_AUDIENCE, expiresIn: "5m", jwtid: createHash("sha256").update(`consumer-password:${account.id}:${consumerId}:${Date.now()}:${otp}`).digest("hex") },
     );
     await sendConsumerPasswordChangeOtp({ email: account.email, otp, username: account.username, consumerName: consumer.full_name ?? consumer.username });
     return res.status(200).json({ success: true, challengeToken, maskedEmail: account.email.replace(/^(.{1,2}).*(@.*)$/, "$1***$2"), message: "A verification code was sent to your administrator email." });
@@ -249,7 +261,7 @@ export async function login(req, res) {
           subject: String(user.id),
           issuer: JWT_ISSUER,
           audience: ADMIN_LOGIN_OTP_AUDIENCE,
-          expiresIn: "10m",
+          expiresIn: "5m",
           jwtid: createHash("sha256").update(`${user.id}:${Date.now()}:${otp}`).digest("hex"),
         },
       );
@@ -408,6 +420,16 @@ export async function requestConsumerEmailChangeOtp(req, res) {
     if (!["admin", "super-admin", "consumer"].includes(req.user.role) || !account || account.status !== "active") {
       return res.status(403).json({ success: false, message: "Only active accounts can change their email." });
     }
+    const requestLimit = await reservePasswordResetOtpRequest(passwordResetRequestKey(account.email, "email-change"));
+    if (!requestLimit.allowed) {
+      res.set("Retry-After", String(requestLimit.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        message: requestLimit.reason === "hourly_lock"
+          ? "Too many verification codes were requested. Try again in 1 hour."
+          : "Please wait 2 minutes before requesting another verification code.",
+      });
+    }
     const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
     const challengeToken = jwt.sign(
       {
@@ -419,7 +441,7 @@ export async function requestConsumerEmailChangeOtp(req, res) {
       getJwtSecret(),
       {
         subject: String(account.id), issuer: JWT_ISSUER, audience: EMAIL_CHANGE_OTP_AUDIENCE,
-        expiresIn: "10m", jwtid: createHash("sha256").update(`email:${account.id}:${Date.now()}:${otp}`).digest("hex"),
+        expiresIn: "5m", jwtid: createHash("sha256").update(`email:${account.id}:${Date.now()}:${otp}`).digest("hex"),
       },
     );
     await sendConsumerEmailChangeOtp({ email: account.email, otp, username: account.username });
@@ -495,36 +517,55 @@ export async function completeConsumerEmailChange(req, res) {
 export async function forgotPassword(req, res) {
   try {
     const account = await findPasswordResetAccount(req.body?.email);
-    let challengeToken;
-    if (account?.status === "active") {
-      const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
-      challengeToken = jwt.sign(
-        {
-          role: account.role,
-          otpHash: otpFingerprint(otp),
-          passwordFingerprint: passwordFingerprint(account.password),
-        },
-        getJwtSecret(),
-        {
-          subject: String(account.id),
-          issuer: JWT_ISSUER,
-          audience: OTP_AUDIENCE,
-          expiresIn: "10m",
-        },
-      );
-      await sendPasswordResetOtp({ email: account.email, otp, username: account.username });
-    } else {
-      challengeToken = jwt.sign(
-        { role: "unknown", otpHash: otpFingerprint(String(randomInt(0, 1_000_000)).padStart(6, "0")) },
-        getJwtSecret(),
-        { subject: "0", issuer: JWT_ISSUER, audience: OTP_AUDIENCE, expiresIn: "10m" },
-      );
+    if (!account || account.status !== "active") {
+      return res.status(404).json({
+        success: false,
+        message: "No active WaterWise account is registered with that email address.",
+        field: "email",
+      });
     }
-    return res.status(200).json({ success: true, message: RESET_RESPONSE, challengeToken });
+
+    const requestKey = passwordResetRequestKey(req.body?.email);
+    const requestLimit = await reservePasswordResetOtpRequest(requestKey);
+
+    if (!requestLimit.allowed) {
+      res.set("Retry-After", String(requestLimit.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        message: requestLimit.reason === "hourly_lock"
+          ? "Too many password reset codes were requested. Try again in 1 hour."
+          : "Please wait 2 minutes before requesting another verification code.",
+      });
+    }
+
+    const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const challengeToken = jwt.sign(
+      {
+        role: account.role,
+        otpHash: otpFingerprint(otp),
+        passwordFingerprint: passwordFingerprint(account.password),
+      },
+      getJwtSecret(),
+      {
+        subject: String(account.id),
+        issuer: JWT_ISSUER,
+        audience: OTP_AUDIENCE,
+        expiresIn: "5m",
+      },
+    );
+    await sendPasswordResetOtp({ email: account.email, otp, username: account.username });
+    return res.status(200).json({
+      success: true,
+      message: "A verification code has been sent to your registered email address.",
+      challengeToken,
+    });
   } catch (error) {
+    console.error("Forgot password request failed:", error);
     return res.status(error.statusCode ?? 500).json({
       success: false,
-      message: error.statusCode === 400 ? error.message : "Unable to send a reset email right now.",
+      message: error.statusCode === 400 || process.env.NODE_ENV !== "production"
+        ? error.message
+        : "Unable to send a reset email right now.",
       ...(error.field ? { field: error.field } : {}),
     });
   }
@@ -542,7 +583,7 @@ function createOtpChallenge(account, otp) {
       subject: String(account.id),
       issuer: JWT_ISSUER,
       audience: OTP_AUDIENCE,
-      expiresIn: "10m",
+      expiresIn: "5m",
     },
   );
 }
@@ -552,6 +593,16 @@ export async function requestAuthenticatedPasswordOtp(req, res) {
     const account = await getPasswordResetAccountById(req.user.id, req.user.role);
     if (!account || account.status !== "active") {
       return res.status(404).json({ success: false, message: "Active account not found." });
+    }
+    const requestLimit = await reservePasswordResetOtpRequest(passwordResetRequestKey(account.email, "authenticated-password-change"));
+    if (!requestLimit.allowed) {
+      res.set("Retry-After", String(requestLimit.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        message: requestLimit.reason === "hourly_lock"
+          ? "Too many verification codes were requested. Try again in 1 hour."
+          : "Please wait 2 minutes before requesting another verification code.",
+      });
     }
     const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
     const challengeToken = createOtpChallenge(account, otp);

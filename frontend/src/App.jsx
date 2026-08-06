@@ -1,9 +1,12 @@
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router";
+import { useEffect } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
 import AppLayout from "./components/AppLayout";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import RouteAccessError from "./components/RouteAccessError";
 import {
   getStoredAccount as getSessionAccount,
+  clearSession,
+  getAccessTokenExpiresAt,
   hasAuthenticatedSession,
 } from "./services/authToken";
 import BillingLedger from "./pages/BillingLedger";
@@ -120,6 +123,29 @@ function MockPortalPage() {
       </section>
     </AppLayout>
   );
+}
+
+function SessionExpiryGuard() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const expiresAt = getAccessTokenExpiresAt();
+    if (!expiresAt) return undefined;
+    const remainingMs = expiresAt - Date.now();
+    if (remainingMs <= 0) {
+      clearSession();
+      navigate("/login", { replace: true, state: { sessionExpired: true } });
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      clearSession();
+      navigate("/login", { replace: true, state: { sessionExpired: true } });
+    }, remainingMs);
+    return () => window.clearTimeout(timer);
+  }, [location.pathname, navigate]);
+
+  return null;
 }
 
 function getStoredAccount() {
@@ -399,6 +425,7 @@ export function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
+      <SessionExpiryGuard />
       <AppRoutes />
       <PWAInstallPrompt />
     </BrowserRouter>

@@ -15,7 +15,7 @@ export default function AdminDashboardPage() {
 
       <section aria-labelledby="dashboard-summary" className="space-y-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">daldhaulkadhLive indicators</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-water-600">Live indicators</p>
           <h2 className="mt-1 text-2xl font-extrabold text-slate-900" id="dashboard-summary">Consumption summary</h2>
         </div>
         <div className="grid gap-3 sm:gap-4 xl:grid-cols-3">

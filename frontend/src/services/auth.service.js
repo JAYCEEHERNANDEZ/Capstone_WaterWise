@@ -46,7 +46,12 @@ export async function requestPasswordReset(email) {
       body: JSON.stringify({ email }),
     });
   } catch (error) {
-    throw new Error(error.response?.data?.message ?? "Unable to send the reset email.", { cause: error });
+    const requestError = new Error(error.response?.data?.message ?? "Unable to send the reset email.", { cause: error });
+    const retryAfter = Number(error.response?.headers?.["retry-after"]);
+    if (Number.isFinite(retryAfter) && retryAfter > 0) {
+      requestError.retryAfterSeconds = Math.ceil(retryAfter);
+    }
+    throw requestError;
   }
 }
 
@@ -76,7 +81,10 @@ export async function requestAuthenticatedPasswordOtp() {
   try {
     return await apiRequest("/auth/change-password/email-otp", { method: "POST" });
   } catch (error) {
-    throw new Error(error.response?.data?.message ?? "Unable to send a verification code.", { cause: error });
+    const requestError = new Error(error.response?.data?.message ?? "Unable to send a verification code.", { cause: error });
+    const retryAfter = Number(error.response?.headers?.["retry-after"]);
+    if (Number.isFinite(retryAfter) && retryAfter > 0) requestError.retryAfterSeconds = Math.ceil(retryAfter);
+    throw requestError;
   }
 }
 
@@ -84,7 +92,10 @@ export async function requestConsumerEmailChangeOtp() {
   try {
     return await apiRequest("/auth/consumer/change-email/otp", { method: "POST" });
   } catch (error) {
-    throw new Error(error.response?.data?.message ?? "Unable to send the verification code.", { cause: error });
+    const requestError = new Error(error.response?.data?.message ?? "Unable to send the verification code.", { cause: error });
+    const retryAfter = Number(error.response?.headers?.["retry-after"]);
+    if (Number.isFinite(retryAfter) && retryAfter > 0) requestError.retryAfterSeconds = Math.ceil(retryAfter);
+    throw requestError;
   }
 }
 

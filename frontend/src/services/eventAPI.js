@@ -1,4 +1,4 @@
-let events = [];
+import { apiRequest } from "./apiClient";
 
 function normalizeTags(tags) {
   if (Array.isArray(tags)) return tags.filter(Boolean);
@@ -39,25 +39,31 @@ function eventPayload(event) {
 }
 
 export async function fetchEvents() {
-  return events.map(normalizeEvent);
+  const response = await apiRequest("/events");
+  return (response?.data ?? []).map(normalizeEvent);
 }
 
 export async function fetchEventById(eventId) {
-  return events.find((event) => event.id === eventId) ?? null;
+  const response = await apiRequest(`/events/${eventId}`);
+  return normalizeEvent(response.data);
 }
 
 export async function createEvent(event) {
-  const saved = normalizeEvent({ ...eventPayload(event), id: crypto.randomUUID() });
-  events = [saved, ...events];
-  return saved;
+  const response = await apiRequest("/events", {
+    method: "POST",
+    body: JSON.stringify(eventPayload(event)),
+  });
+  return normalizeEvent(response.data);
 }
 
 export async function updateEvent(eventId, event) {
-  const saved = normalizeEvent({ ...eventPayload(event), id: eventId });
-  events = events.map((item) => item.id === eventId ? saved : item);
-  return saved;
+  const response = await apiRequest(`/events/${eventId}`, {
+    method: "PUT",
+    body: JSON.stringify(eventPayload(event)),
+  });
+  return normalizeEvent(response.data);
 }
 
 export async function deleteEvent(eventId) {
-  events = events.filter((event) => event.id !== eventId);
+  return apiRequest(`/events/${eventId}`, { method: "DELETE" });
 }
