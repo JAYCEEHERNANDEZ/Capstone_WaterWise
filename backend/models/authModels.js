@@ -208,6 +208,22 @@ export async function findPasswordResetAccount(email) {
   return null;
 }
 
+export async function reservePasswordResetOtpRequest(requestKey) {
+  const { data, error } = await supabase.rpc("reserve_password_reset_otp_request", {
+    p_request_key: requestKey,
+  });
+
+  if (error) {
+    throw new Error(`Failed to check password reset request limit: ${error.message}`);
+  }
+
+  return {
+    allowed: data?.allowed === true,
+    reason: data?.reason ?? null,
+    retryAfterSeconds: Math.max(1, Number(data?.retry_after_seconds ?? 1)),
+  };
+}
+
 export async function resetAccountPassword({ accountId, password, role }) {
   const source = getAccountSource(role);
   if (!source) return false;

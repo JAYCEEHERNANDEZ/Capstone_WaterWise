@@ -209,7 +209,7 @@ export default function Login() {
                   {adminChallengeToken ? "Verify admin sign in" : "Sign in to your account"}
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-slate-500">
-                  {adminChallengeToken ? `Enter the code sent to ${maskedEmail}. It expires in 10 minutes.` : "Use the credentials assigned to your WaterWise account."}
+                  {adminChallengeToken ? `Enter the code sent to ${maskedEmail}. It expires in 5 minutes.` : "Use the credentials assigned to your WaterWise account."}
                 </p>
               </div>
 

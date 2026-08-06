@@ -9,7 +9,7 @@ WaterWise is a full-stack water consumption, billing, payment, and account-manag
 - View consumption, billing, payment, and resident KPIs.
 - Create and update consumer accounts using any complete, valid email domain.
 - View consumer meter readings through the administrator read-only endpoint.
-- Manage billing records, payments, events, and announcements.
+- Manage persistent community events and announcements. Creating or changing an event automatically synchronizes a system-wide consumer notification.
 - Review one grouped row per resident in Readings, Billing, and Payments, then open resident-specific record details.
 - Process the oldest outstanding bill first or settle every outstanding bill from oldest to newest.
 - Review residents with three or more outstanding monthly bills from the Flagged Accounts workspace.
@@ -39,6 +39,7 @@ WaterWise is a full-stack water consumption, billing, payment, and account-manag
 - View current balances, billing history, consumption summaries, and graphs.
 - View profile information and announcements.
 - Receive targeted and system-wide notifications.
+- Receive new, updated, and cancelled community-event notices through the notification feed.
 - Mark notifications as read.
 - Review payment and billing information.
 - Change the signed-in password using the current password or email OTP.
@@ -105,13 +106,19 @@ Core tables include:
 - `payments`
 - `notifications`
 - `notification_reads`
+- `events`
 - `generated_reports`
 - `ai_consumption_cache`
 - `admin_trusted_devices`
+- `password_reset_request_limits`
 
 The migration adds `admins.role` with `admin` and `super-admin` values. When upgrading an existing database with no Super Admin, the oldest existing administrator is promoted automatically. That account must sign out and sign in again after the migration so its new role is included in the JWT.
 
 The `admin_trusted_devices` table stores only SHA-256 hashes of random browser tokens. It records the owning administrator, role, user agent, creation time, last use, expiration, and revocation time. Run the latest migration before enabling trusted-device login; the backend does not create this table automatically.
+
+The `events` table stores the event title, resident information, date, time, location, categories, status, creator, and audit timestamps. Row Level Security is enabled, direct `anon` and `authenticated` table access is revoked, and the Express backend accesses it with the server-only Supabase service-role key.
+
+The `sync_event_notification` database trigger maintains one system-wide notification per event using the stable `community-event:<event-id>` key. Existing events are backfilled when the migration is run. Updating or cancelling an event updates its notification and clears prior read records so consumers see the change as unread. Deleting an event also removes its related notification.
 
 ## Environment Configuration
 
@@ -173,7 +180,7 @@ For testing from another device on the same network, start Vite with host access
 
 ### Standard login
 
-Consumers and meter readers submit their username/email and password to `POST /api/auth/login`. After successful authentication, the frontend stores the JWT and account data in tab-scoped `sessionStorage`.
+Consumers and meter readers submit their username/email and password to `POST /api/auth/login`. After successful authentication, the frontend stores the JWT and account data in tab-scoped `sessionStorage`. Access tokens expire by role: four hours for Consumers, two hours for Meter Readers, one hour for Admins, and 30 minutes for Super Admins.
 
 Protected requests include:
 
@@ -191,13 +198,13 @@ Administrators use two-step authentication:
 4. The administrator verifies the OTP through `POST /api/auth/admin/verify-login-otp`.
 5. Successful OTP verification creates the admin JWT and a random trusted-device token in an `HttpOnly` browser cookie.
 
-Admin login codes expire after 10 minutes, allow up to five incorrect attempts, and cannot be reused after successful verification.
+Admin login codes expire after 5 minutes, allow up to five incorrect attempts, and cannot be reused after successful verification.
 
-On later logins, the backend still validates the administrator password first. If the browser presents an active trusted-device cookie belonging to the same administrator and role, the backend skips only the OTP step and issues the normal eight-hour access JWT. A regular Admin browser remains trusted for 30 days; a Super Admin browser remains trusted for 7 days.
+On later logins, the backend still validates the administrator password first. If the browser presents an active trusted-device cookie belonging to the same administrator and role, the backend skips only the OTP step and issues the normal role-based access JWT. Admin access tokens expire after one hour and Super Admin access tokens after 30 minutes. A regular Admin browser remains trusted for 30 days; a Super Admin browser remains trusted for 7 days.
 
 The browser stores the raw random token only in an `HttpOnly` cookie. The database stores only its SHA-256 hash. Production cookies use `Secure` and `SameSite=None` for the deployed cross-origin frontend/backend configuration. Frontend API requests therefore use credentials, and backend CORS allows credentialed requests only from approved origins.
 
-Admin Profile Management contains one **Profile security** section with **Trusted devices**, **Change password**, and **Change email** controls. The device view shows the platform, browser, last-used time, expiry, and current device. Administrators can revoke one device or all other devices. A revoked or expired browser must complete OTP again on its next login. Revocation removes trusted-browser status; it does not cancel an access JWT that was already issued for the current eight-hour session. Changing or resetting an administrator password revokes every trusted device for that account.
+Admin Profile Management contains one **Profile security** section with **Trusted devices**, **Change password**, and **Change email** controls. The device view shows the platform, browser, last-used time, expiry, and current device. Administrators can revoke one device or all other devices. A revoked or expired browser must complete OTP again on its next login. Revocation removes trusted-browser status; it does not cancel an access JWT that was already issued for the current role-based session. Changing or resetting an administrator password revokes every trusted device for that account.
 
 ### Forgot-password OTP flow
 
@@ -207,7 +214,7 @@ Admin Profile Management contains one **Profile security** section with **Truste
 4. Only verified users can open the new-password step.
 5. The reset session becomes invalid after the password is changed.
 
-The forgot-password response does not reveal whether an email belongs to an account.
+The forgot-password form checks the backend account database before sending an OTP and reports when an email is not registered. This avoids consuming an email request for an unknown account, but intentionally allows account-email discovery; request throttling must remain enabled to reduce automated enumeration and email abuse.
 
 ### Change password while signed in
 
@@ -232,11 +239,11 @@ Regular Admins and Super Admins can optionally assign a new password while editi
 4. Successful verification creates a single-use authorization valid for five minutes.
 5. The consumer update accepts the password only when that authorization matches the same administrator and resident.
 
-The OTP expires after 10 minutes and allows up to five incorrect attempts. Updating the resident's name, username, email, contact number, purok, or account status does not request OTP when the optional password field is blank.
+The OTP expires after 5 minutes and allows up to five incorrect attempts. Updating the resident's name, username, email, contact number, purok, or account status does not request OTP when the optional password field is blank.
 
 ### Consumer email change
 
-Consumers can select **Change email** from the **Account security** section of their Household Profile page. WaterWise first sends an OTP to the current registered email. After successful verification, the consumer can enter a different complete email address. Codes expire after 10 minutes and allow up to five incorrect attempts.
+Consumers can select **Change email** from the **Account security** section of their Household Profile page. WaterWise first sends an OTP to the current registered email. After successful verification, the consumer can enter a different complete email address. Codes expire after 5 minutes and allow up to five incorrect attempts.
 
 If the consumer cannot remember or access the current email, the self-service change cannot continue. The consumer must visit the Sucol Water System office so staff can verify their identity and update the account safely.
 
@@ -308,6 +315,7 @@ The backend independently restricts `POST /api/admins` and `POST /api/meter-read
 | `/api/billing` | Billing records and balances |
 | `/api/payments` | Payment processing and history |
 | `/api/notifications` | Announcements and notification state |
+| `/api/events` | Admin-only persistent community-event CRUD and automatic consumer-notification synchronization |
 | `/api/consumption/prediction` | AI consumption predictions |
 | `/api/anomaly` | AI anomaly detection |
 | `/api/recommendation` | AI recommendations |
@@ -333,6 +341,34 @@ Dashboards and AI cache detect the updated data
 - Payment-backed consumption records are protected from silent mutation.
 - Notifications may target one consumer or be system-wide.
 - Notification read state is stored separately for each consumer.
+
+## Community Events and Consumer Notifications
+
+Event management is persistent and available only to authenticated Admin and Super Admin accounts:
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/events` | List scheduled and cancelled events |
+| `GET` | `/api/events/:id` | Retrieve one event |
+| `POST` | `/api/events` | Create an event |
+| `PUT` | `/api/events/:id` | Update or cancel an event |
+| `DELETE` | `/api/events/:id` | Delete an event and its synchronized notification |
+
+The frontend event service calls these endpoints instead of keeping events in browser memory. Database validation enforces required text, valid `YYYY-MM-DD` dates, 24-hour `HH:MM` times, category limits, and supported event statuses.
+
+Event notification flow:
+
+```text
+Admin creates or updates an event
+              ↓
+Authenticated /api/events endpoint validates and saves it
+              ↓
+Supabase trigger creates or updates one global notification
+              ↓
+Consumers receive it in the notification feed and Announcements page
+```
+
+These are in-app notifications. Event email and SMS delivery are not included.
 
 ## Administrator Record Views
 
@@ -427,3 +463,4 @@ This is expected until the emailed OTP is verified. The admin access token is is
 - Resident password authorization is required only when a consumer update contains `password`; it is bound to the acting administrator and target resident and is single-use.
 - The frontend must never create an authenticated session before the backend returns a valid access token.
 - Validate ownership and role permissions on every protected endpoint.
+- Supabase Row Level Security blocks direct browser access to protected tables; database operations must pass through the authenticated Express backend using the server-only service-role key.

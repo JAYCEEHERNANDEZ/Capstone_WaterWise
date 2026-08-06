@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, KeyRound, LoaderCircle, Mail, ShieldCheck } from "lucide-react";
 import {
   changePasswordWithCurrent,
@@ -7,6 +7,8 @@ import {
   verifyPasswordResetOtp,
 } from "../services/auth.service";
 import Modal from "./Modal";
+
+const formatCountdown = (totalSeconds) => `${String(Math.floor(totalSeconds / 60)).padStart(2, "0")}:${String(totalSeconds % 60).padStart(2, "0")}`;
 
 function isStrongPassword(password) {
   return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[^A-Za-z0-9]/.test(password);
@@ -25,6 +27,19 @@ export default function ChangePasswordModal({ emailOnly = false, isOpen, onClose
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [clock, setClock] = useState(0);
+  const cooldownSeconds = Math.max(0, Math.ceil((cooldownUntil - clock) / 1000));
+
+  useEffect(() => {
+    if (!cooldownUntil) return undefined;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setClock(now);
+      if (now >= cooldownUntil) window.clearInterval(timer);
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [cooldownUntil]);
 
   const validateNewPassword = () => {
     if (!isStrongPassword(newPassword)) return "Use at least 8 characters with uppercase, lowercase, a number, and a symbol.";
@@ -60,8 +75,15 @@ export default function ChangePasswordModal({ emailOnly = false, isOpen, onClose
       setChallengeToken(result.challengeToken);
       setMaskedEmail(result.maskedEmail);
       setMessage(result.message);
+      setOtp("");
+      setClock(Date.now());
+      setCooldownUntil(Date.now() + 2 * 60 * 1000);
     } catch (requestError) {
       setError(requestError.message);
+      if (requestError.retryAfterSeconds) {
+        setClock(Date.now());
+        setCooldownUntil(Date.now() + requestError.retryAfterSeconds * 1000);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -118,18 +140,18 @@ export default function ChangePasswordModal({ emailOnly = false, isOpen, onClose
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-water-50 text-water-700"><Mail className="h-5 w-5" /></span>
             <p className="mt-3 text-sm leading-6 text-slate-600">We’ll send a 6-digit code to the email registered to your signed-in account.</p>
             {error && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-left text-sm font-semibold text-red-700" role="alert">{error}</p>}
-            <button className="ww-primary-button mt-5 flex min-h-12 w-full items-center justify-center gap-2" disabled={isSubmitting} onClick={sendOtp} type="button">{isSubmitting && <LoaderCircle className="h-5 w-5 animate-spin" />}{isSubmitting ? "Sending code…" : "Send email code"}</button>
+            <button className="ww-primary-button mt-5 flex min-h-12 w-full items-center justify-center gap-2" disabled={isSubmitting || cooldownSeconds > 0} onClick={sendOtp} type="button">{isSubmitting && <LoaderCircle className="h-5 w-5 animate-spin" />}{isSubmitting ? "Sending code…" : cooldownSeconds > 0 ? `Try again in ${formatCountdown(cooldownSeconds)}` : "Send email code"}</button>
           </div>
         )}
 
         {method === "email" && challengeToken && !resetToken && (
           <form className="mt-5 space-y-4" onSubmit={verifyOtp}>
-            <p className="text-sm text-slate-600">Enter the code sent to <strong>{maskedEmail}</strong>.</p>
+            <p className="text-sm text-slate-600">Enter the code sent to <strong>{maskedEmail}</strong>. It expires in 5 minutes.</p>
             <div><label className="text-sm font-semibold" htmlFor="account-password-otp">Verification code</label><input autoComplete="one-time-code" className="ww-field mt-2 py-3 text-center font-mono text-xl tracking-[0.35em]" id="account-password-otp" inputMode="numeric" maxLength={6} onChange={(event) => { setOtp(event.target.value.replace(/\D/g, "")); setError(""); }} value={otp} /></div>
             {message && !error && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{message}</p>}
             {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700" role="alert">{error}</p>}
             <button className="ww-primary-button flex min-h-12 w-full items-center justify-center gap-2" disabled={isSubmitting} type="submit">{isSubmitting && <LoaderCircle className="h-5 w-5 animate-spin" />}{isSubmitting ? "Verifying…" : "Verify code"}</button>
-            <button className="w-full text-sm font-bold text-water-700" disabled={isSubmitting} onClick={sendOtp} type="button">Resend code</button>
+            <button className="w-full text-sm font-bold text-water-700 disabled:cursor-not-allowed disabled:text-slate-400" disabled={isSubmitting || cooldownSeconds > 0} onClick={sendOtp} type="button">{cooldownSeconds > 0 ? `Resend code in ${formatCountdown(cooldownSeconds)}` : "Resend code"}</button>
           </form>
         )}
 
